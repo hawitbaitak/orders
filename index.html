@@ -382,7 +382,7 @@
                         <h1 class="text-3xl font-black text-[#142952]">فاتورة</h1>
                     </div>
                     <div class="text-left font-black text-[11px] space-y-0.5">
-                        <p>رقم الفاتورة : #{{ invoice.orderId }}</p>
+                        <p class="text-sm text-[#142952] pb-1">رقم الفاتورة : #{{ invoice.orderId }}</p>
                         <p>تاريخ الطلب : {{ formatDateLong(invoice.timestamp) }}</p>
                         <p>الرقم الضريبي : 310236446600003</p>
                     </div>
@@ -622,7 +622,7 @@
                 const saveOrder = async () => {
                     isSaving.value = true;
                     const mCode = (orderForm.value.managerCode || 'XX').toUpperCase().substring(0,2);
-                    const orderId = editingOrder.value ? editingOrder.value.orderId : (`${mCode}-` + Math.random().toString(36).substr(2, 6).toUpperCase());
+                    const orderId = editingOrder.value ? editingOrder.value.orderId : (`${mCode}-` + Math.floor(100000 + Math.random() * 900000).toString());
                     
                     const payload = {
                         orderId,
