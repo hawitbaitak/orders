@@ -172,7 +172,7 @@
                         </div>
                         <div class="space-y-1">
                             <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">الجوال</label>
-                            <input v-model="orderForm.client.phone" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold" dir="ltr">
+                            <input v-model="orderForm.client.phone" @input="orderForm.client.phone = orderForm.client.phone.replace(/\s+/g, '')" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold" dir="ltr">
                         </div>
                         <div class="space-y-1">
                             <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">العنوان بالتفصيل</label>
@@ -555,7 +555,7 @@
                     discountRate: 0,
                     isPaid: false, 
                     receiptImage: null,
-                    client: { name: '', city: '', address: '', phone: '+966 ' },
+                    client: { name: '', city: '', address: '', phone: '+966' },
                     products: [{ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 }]
                 });
 
@@ -719,7 +719,7 @@
                         discountRate: 0,
                         isPaid: false,
                         receiptImage: null,
-                        client: { name: '', city: '', address: '', phone: '+966 ' },
+                        client: { name: '', city: '', address: '', phone: '+966' },
                         products: [{ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 }]
                     };
                 };
@@ -854,21 +854,22 @@
                 };
 
                 const filteredOrders = computed(() => {
-                    const q = searchQuery.value.toUpperCase();
+                    const q = (searchQuery.value || '').toUpperCase();
                     
                     // تنظيف حقل البحث من علامة الزائد والمسافات
-                    const rawSearchPhone = searchQuery.value.replace(/[\s+]/g, '');
+                    const rawSearchPhone = (searchQuery.value || '').replace(/[\s+]/g, '');
                     // إذا كان يبدأ بـ 05 نشيل الصفر عشان المطابقة تكون دقيقة
                     const queryPhone = rawSearchPhone.startsWith('05') ? rawSearchPhone.substring(1) : rawSearchPhone;
 
                     return orders.value.filter(o => {
-                        const matchId = o.orderId.includes(q);
+                        // تحويل المرجع لنص لتجنب أي أخطاء
+                        const matchId = (o.orderId || '').toString().toUpperCase().includes(q);
                         const matchName = (o.client?.name || "").includes(searchQuery.value);
                         
                         let matchPhone = false;
                         if (o.client && o.client.phone) {
-                            // تنظيف رقم العميل بنفس الطريقة للمقارنة
-                            const rawOrderPhone = o.client.phone.replace(/[\s+]/g, '');
+                            // تحويل الرقم لنص عشان نتجنب أي خطأ لو كان محفوظ في المتصفح كرقم
+                            const rawOrderPhone = String(o.client.phone).replace(/[\s+]/g, '');
                             const orderPhone = rawOrderPhone.startsWith('05') ? rawOrderPhone.substring(1) : rawOrderPhone;
                             if (queryPhone.length > 0 && orderPhone.includes(queryPhone)) {
                                 matchPhone = true;
