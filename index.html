@@ -248,7 +248,7 @@
                 <div class="p-8 bg-gray-50 flex justify-between items-center border-b">
                     <div class="relative w-96">
                         <i data-lucide="search" class="absolute right-4 top-3.5 text-gray-400 w-5 h-5"></i>
-                        <input v-model="searchQuery" class="w-full pr-12 pl-6 py-3.5 bg-white border-none rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold" placeholder="ابحث باسم العميل أو رقم الطلب...">
+                        <input v-model="searchQuery" class="w-full pr-12 pl-6 py-3.5 bg-white border-none rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold" placeholder="ابحث باسم العميل أو رقم الطلب أو الجوال...">
                     </div>
                     <div class="font-black text-gray-400">الإجمالي: {{ filteredOrders.length }} طلب</div>
                 </div>
@@ -855,8 +855,28 @@
 
                 const filteredOrders = computed(() => {
                     const q = searchQuery.value.toUpperCase();
-                    return orders.value.filter(o => o.orderId.includes(q) || (o.client?.name || "").includes(searchQuery.value))
-                        .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    
+                    // تنظيف حقل البحث من علامة الزائد والمسافات
+                    const rawSearchPhone = searchQuery.value.replace(/[\s+]/g, '');
+                    // إذا كان يبدأ بـ 05 نشيل الصفر عشان المطابقة تكون دقيقة
+                    const queryPhone = rawSearchPhone.startsWith('05') ? rawSearchPhone.substring(1) : rawSearchPhone;
+
+                    return orders.value.filter(o => {
+                        const matchId = o.orderId.includes(q);
+                        const matchName = (o.client?.name || "").includes(searchQuery.value);
+                        
+                        let matchPhone = false;
+                        if (o.client && o.client.phone) {
+                            // تنظيف رقم العميل بنفس الطريقة للمقارنة
+                            const rawOrderPhone = o.client.phone.replace(/[\s+]/g, '');
+                            const orderPhone = rawOrderPhone.startsWith('05') ? rawOrderPhone.substring(1) : rawOrderPhone;
+                            if (queryPhone.length > 0 && orderPhone.includes(queryPhone)) {
+                                matchPhone = true;
+                            }
+                        }
+
+                        return matchId || matchName || matchPhone;
+                    }).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
                 });
 
                 const filteredByDateOrders = computed(() => {
