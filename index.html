@@ -238,8 +238,9 @@
                         </div>
                         <div class="flex gap-4">
                             <button v-if="editingOrder" type="button" @click="cancelEdit" class="bg-gray-200 px-10 py-4 rounded-2xl font-black text-gray-600 shadow-sm transition-all hover:bg-gray-300">إلغاء</button>
-                            <button type="submit" :disabled="isSaving" class="bg-[#142952] text-white px-16 py-4 rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all">
-                                {{ isSaving ? 'جاري المزامنة مع السحاب...' : (editingOrder ? 'تحديث الطلب' : 'حفظ الطلب') }}
+                            <button type="submit" :disabled="isSaving || isSuccess" :class="isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-[#142952] hover:bg-blue-800'" class="text-white px-16 py-4 rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all flex justify-center items-center gap-3 min-w-[280px]">
+                                <i v-if="isSuccess" data-lucide="check-circle" class="w-6 h-6 text-white"></i>
+                                <span>{{ isSaving ? 'جاري المزامنة مع السحاب...' : (isSuccess ? 'تم التسجيل بنجاح' : (editingOrder ? 'تحديث الطلب' : 'حفظ الطلب')) }}</span>
                             </button>
                         </div>
                     </div>
@@ -533,6 +534,7 @@
                 const filterPaymentStatus = ref('all'); 
                 
                 const isSaving = ref(false);
+                const isSuccess = ref(false);
                 const bulkList = ref([]);
                 const editingOrder = ref(null);
                 const receiptInput = ref(null);
@@ -565,7 +567,6 @@
                 const showNotify = (msg, type = 'success') => {
                     if (notifyTimeout) clearTimeout(notifyTimeout);
                     notification.value = { msg, type };
-                    // الإشعار الأزرق (جاري التحميل) هيفضل موجود لحد ما نستبدله بنجاح أو خطأ
                     if (type !== 'info') {
                         notifyTimeout = setTimeout(() => notification.value = null, 4000);
                     }
@@ -628,6 +629,7 @@
 
                 const saveOrder = async () => {
                     isSaving.value = true;
+                    isSuccess.value = false;
                     showNotify('جاري تسجيل الطلب في السحاب...', 'info');
                     
                     const mCode = (orderForm.value.managerCode || 'XX').toUpperCase().substring(0,2);
@@ -649,7 +651,6 @@
                     };
 
                     try {
-                        // إرسال البيانات للسحاب أولاً
                         const response = await fetch(GOOGLE_SCRIPT_URL, { 
                             method: 'POST', 
                             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -658,10 +659,7 @@
                         
                         const result = await response.json();
                         
-                        // لو السحاب أكد إن الحفظ تم
                         if (result.result === "success" || result.status === "success") {
-                            
-                            // نحفظه محلي عشان يظهر في الأرشيف
                             if (editingOrder.value) {
                                 const idx = orders.value.findIndex(o => o.orderId === editingOrder.value.orderId);
                                 if (idx !== -1) orders.value[idx] = payload;
@@ -671,8 +669,18 @@
                             localStorage.setItem('hwayt_orders_v7', JSON.stringify(orders.value));
 
                             showNotify('تم تسجيل الطلب في السحاب بنجاح!', 'success');
-                            cancelEdit();
-                            setTab('archive');
+                            
+                            // تحويل الزرار لعلامة الصح الخضراء
+                            isSuccess.value = true;
+                            nextTick(() => setTimeout(() => lucide.createIcons(), 50));
+                            
+                            // الانتظار ثانيتين وبعدين تصفير الفورم والبقاء في نفس الصفحة
+                            setTimeout(() => {
+                                isSuccess.value = false;
+                                cancelEdit();
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }, 2500);
+
                         } else {
                             throw new Error("السيرفر رفض الحفظ");
                         }
@@ -873,7 +881,6 @@
                     const queryPhone = rawSearchPhone.startsWith('05') ? rawSearchPhone.substring(1) : rawSearchPhone;
 
                     return orders.value.filter(o => {
-                        // حماية إضافية لو أي قيمة فاضية
                         const matchId = String(o.orderId || '').toUpperCase().includes(q);
                         const matchName = String(o.client?.name || "").includes(searchQuery.value || '');
                         
@@ -912,7 +919,7 @@
                 watchEffect(() => setTimeout(() => lucide.createIcons(), 100));
 
                 return {
-                    activeTab, orders, catalog, notification, searchQuery, filterDate, filterPaymentStatus, isSaving, syncLoading, loading,
+                    activeTab, orders, catalog, notification, searchQuery, filterDate, filterPaymentStatus, isSaving, isSuccess, syncLoading, loading,
                     orderForm, catalogForm, bulkList, editingOrder, receiptInput,
                     addProductRow, removeProductRow, syncProductData, updatePrice, handleReceiptUpload, saveOrder, deleteOrder, editOrder, cancelEdit,
                     saveCatalogItem, deleteCatalogItem, viewInvoice, printBulk, downloadBulkPDF, downloadZIP, syncFromSheet, calculateTotal, calculateSubTotal,
