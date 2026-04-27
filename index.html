@@ -330,7 +330,7 @@
                 <div class="p-8 bg-gray-50 flex justify-between items-center border-b flex-wrap gap-4">
                     <div class="relative w-full md:w-[28rem]">
                         <i data-lucide="search" class="absolute right-4 top-3.5 text-gray-400 w-5 h-5"></i>
-                        <input v-model="searchQuery" class="w-full pr-12 pl-6 py-3.5 bg-white border-none rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold text-sm" placeholder="ابحث باسم العميل أو رقم الجوال في جميع الطلبات (للتأكد من التسجيل المسبق)...">
+                        <input v-model="searchQuery" class="w-full pr-12 pl-6 py-3.5 bg-white border-none rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold text-sm" placeholder="ابحث باسم العميل أو رقم الجوال أو رقم الطلب...">
                     </div>
                     <div class="font-black text-gray-400">الإجمالي المعروض: {{ filteredOrders.length }} طلب</div>
                 </div>
@@ -343,6 +343,7 @@
                                 <th class="p-6">العميل</th>
                                 <th class="p-6">الجوال</th>
                                 <th class="p-6">المبلغ</th>
+                                <th class="p-6 text-center">الإيصال</th>
                                 <th class="p-6 text-center">إجراءات</th>
                             </tr>
                         </thead>
@@ -353,13 +354,20 @@
                                     <span v-if="order.isPaid" class="block mt-1 bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded w-fit">مدفوع</span>
                                     <span v-else class="block mt-1 bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded w-fit">غير مدفوع</span>
                                 </td>
-                                <td class="p-6 text-xs text-gray-500 font-bold">{{ formatDate(order.timestamp) }}</td>
+                                <td class="p-6 text-xs text-gray-500 font-bold" dir="ltr">{{ formatDate(order.timestamp) }}<br>{{ formatTime(order.timestamp) }}</td>
                                 <td class="p-6 font-black text-gray-800">
                                     {{ order.client?.name || 'غير متوفر' }}
                                     <span class="block text-[10px] text-gray-400 mt-1 font-bold">كود الموظف: {{ order.managerCode }}</span>
                                 </td>
                                 <td class="p-6 font-bold text-gray-600" dir="ltr">{{ order.client?.phone || '' }}</td>
                                 <td class="p-6 font-black text-green-600">{{ order.totalAmount }} SAR</td>
+                                <td class="p-6 text-center">
+                                    <button v-if="order.receiptImage && order.receiptImage.length > 10" @click="showReceipt(order.receiptImage)" class="text-blue-500 hover:text-blue-700 transition-colors flex flex-col items-center justify-center gap-1 mx-auto">
+                                        <i data-lucide="image" class="w-5 h-5"></i>
+                                        <span class="text-[10px] font-bold">عرض</span>
+                                    </button>
+                                    <span v-else class="text-gray-300">-</span>
+                                </td>
                                 <td class="p-6">
                                     <div class="flex justify-center gap-2">
                                         <button @click="viewInvoice(order)" class="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all"><i data-lucide="eye" class="w-4 h-4"></i></button>
@@ -503,11 +511,11 @@
                                     <td class="font-mono font-black text-blue-700">{{ row['رقم الطلب'] }}</td>
                                     <td class="font-black text-gray-500">{{ row['رمز المسؤول'] || 'غير محدد' }}</td>
                                     <td class="font-bold">{{ row['العميل'] }}</td>
-                                    <td class="text-gray-500 font-bold">{{ formatDate(row['التاريخ']) }}</td>
+                                    <td class="text-gray-500 font-bold" dir="ltr">{{ formatDate(row['التاريخ']) }}</td>
                                     <td class="font-black text-green-600">{{ row['المبلغ الإجمالي'] }} SAR</td>
                                     <td>
-                                        <span :class="row['حالة الدفع'] === 'تم الدفع' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="px-2 py-1 rounded font-black text-[10px]">
-                                            {{ row['حالة الدفع'] }}
+                                        <span :class="row['حالة الدفع'].includes('تم الدفع') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="px-2 py-1 rounded font-black text-[10px]">
+                                            {{ row['حالة الدفع'].includes('تم الدفع') ? 'تم الدفع' : 'لم يتم الدفع' }}
                                         </span>
                                     </td>
                                 </tr>
@@ -667,21 +675,28 @@
         products: [{ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 }]
     });
 
-    function safeIsoDate(dateStr) {
+    // دالة ذكية ومعدلة لقراءة جميع صيغ التواريخ (حتى التواريخ العربية المكتوبة في الإكسيل) وحل مشكلة اختفاء الطلبات القديمة
+    function parseSheetDate(dateStr) {
         if (!dateStr) return new Date().toISOString();
-        const d = new Date(dateStr);
-        return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+        let d = new Date(dateStr);
+        if (!isNaN(d.getTime())) return d.toISOString();
+        
+        if (typeof dateStr === 'string') {
+            const s = dateStr.trim();
+            const parts = s.split(/[\/\-]/);
+            if (parts.length === 3) {
+                if (parts[2].length === 4) {
+                    d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                    if (!isNaN(d.getTime())) return d.toISOString();
+                }
+            }
+        }
+        return new Date().toISOString();
     }
 
-    // دالة حماية لحفظ البيانات في المتصفح وتجنب انهيار النظام إذا امتلأت الذاكرة بسبب الصور
     function safeStorageSave(key, data) {
-        try {
-            localStorage.setItem(key, JSON.stringify(data));
-        } catch (e) {
-            console.warn("تحذير: ذاكرة المتصفح ممتلئة. سيعمل النظام على الذاكرة الحية المؤقتة.");
-            // اختياري: تفريغ الذاكرة تلقائياً إذا امتلأت
-            localStorage.clear(); 
-        }
+        try { localStorage.setItem(key, JSON.stringify(data)); } 
+        catch (e) { console.warn("الذاكرة ممتلئة. يعمل النظام على الذاكرة الحية."); localStorage.clear(); }
     }
 
     createApp({
@@ -720,7 +735,9 @@
             let notifyTimeout = null;
 
             const isAdmin = computed(() => currentUser.value?.role === 'admin');
-            const archiveLabel = computed(() => currentUser.value?.role === 'admin' ? 'أرشيف الطلبات العام' : 'طلباتي وأرشيف البحث');
+            
+            // فتح أرشيف الطلبات العام لجميع الموظفين
+            const archiveLabel = computed(() => 'أرشيف الطلبات العام');
 
             const calcSubTotal = computed(() => orderForm.value.products.reduce((sum, p) => sum + (p.price * p.count), 0));
             const calcDiscountValue = computed(() => parseFloat(((calcSubTotal.value * (orderForm.value.discountRate || 0)) / 100).toFixed(2)));
@@ -740,22 +757,13 @@
                         const orderPhone = rawOrder.startsWith('05') ? rawOrder.substring(1) : rawOrder;
                         if (queryPhone.length > 0 && orderPhone.includes(queryPhone)) matchPhone = true;
                     }
-                    const isMatch = matchId || matchName || matchPhone;
-
-                    if (q.length > 0) return isMatch;
-
-                    if (!isAdmin.value) {
-                        if ((o.managerCode || '').toUpperCase() !== (currentUser.value?.managerCode || '').toUpperCase()) return false;
-                    }
-                    return true;
-                }).sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+                    return matchId || matchName || matchPhone;
+                // تعديل الترتيب ليصبح من الأحدث إلى الأقدم بشكل صحيح
+                }).sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
             });
 
             const filteredByDateOrders = computed(() => {
                 return orders.value.filter(o => {
-                    if (!isAdmin.value) {
-                        if ((o.managerCode || '').toUpperCase() !== (currentUser.value?.managerCode || '').toUpperCase()) return false;
-                    }
                     const dateMatch = (o.timestamp || '').split('T')[0] === filterDate.value;
                     let statusMatch = true;
                     if (filterPaymentStatus.value === 'paid')   statusMatch = o.isPaid === true;
@@ -770,7 +778,7 @@
                     const code = (r['رمز المسؤول'] || 'غير محدد').toUpperCase();
                     if (!stats[code]) stats[code] = { code, total: 0, paid: 0, unpaid: 0, revenue: 0 };
                     stats[code].total++;
-                    if (r['حالة الدفع'] === 'تم الدفع') {
+                    if (String(r['حالة الدفع'] || '').includes('تم الدفع')) {
                         stats[code].paid++;
                         stats[code].revenue += parseFloat(r['المبلغ الإجمالي'] || 0);
                     } else {
@@ -791,7 +799,7 @@
                 const dataToSum = filteredReportData.value;
                 const totalOrders   = dataToSum.length;
                 const totalRevenue  = dataToSum.reduce((s, r) => s + parseFloat(r['المبلغ الإجمالي'] || 0), 0).toFixed(2);
-                const paidOrders    = dataToSum.filter(r => r['حالة الدفع'] === 'تم الدفع').length;
+                const paidOrders    = dataToSum.filter(r => String(r['حالة الدفع'] || '').includes('تم الدفع')).length;
                 const unpaidOrders  = totalOrders - paidOrders;
                 return { totalOrders, totalRevenue, paidOrders, unpaidOrders };
             });
@@ -852,6 +860,12 @@
                 reader.readAsDataURL(file);
             };
 
+            // دالة فتح الإيصال في نافذة جديدة
+            const showReceipt = (imgSrc) => {
+                const w = window.open("");
+                w.document.write(`<div style="display:flex; justify-content:center; align-items:center; height:100vh; background:#f0f0f0;"><img src="${imgSrc}" style="max-width:100%; max-height:100vh; box-shadow: 0 4px 8px rgba(0,0,0,0.2); border-radius: 8px;" /></div>`);
+            };
+
             const saveOrder = async () => {
                 isSaving.value = true; isSuccess.value = false;
                 showNotify('جاري تسجيل الطلب في السحاب...', 'info');
@@ -886,7 +900,7 @@
                         } else {
                             orders.value.unshift(payload);
                         }
-                        safeStorageSave('hwayt_orders_v8', orders.value); // استخدام الحماية هنا
+                        safeStorageSave('hwayt_orders_v8', orders.value);
                         isSaving.value = false; isSuccess.value = true;
                         showNotify('تم تسجيل الطلب في السحاب بنجاح!', 'success');
                         setTimeout(() => { isSuccess.value = false; cancelEdit(); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 2500);
@@ -900,7 +914,7 @@
             const deleteOrder = async (order) => {
                 if (!confirm(`حذف الطلب ${order.orderId} نهائياً؟`)) return;
                 orders.value = orders.value.filter(o => o.orderId !== order.orderId);
-                safeStorageSave('hwayt_orders_v8', orders.value); // استخدام الحماية هنا
+                safeStorageSave('hwayt_orders_v8', orders.value); 
                 try {
                     await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'delete', orderId: order.orderId, target: 'orders' }) });
                     showNotify('تم الحذف بنجاح');
@@ -942,10 +956,12 @@
                             grouped[oid] = {
                                 orderId: oid, managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim(),
                                 discountRate: parseFloat(row['نسبة الخصم'] || 0), discountValue: parseFloat(row['قيمة الخصم'] || 0),
-                                isPaid: row['حالة الدفع'] === 'تم الدفع', receiptImage: row['صورة الإيصال'] || null,
+                                // حل مشكلة الكل غير مدفوع
+                                isPaid: String(row['حالة الدفع'] || '').includes('تم الدفع'), 
+                                receiptImage: row['صورة الإيصال'] || null,
                                 client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: row['الجوال'] || '', address: row['العنوان بالتفصيل'] || '' },
                                 products: [], totalAmount: 0, subTotal: 0,
-                                timestamp: safeIsoDate(row['التاريخ'])
+                                timestamp: parseSheetDate(row['التاريخ'])
                             };
                         }
                         const p = {
@@ -965,8 +981,8 @@
                         } else { o.totalAmount = o.subTotal; }
                     });
 
-                    orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                    safeStorageSave('hwayt_orders_v8', orders.value); // استخدام الحماية هنا
+                    orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                    safeStorageSave('hwayt_orders_v8', orders.value);
                     showNotify('تمت المزامنة بنجاح');
                 } catch(e) {
                     console.error("Sync Error Details: ", e);
@@ -1007,7 +1023,7 @@
                     reportData.value = accounts.filter(r => {
                         const dStr = r['التاريخ'];
                         if(!dStr) return false;
-                        const d = new Date(safeIsoDate(dStr));
+                        const d = new Date(parseSheetDate(dStr));
                         return d >= start && d <= end;
                     });
                     showNotify(`تم جلب وتحليل البيانات بنجاح`);
@@ -1039,7 +1055,7 @@
                 reportType, selectedEmployee, reportStartDate, reportEndDate, reportData, filteredReportData, reportGenerated, reportSummary, employeeStats,
                 isAdmin, archiveLabel, calcSubTotal, calcDiscountValue, calcTotal,
                 filteredOrders, filteredByDateOrders,
-                setTab, addProductRow, removeProductRow, syncProductData, updatePrice, handleReceiptUpload,
+                setTab, addProductRow, removeProductRow, syncProductData, updatePrice, handleReceiptUpload, showReceipt,
                 saveOrder, deleteOrder, editOrder, cancelEdit, saveCatalogItem, deleteCatalogItem, syncFromSheet,
                 viewInvoice, printBulk, downloadBulkPDF, generateReport, exportReportExcel,
                 formatDate, formatDateLong, formatTime
