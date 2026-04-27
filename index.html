@@ -226,14 +226,13 @@
                                 <div class="space-y-1">
                                     <label class="text-[10px] font-black text-gray-400 uppercase">اختر المنتج</label>
                                     <div class="flex items-center gap-3">
-                                        <div v-if="p.name" class="w-12 h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center p-1 shrink-0 shadow-sm">
-                                            <img :src="'products/' + p.name + '.webp'"
-                                                 :data-name="p.name"
-                                                 onerror="if(!this.dataset.j){this.dataset.j=1; this.src='products/'+this.dataset.name+'.jpg';}else if(!this.dataset.p){this.dataset.p=1; this.src='products/'+this.dataset.name+'.png';}else{this.onerror=null;this.src='logo1.png';}"
+                                        <div v-if="p.name" class="w-16 h-16 bg-white border border-gray-200 rounded-xl flex items-center justify-center p-1 shrink-0 shadow-sm">
+                                            <img :src="`products/${p.name}.webp`" :data-name="p.name"
+                                                 onerror="if(!this.getAttribute('data-j')){this.setAttribute('data-j','1'); this.src='products/'+this.getAttribute('data-name')+'.jpg';} else if(!this.getAttribute('data-p')){this.setAttribute('data-p','1'); this.src='products/'+this.getAttribute('data-name')+'.png';} else {this.onerror=null; this.src='logo1.png';}"
                                                  class="w-full h-full object-contain rounded-md">
                                         </div>
                                         <select v-model="p.productId" @change="syncProductData(p)" required class="flex-1 w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
-                                            <option value="" disabled>اختر من القائمة...</option>
+                                            <option value="">اختر من القائمة...</option>
                                             <option v-for="item in catalog" :key="item.id" :value="item.id">{{ item.name }} (SAR {{ item.price }})</option>
                                         </select>
                                     </div>
@@ -280,6 +279,7 @@
                             </div>
                             <div v-if="orderForm.discountRate > 0" class="font-bold text-gray-400 text-sm line-through decoration-red-400">{{ calcSubTotal }} SAR</div>
                             <div class="font-black text-4xl text-green-600">{{ calcTotal }} SAR</div>
+                            <div v-if="orderForm.discountRate > 0" class="font-bold text-red-500 text-xs mt-1">تم تطبيق خصم {{ orderForm.discountRate }}%</div>
                         </div>
                         <div class="flex gap-4">
                             <button v-if="editingOrder" type="button" @click="cancelEdit" class="bg-gray-200 px-10 py-4 rounded-2xl font-black text-gray-600 shadow-sm transition-all hover:bg-gray-300">إلغاء</button>
@@ -646,7 +646,7 @@
                             <td>
                                 <div class="flex gap-3">
                                     <div class="w-12 h-12 bg-gray-50 border rounded-lg flex items-center justify-center p-1 shrink-0">
-                                        <img :src="'products/' + p.name + '.webp'" :data-name="p.name" onerror="if(!this.dataset.j){this.dataset.j=1; this.src='products/'+this.dataset.name+'.jpg';}else if(!this.dataset.p){this.dataset.p=1; this.src='products/'+this.dataset.name+'.png';}else{this.onerror=null;this.src='logo1.png';}" class="w-full h-full object-contain rounded-md">
+                                        <img :src="`products/${p.name}.webp`" :data-name="p.name" onerror="if(!this.getAttribute('data-j')){this.setAttribute('data-j','1'); this.src='products/'+this.getAttribute('data-name')+'.jpg';} else if(!this.getAttribute('data-p')){this.setAttribute('data-p','1'); this.src='products/'+this.getAttribute('data-name')+'.png';} else {this.onerror=null; this.src='logo1.png';}" class="w-full h-full object-contain rounded-md">
                                     </div>
                                     <div class="space-y-1 flex-1">
                                         <p class="font-black text-sm text-gray-900">{{ p.name }} <span v-if="p.villaNo" class="text-[10px] text-gray-400 font-bold">(فيلا {{ p.villaNo }})</span></p>
@@ -703,7 +703,7 @@
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZiIYA4HcTl2nI6nnDcyPVdJqHPL99gpmz4ZeQwfs_NfxfB58z57u8Mm4WmYS8FsXD/exec";
 
-    // أسعار المنتجات المحدثة
+    // تحديث الأسعار (النسخة النهائية الثابتة التي لا تُمسح)
     const STATIC_PRICES = {
         1: 149, 2: 149, 3: 199, 4: 199, 5: 225, 6: 225, 7: 249, 8: 229, 9: 215, 10: 225,
         11: 149, 12: 225, 13: 225, 14: 126, 15: 166, 16: 235, 17: 199, 18: 218, 19: 299, 20: 299,
@@ -759,7 +759,7 @@
 
             const activeTab = ref('create');
             const orders = ref(JSON.parse(localStorage.getItem('hwayt_orders_v8') || '[]'));
-            const catalog = ref(DEFAULT_CATALOG);
+            const catalog = ref([...DEFAULT_CATALOG]);
             const catalogForm = ref({ name: '', price: '' });
             const orderForm = ref(EMPTY_ORDER_FORM());
             const editingOrder = ref(null);
@@ -890,6 +890,7 @@
                     if (data.success && data.user) {
                         currentUser.value = data.user;
                         sessionStorage.setItem('hb_user', JSON.stringify(data.user));
+                        cancelEdit(); // لتعبئة رمز الموظف فوراً
                         syncFromSheet();
                     } else {
                         loginError.value = 'اسم المستخدم أو كلمة المرور غير صحيحة';
@@ -964,14 +965,15 @@
                 
                 isSaving.value = false;
                 isSuccess.value = true;
-                showNotify('تم حفظ الطلب بنجاح!', 'success');
 
+                // إعادة تهيئة الواجهة لطلب جديد فوراً
                 setTimeout(() => { 
                     isSuccess.value = false; 
                     cancelEdit(); 
                     window.scrollTo({ top: 0, behavior: 'smooth' }); 
                 }, 1500);
 
+                // إرسال البيانات للسحاب في الخلفية (بدون تأخير الواجهة)
                 fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST', mode: 'no-cors', 
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -997,14 +999,28 @@
                     client: JSON.parse(JSON.stringify(order.client)), products: JSON.parse(JSON.stringify(order.products))
                 };
                 if (receiptInput.value) receiptInput.value.value = '';
+                
                 orderForm.value.products.forEach(p => { 
                     if (!p.basePrice) p.basePrice = p.color === 'gold' ? p.price - 19 : p.price; 
-                    p.productId = String(p.productId || p.name || ''); // تأمين وتثبيت رقم الموديل لكي لا يختفي
+                    p.productId = String(p.productId || p.name || ''); 
+                    
+                    // تأمين المنتجات المسجلة يدوياً لكي تظهر في القائمة ولا تُمسح
+                    if (p.productId && !catalog.value.some(c => String(c.id) === p.productId)) {
+                        catalog.value.push({ id: p.productId, name: p.name || p.productId, price: p.basePrice });
+                    }
                 });
                 setTab('create');
             };
 
-            const cancelEdit = () => { editingOrder.value = null; if (receiptInput.value) receiptInput.value.value = ''; orderForm.value = EMPTY_ORDER_FORM(); };
+            const cancelEdit = () => { 
+                editingOrder.value = null; 
+                if (receiptInput.value) receiptInput.value.value = ''; 
+                orderForm.value = EMPTY_ORDER_FORM(); 
+                // الاحتفاظ برمز الموظف لعدم الحاجة لكتابته مجدداً
+                if (currentUser.value && currentUser.value.managerCode) {
+                    orderForm.value.managerCode = currentUser.value.managerCode;
+                }
+            };
 
             const syncFromSheet = async () => {
                 syncLoading.value = true;
@@ -1014,10 +1030,19 @@
                     let result;
                     try { result = JSON.parse(text); } catch(e) { throw new Error('خطأ في صيغة البيانات'); }
 
+                    // إضافة المنتجات الجديدة من الشيت بدون تغيير الأسعار الثابتة المحمية
+                    let newCat = [...DEFAULT_CATALOG];
                     if (result.catalog?.length > 0) {
-                        const sheetCatalog = result.catalog.map(r => ({ id: String(r['id'] || r['اسم المنتج'] || ''), name: String(r['name'] || r['اسم المنتج'] || ''), price: parseFloat(r['price'] || r['السعر'] || 0) })).filter(i => i.name);
-                        if (sheetCatalog.length > 0) catalog.value = sheetCatalog;
+                        result.catalog.forEach(r => {
+                            let id = String(r['id'] || r['اسم المنتج'] || '');
+                            let name = String(r['name'] || r['اسم المنتج'] || '');
+                            let price = parseFloat(r['price'] || r['السعر'] || 0);
+                            if (id && !newCat.some(c => c.id === id)) {
+                                newCat.push({ id, name, price });
+                            }
+                        });
                     }
+                    catalog.value = newCat;
 
                     const grouped = {};
                     (result.orders || []).forEach(row => {
@@ -1163,7 +1188,13 @@
             const formatDateLong = (ts) => ts ? new Date(ts).toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) : '-';
             const formatTime = (ts) => ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }) : '-';
 
-            onMounted(() => { setTimeout(() => lucide.createIcons(), 500); if (currentUser.value) syncFromSheet(); });
+            onMounted(() => { 
+                setTimeout(() => lucide.createIcons(), 500); 
+                if (currentUser.value) {
+                    cancelEdit(); // لتعبئة رمز الموظف فور فتح التطبيق
+                    syncFromSheet(); 
+                }
+            });
             watchEffect(() => setTimeout(() => lucide.createIcons(), 100));
 
             return {
