@@ -657,7 +657,7 @@
 <script type="module">
     const { createApp, ref, computed, onMounted, watchEffect, nextTick } = Vue;
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZiIYA4HcTl2nI6nnDcyPVdJqHPL99gpmz4ZeQwfs_NfxfB58z57u8Mm4WmYS8FsXD/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzpjCLgmN9nSJlHsTbrLPE33I76hJAF3boosakQImQ1IGo_mb8SdHJx-OjQ4BB0AD1X/exec";
 
     const DEFAULT_CATALOG = Array.from({length:51}, (_,i) => ({ id: `design-${i+1}`, name: `design-${i+1}`, price: 199 }));
 
@@ -667,11 +667,21 @@
         products: [{ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 }]
     });
 
-    // Helper لدعم قراءة التواريخ المكتوبة بطريقة خاطئة من الإكسيل وحماية المزامنة من التعليق
     function safeIsoDate(dateStr) {
         if (!dateStr) return new Date().toISOString();
         const d = new Date(dateStr);
         return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+    }
+
+    // دالة حماية لحفظ البيانات في المتصفح وتجنب انهيار النظام إذا امتلأت الذاكرة بسبب الصور
+    function safeStorageSave(key, data) {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+        } catch (e) {
+            console.warn("تحذير: ذاكرة المتصفح ممتلئة. سيعمل النظام على الذاكرة الحية المؤقتة.");
+            // اختياري: تفريغ الذاكرة تلقائياً إذا امتلأت
+            localStorage.clear(); 
+        }
     }
 
     createApp({
@@ -700,7 +710,6 @@
             const filterDate = ref(new Date().toISOString().split('T')[0]);
             const filterPaymentStatus = ref('all');
 
-            // Reports variables
             const reportType = ref('general');
             const selectedEmployee = ref('');
             const reportStartDate = ref(new Date().toISOString().split('T')[0]);
@@ -717,7 +726,6 @@
             const calcDiscountValue = computed(() => parseFloat(((calcSubTotal.value * (orderForm.value.discountRate || 0)) / 100).toFixed(2)));
             const calcTotal = computed(() => Math.round(calcSubTotal.value - calcDiscountValue.value));
 
-            // تعديل نظام الأرشيف ليسمح للموظف بالبحث في قاعدة البيانات كاملة
             const filteredOrders = computed(() => {
                 const q = (searchQuery.value || '').toString().toUpperCase().trim();
                 const rawPhone = (searchQuery.value || '').toString().replace(/[\s+]/g, '');
@@ -734,10 +742,8 @@
                     }
                     const isMatch = matchId || matchName || matchPhone;
 
-                    // إذا كان يبحث، اعرض النتيجة حتى لو لم تكن تابعة لكوده (للتأكد من العميل)
                     if (q.length > 0) return isMatch;
 
-                    // بدون بحث، يرى الموظف طلباته فقط
                     if (!isAdmin.value) {
                         if ((o.managerCode || '').toUpperCase() !== (currentUser.value?.managerCode || '').toUpperCase()) return false;
                     }
@@ -758,7 +764,6 @@
                 });
             });
 
-            // حسابات تقرير لوحة تحكم الموظفين
             const employeeStats = computed(() => {
                 const stats = {};
                 reportData.value.forEach(r => {
@@ -775,7 +780,6 @@
                 return Object.values(stats).sort((a,b) => b.total - a.total);
             });
 
-            // تصفية البيانات في الجدول العام للتقارير
             const filteredReportData = computed(() => {
                 if (reportType.value === 'employee' && selectedEmployee.value) {
                     return reportData.value.filter(r => (r['رمز المسؤول'] || '').toUpperCase() === selectedEmployee.value);
@@ -806,7 +810,7 @@
                 loginLoading.value = true; loginError.value = '';
                 try {
                     const res = await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST', redirect: 'follow', // حل مشكلة الـ CORS والـ redirects الخاصة بجوجل
+                        method: 'POST', redirect: 'follow',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ action: 'login', username: loginForm.value.username, password: loginForm.value.password })
                     });
@@ -866,8 +870,8 @@
                 };
 
                 try {
-                    const response = await fetch(https:script.google.com/macros/s/AKfycbzZiIYA4HcTl2nI6nnDcyPVdJqHPL99gpmz4ZeQwfs_NfxfB58z57u8Mm4WmYS8FsXD/exec, {
-                        method: 'POST', redirect: 'follow', // حل التعليق
+                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST', redirect: 'follow',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify(payload)
                     });
@@ -882,7 +886,7 @@
                         } else {
                             orders.value.unshift(payload);
                         }
-                        localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
+                        safeStorageSave('hwayt_orders_v8', orders.value); // استخدام الحماية هنا
                         isSaving.value = false; isSuccess.value = true;
                         showNotify('تم تسجيل الطلب في السحاب بنجاح!', 'success');
                         setTimeout(() => { isSuccess.value = false; cancelEdit(); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 2500);
@@ -896,7 +900,7 @@
             const deleteOrder = async (order) => {
                 if (!confirm(`حذف الطلب ${order.orderId} نهائياً؟`)) return;
                 orders.value = orders.value.filter(o => o.orderId !== order.orderId);
-                localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
+                safeStorageSave('hwayt_orders_v8', orders.value); // استخدام الحماية هنا
                 try {
                     await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'delete', orderId: order.orderId, target: 'orders' }) });
                     showNotify('تم الحذف بنجاح');
@@ -920,7 +924,6 @@
             const syncFromSheet = async () => {
                 syncLoading.value = true;
                 try {
-                    // تم إضافة redirect: follow لحل مشكلة CORS ورفض جوجل
                     const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
                     const text = await res.text();
                     let result;
@@ -942,7 +945,7 @@
                                 isPaid: row['حالة الدفع'] === 'تم الدفع', receiptImage: row['صورة الإيصال'] || null,
                                 client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: row['الجوال'] || '', address: row['العنوان بالتفصيل'] || '' },
                                 products: [], totalAmount: 0, subTotal: 0,
-                                timestamp: safeIsoDate(row['التاريخ']) // الحماية من خطأ التواريخ الخاطئة هنا
+                                timestamp: safeIsoDate(row['التاريخ'])
                             };
                         }
                         const p = {
@@ -963,11 +966,11 @@
                     });
 
                     orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
+                    safeStorageSave('hwayt_orders_v8', orders.value); // استخدام الحماية هنا
                     showNotify('تمت المزامنة بنجاح');
                 } catch(e) {
                     console.error("Sync Error Details: ", e);
-                    showNotify('خطأ في المزامنة السحابية. تم استخدام النسخة المحلية.', 'error');
+                    showNotify('خطأ في المزامنة. يرجى التأكد من الاتصال.', 'error');
                 } finally { syncLoading.value = false; }
             };
 
