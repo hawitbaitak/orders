@@ -16,20 +16,8 @@
         body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; color: #1e293b; }
         .sidebar { background: #142952; }
         .active-tab { background: rgba(255,255,255,0.1); border-right: 4px solid #fbbf24; }
-
-        /* Login page */
-        .login-bg {
-            background: linear-gradient(135deg, #0f1f3d 0%, #142952 50%, #1e3a6e 100%);
-            min-height: 100vh;
-        }
-
-        /* Invoice A4 */
-        .invoice-a4 {
-            width: 210mm; height: 296mm; max-height: 296mm;
-            background: white; margin: 0 auto; padding: 8mm 12mm;
-            box-sizing: border-box; color: #000; line-height: 1.3;
-            position: relative; overflow: hidden;
-        }
+        .login-bg { background: linear-gradient(135deg, #0f1f3d 0%, #142952 50%, #1e3a6e 100%); min-height: 100vh; }
+        .invoice-a4 { width: 210mm; height: 296mm; max-height: 296mm; background: white; margin: 0 auto; padding: 8mm 12mm; box-sizing: border-box; color: #000; line-height: 1.3; position: relative; overflow: hidden; }
         .inv-header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border-bottom: 2px solid #142952; padding-bottom: 10px; margin-bottom: 15px; }
         .inv-info-box { background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9; }
         .inv-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
@@ -47,8 +35,6 @@
         #capture-area { position: absolute; left: -9999px; top: 0; width: 210mm; }
         .loader-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* Report table */
         .report-table th { background: #142952; color: white; padding: 8px 12px; text-align: right; font-size: 12px; }
         .report-table td { border: 1px solid #e2e8f0; padding: 8px 12px; font-size: 12px; }
         .report-table tr:nth-child(even) td { background: #f8fafc; }
@@ -57,7 +43,6 @@
 <body>
 <div id="app" class="min-h-screen flex">
 
-    <!-- ==================== LOGIN PAGE ==================== -->
     <div v-if="!currentUser" class="login-bg w-full flex items-center justify-center p-4">
         <div class="w-full max-w-md">
             <div class="text-center mb-10">
@@ -67,14 +52,11 @@
                 <h1 class="text-4xl font-black text-white">هوية بيتك</h1>
                 <p class="text-blue-300 text-sm mt-2 tracking-widest">نظام إدارة المبيعات</p>
             </div>
-
             <div class="bg-white rounded-3xl shadow-2xl p-10">
                 <h2 class="text-2xl font-black text-[#142952] mb-8 text-center">تسجيل الدخول</h2>
-
                 <div v-if="loginError" class="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-4 mb-6 text-sm font-bold text-center">
                     {{ loginError }}
                 </div>
-
                 <div class="space-y-5">
                     <div>
                         <label class="block text-xs font-black text-gray-400 mb-2 uppercase">اسم المستخدم</label>
@@ -90,14 +72,11 @@
                     </button>
                 </div>
             </div>
-            <p class="text-center text-blue-400 text-xs mt-6 font-bold">جميع الحقوق محفوظة © هوية بيتك 2025</p>
         </div>
     </div>
 
-    <!-- ==================== MAIN APP ==================== -->
     <template v-if="currentUser">
 
-        <!-- SIDEBAR -->
         <aside class="sidebar w-64 text-white flex flex-col no-print fixed h-full z-50 shadow-2xl">
             <div class="p-8 text-center border-b border-white/5">
                 <div class="w-24 h-24 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center p-2 shadow-xl overflow-hidden">
@@ -111,7 +90,6 @@
                     </span>
                 </div>
             </div>
-
             <nav class="flex-1 py-10 px-4 space-y-2">
                 <button @click="setTab('create')" :class="{'active-tab': activeTab === 'create'}" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
                     <i data-lucide="plus-circle" class="w-5 h-5 text-yellow-400"></i> تسجيل طلب
@@ -126,10 +104,9 @@
                     <i data-lucide="package" class="w-5 h-5 text-yellow-400"></i> المنتجات
                 </button>
                 <button v-if="isAdmin" @click="setTab('reports')" :class="{'active-tab': activeTab === 'reports'}" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5 text-yellow-400"></i> التقارير
+                    <i data-lucide="bar-chart-2" class="w-5 h-5 text-yellow-400"></i> التقارير المتقدمة
                 </button>
             </nav>
-
             <div class="p-4 border-t border-white/10">
                 <button @click="doLogout" class="w-full flex items-center gap-3 px-6 py-3 rounded-xl hover:bg-white/10 transition-all font-bold text-red-300 hover:text-red-200">
                     <i data-lucide="log-out" class="w-4 h-4"></i> تسجيل خروج
@@ -138,8 +115,6 @@
         </aside>
 
         <main class="flex-1 mr-64 p-8 no-print relative min-h-screen">
-
-            <!-- NOTIFICATION -->
             <div v-if="notification" class="fixed top-10 left-10 z-[100] p-5 rounded-2xl shadow-2xl bg-white border-l-8 flex items-center gap-4 transition-all"
                  :class="{'border-red-500 text-red-600 animate-bounce': notification.type === 'error', 'border-green-500 text-green-600 animate-bounce': notification.type === 'success', 'border-blue-500 text-blue-700': notification.type === 'info'}">
                 <i v-if="notification.type === 'success'" data-lucide="check-circle"></i>
@@ -148,13 +123,11 @@
                 <span class="font-black">{{ notification.msg }}</span>
             </div>
 
-            <!-- FULL SCREEN LOADER -->
             <div v-if="loading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm">
                 <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
-                <p class="font-black text-[#142952]">جاري مزامنة البيانات...</p>
+                <p class="font-black text-[#142952]">جاري معالجة البيانات...</p>
             </div>
 
-            <!-- PAGE HEADER -->
             <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <div>
                     <h2 class="text-3xl font-black text-[#142952]">
@@ -162,7 +135,7 @@
                         <span v-if="activeTab === 'archive'">{{ archiveLabel }}</span>
                         <span v-if="activeTab === 'invoices'">إصدار وتحميل الفواتير</span>
                         <span v-if="activeTab === 'catalog'">إدارة المنتجات</span>
-                        <span v-if="activeTab === 'reports'">التقارير والإحصائيات</span>
+                        <span v-if="activeTab === 'reports'">التقارير المتقدمة للمدير</span>
                     </h2>
                 </div>
                 <div class="flex gap-2">
@@ -173,11 +146,8 @@
                 </div>
             </header>
 
-            <!-- ==================== TAB: CREATE ORDER ==================== -->
             <section v-if="activeTab === 'create'" class="bg-white p-8 rounded-3xl shadow-sm border animate-in">
                 <form @submit.prevent="saveOrder" class="space-y-8">
-
-                    <!-- Order Settings -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 bg-blue-50/50 p-8 rounded-3xl mb-4 border border-blue-100">
                         <div class="col-span-full font-black text-[#142952] flex items-center gap-2 mb-2 text-lg">
                             <i data-lucide="settings"></i> إعدادات الطلب والدفع
@@ -215,7 +185,6 @@
                         </div>
                     </div>
 
-                    <!-- Client Info -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 bg-gray-50 p-8 rounded-3xl">
                         <div class="col-span-full font-black text-[#142952] flex items-center gap-2 mb-2 text-lg">
                             <i data-lucide="user"></i> بيانات العميل الأساسية
@@ -238,7 +207,6 @@
                         </div>
                     </div>
 
-                    <!-- Products List -->
                     <div class="space-y-6">
                         <div class="flex justify-between items-center border-b pb-4">
                             <h3 class="text-xl font-black text-[#142952]">قائمة المنتجات المطلوبة</h3>
@@ -265,11 +233,11 @@
                                     <input v-model.number="p.count" type="number" min="1" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm text-center">
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-blue-600 uppercase">العنوان الوطني</label>
+                                    <label class="text-[10px] font-black text-blue-600 uppercase">العنوان الوطني (اختياري)</label>
                                     <input v-model="p.nationalAddress" class="w-full p-3 border-2 border-blue-50 rounded-xl bg-blue-50/30 font-bold text-sm">
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">رقم الفيلا</label>
+                                    <label class="text-[10px] font-black text-gray-400 uppercase">رقم الفيلا (اختياري)</label>
                                     <input v-model="p.villaNo" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
                                 </div>
                                 <div class="space-y-1">
@@ -287,7 +255,6 @@
                         </div>
                     </div>
 
-                    <!-- Order Total & Submit -->
                     <div class="flex justify-between items-center border-t pt-10">
                         <div class="flex flex-col gap-1">
                             <div class="text-sm text-gray-400 font-bold">مجموع المنتجات: <span class="text-black font-black">{{ calcSubTotal }} SAR</span></div>
@@ -296,7 +263,6 @@
                             </div>
                             <div v-if="orderForm.discountRate > 0" class="font-bold text-gray-400 text-sm line-through decoration-red-400">{{ calcSubTotal }} SAR</div>
                             <div class="font-black text-4xl text-green-600">{{ calcTotal }} SAR</div>
-                            <div v-if="orderForm.discountRate > 0" class="font-bold text-red-500 text-xs mt-1">تم تطبيق خصم {{ orderForm.discountRate }}%</div>
                         </div>
                         <div class="flex gap-4">
                             <button v-if="editingOrder" type="button" @click="cancelEdit" class="bg-gray-200 px-10 py-4 rounded-2xl font-black text-gray-600 shadow-sm transition-all hover:bg-gray-300">إلغاء</button>
@@ -305,14 +271,13 @@
                                     class="text-white px-16 py-4 rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all flex justify-center items-center gap-3 min-w-[280px]">
                                 <i v-if="isSuccess" data-lucide="check-circle" class="w-6 h-6 text-white"></i>
                                 <i v-else-if="isSaving" data-lucide="loader" class="w-5 h-5 animate-spin"></i>
-                                <span>{{ isSaving ? 'جاري المزامنة مع السحاب...' : (isSuccess ? 'تم التسجيل بنجاح' : (editingOrder ? 'تحديث الطلب' : 'حفظ الطلب')) }}</span>
+                                <span>{{ isSaving ? 'جاري الحفظ في السحاب...' : (isSuccess ? 'تم التسجيل بنجاح' : (editingOrder ? 'تحديث الطلب' : 'حفظ الطلب')) }}</span>
                             </button>
                         </div>
                     </div>
                 </form>
             </section>
 
-            <!-- ==================== TAB: INVOICES ==================== -->
             <section v-if="activeTab === 'invoices'" class="space-y-8 animate-in">
                 <div class="bg-white p-8 rounded-3xl shadow-sm border flex flex-col xl:flex-row justify-between items-center gap-6">
                     <div class="flex flex-wrap items-center gap-6">
@@ -336,48 +301,38 @@
                         <button @click="downloadBulkPDF" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-blue-700 transition-all">
                             <i data-lucide="file-down" class="w-5 h-5 text-white"></i> PDF مجمع
                         </button>
-                        <button @click="downloadZIP" class="bg-green-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-green-700 transition-all">
-                            <i data-lucide="archive" class="w-5 h-5 text-white"></i> ZIP (فواتير منفصلة)
-                        </button>
                     </div>
                 </div>
 
                 <div v-if="filteredByDateOrders.length === 0" class="py-32 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 shadow-none">
                     <i data-lucide="inbox" class="w-20 h-20 text-gray-100 mx-auto mb-6"></i>
-                    <p class="text-gray-400 font-black text-xl">لا توجد سجلات تطابق بحثك</p>
+                    <p class="text-gray-400 font-black text-xl">لا توجد فواتير مطابقة لخياراتك</p>
                 </div>
 
                 <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div v-for="order in filteredByDateOrders" :key="order.orderId"
-                         class="bg-white p-8 rounded-3xl border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer group relative overflow-hidden"
-                         @click="viewInvoice(order)">
+                    <div v-for="order in filteredByDateOrders" :key="order.orderId" class="bg-white p-8 rounded-3xl border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer relative" @click="viewInvoice(order)">
                         <div class="flex justify-between items-start mb-6">
                             <span class="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase">{{ order.orderId }}</span>
-                            <span class="text-[10px] font-bold text-gray-300">{{ formatTime(order.timestamp) }}</span>
+                            <span class="text-[10px] font-bold text-gray-400">{{ formatTime(order.timestamp) }}</span>
                         </div>
                         <h4 class="font-black text-[#142952] text-xl mb-1 truncate">{{ order.client?.name || 'بدون اسم' }}</h4>
                         <p class="text-xs text-gray-400 line-clamp-1 mb-6">📍 {{ order.client?.address || '' }}</p>
                         <div class="flex justify-between items-center border-t border-dashed border-gray-100 pt-6">
                             <span class="font-black text-green-600 text-lg">{{ order.totalAmount }} SAR</span>
-                            <span v-if="order.isPaid" class="text-green-500 font-black text-xs flex items-center gap-1">
-                                <i data-lucide="check-circle" class="w-3 h-3"></i> مدفوع
-                            </span>
-                            <span v-else class="text-red-400 font-black text-xs flex items-center gap-1">
-                                <i data-lucide="x-circle" class="w-3 h-3"></i> غير مدفوع
-                            </span>
+                            <span v-if="order.isPaid" class="text-green-500 font-black text-xs flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> مدفوع</span>
+                            <span v-else class="text-red-400 font-black text-xs flex items-center gap-1"><i data-lucide="x-circle" class="w-3 h-3"></i> غير مدفوع</span>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- ==================== TAB: ARCHIVE ==================== -->
             <section v-if="activeTab === 'archive'" class="bg-white rounded-3xl shadow-sm border overflow-hidden animate-in">
-                <div class="p-8 bg-gray-50 flex justify-between items-center border-b">
-                    <div class="relative w-96">
+                <div class="p-8 bg-gray-50 flex justify-between items-center border-b flex-wrap gap-4">
+                    <div class="relative w-full md:w-[28rem]">
                         <i data-lucide="search" class="absolute right-4 top-3.5 text-gray-400 w-5 h-5"></i>
-                        <input v-model="searchQuery" class="w-full pr-12 pl-6 py-3.5 bg-white border-none rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold" placeholder="ابحث باسم العميل أو رقم الطلب أو الجوال...">
+                        <input v-model="searchQuery" class="w-full pr-12 pl-6 py-3.5 bg-white border-none rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold text-sm" placeholder="ابحث باسم العميل أو رقم الجوال في جميع الطلبات (للتأكد من التسجيل المسبق)...">
                     </div>
-                    <div class="font-black text-gray-400">الإجمالي: {{ filteredOrders.length }} طلب</div>
+                    <div class="font-black text-gray-400">الإجمالي المعروض: {{ filteredOrders.length }} طلب</div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-right border-collapse text-sm">
@@ -386,7 +341,7 @@
                                 <th class="p-6">رقم الطلب</th>
                                 <th class="p-6">التاريخ</th>
                                 <th class="p-6">العميل</th>
-                                <th class="p-6">العنوان</th>
+                                <th class="p-6">الجوال</th>
                                 <th class="p-6">المبلغ</th>
                                 <th class="p-6 text-center">إجراءات</th>
                             </tr>
@@ -399,14 +354,17 @@
                                     <span v-else class="block mt-1 bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded w-fit">غير مدفوع</span>
                                 </td>
                                 <td class="p-6 text-xs text-gray-500 font-bold">{{ formatDate(order.timestamp) }}</td>
-                                <td class="p-6 font-black text-gray-800">{{ order.client?.name || 'غير متوفر' }}</td>
-                                <td class="p-4 max-w-xs truncate font-bold text-gray-400">{{ order.client?.address || '' }}</td>
+                                <td class="p-6 font-black text-gray-800">
+                                    {{ order.client?.name || 'غير متوفر' }}
+                                    <span class="block text-[10px] text-gray-400 mt-1 font-bold">كود الموظف: {{ order.managerCode }}</span>
+                                </td>
+                                <td class="p-6 font-bold text-gray-600" dir="ltr">{{ order.client?.phone || '' }}</td>
                                 <td class="p-6 font-black text-green-600">{{ order.totalAmount }} SAR</td>
                                 <td class="p-6">
                                     <div class="flex justify-center gap-2">
                                         <button @click="viewInvoice(order)" class="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all"><i data-lucide="eye" class="w-4 h-4"></i></button>
-                                        <button @click="editOrder(order)" class="p-3 bg-yellow-50 text-yellow-600 rounded-xl hover:bg-yellow-600 hover:text-white transition-all"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                                        <button @click="deleteOrder(order)" class="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                        <button v-if="isAdmin || order.managerCode === currentUser.managerCode" @click="editOrder(order)" class="p-3 bg-yellow-50 text-yellow-600 rounded-xl hover:bg-yellow-600 hover:text-white transition-all"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                        <button v-if="isAdmin || order.managerCode === currentUser.managerCode" @click="deleteOrder(order)" class="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                     </div>
                                 </td>
                             </tr>
@@ -415,7 +373,6 @@
                 </div>
             </section>
 
-            <!-- ==================== TAB: CATALOG ==================== -->
             <section v-if="activeTab === 'catalog'" class="bg-white p-8 rounded-3xl border animate-in shadow-sm">
                 <form @submit.prevent="saveCatalogItem" class="flex flex-wrap gap-6 mb-12 p-8 bg-gray-50 rounded-[2.5rem] items-end border border-white">
                     <div class="flex-1 min-w-[280px]">
@@ -441,39 +398,78 @@
                 </div>
             </section>
 
-            <!-- ==================== TAB: REPORTS (ADMIN ONLY) ==================== -->
             <section v-if="activeTab === 'reports' && isAdmin" class="space-y-8 animate-in">
+                
+                <div class="bg-white p-8 rounded-3xl shadow-sm border">
+                    <div class="flex gap-4 mb-8 pb-6 border-b border-gray-100">
+                        <button @click="reportType = 'general'" :class="reportType === 'general' ? 'bg-[#142952] text-white shadow-lg' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-8 py-3 rounded-2xl font-black transition-all">تقرير مالي عام</button>
+                        <button @click="reportType = 'employee'" :class="reportType === 'employee' ? 'bg-[#142952] text-white shadow-lg' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-8 py-3 rounded-2xl font-black transition-all">تقرير و إحصائيات الموظفين</button>
+                    </div>
 
-                <!-- Filter Controls -->
-                <div class="bg-white p-8 rounded-3xl shadow-sm border flex flex-wrap gap-6 items-end">
-                    <div>
-                        <label class="block text-xs font-black text-gray-400 mb-2 uppercase">من تاريخ</label>
-                        <input type="date" v-model="reportStartDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold">
+                    <div class="flex flex-wrap gap-6 items-end">
+                        <div>
+                            <label class="block text-xs font-black text-gray-400 mb-2 uppercase">من تاريخ</label>
+                            <input type="date" v-model="reportStartDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-gray-400 mb-2 uppercase">إلى تاريخ</label>
+                            <input type="date" v-model="reportEndDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold">
+                        </div>
+                        
+                        <div v-if="reportType === 'employee'" class="w-48">
+                            <label class="block text-xs font-black text-gray-400 mb-2 uppercase">تصفية بموظف محدد</label>
+                            <select v-model="selectedEmployee" class="w-full border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold">
+                                <option value="">جميع الموظفين</option>
+                                <option v-for="emp in employeeStats" :key="emp.code" :value="emp.code">{{ emp.code }}</option>
+                            </select>
+                        </div>
+
+                        <button @click="generateReport" class="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2">
+                            <i data-lucide="filter" class="w-5 h-5 text-white"></i> تصفية وجلب
+                        </button>
+                        <button v-if="filteredReportData.length > 0" @click="exportReportExcel" class="bg-green-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-green-700 transition-all flex items-center gap-2 mr-auto">
+                            <i data-lucide="table" class="w-4 h-4"></i> تصدير Excel
+                        </button>
                     </div>
-                    <div>
-                        <label class="block text-xs font-black text-gray-400 mb-2 uppercase">إلى تاريخ</label>
-                        <input type="date" v-model="reportEndDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold">
-                    </div>
-                    <button @click="generateReport" class="bg-[#142952] text-white px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-blue-800 transition-all flex items-center gap-2">
-                        <i data-lucide="bar-chart-2" class="w-5 h-5 text-yellow-400"></i> إنشاء التقرير
-                    </button>
-                    <button v-if="reportData.length > 0" @click="exportReportPDF" class="bg-red-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-red-700 transition-all flex items-center gap-2">
-                        <i data-lucide="file-down" class="w-4 h-4"></i> تصدير PDF
-                    </button>
-                    <button v-if="reportData.length > 0" @click="exportReportExcel" class="bg-green-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg hover:bg-green-700 transition-all flex items-center gap-2">
-                        <i data-lucide="table" class="w-4 h-4"></i> تصدير Excel
-                    </button>
                 </div>
 
-                <!-- Summary Cards -->
-                <div v-if="reportData.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div v-if="reportType === 'employee' && reportGenerated && !selectedEmployee" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div v-for="emp in employeeStats" :key="emp.code" class="bg-white p-6 rounded-3xl border-2 border-gray-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute -left-4 -top-4 w-24 h-24 bg-blue-50 rounded-full z-0 opacity-50"></div>
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-[#142952] text-white rounded-xl flex items-center justify-center font-black text-lg shadow-md">{{ emp.code }}</div>
+                                    <span class="font-black text-gray-700 text-sm">موظف</span>
+                                </div>
+                                <span class="text-[10px] font-black bg-blue-100 text-blue-700 px-3 py-1 rounded-full">{{ emp.total }} طلب</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center text-sm font-bold bg-green-50 p-2 rounded-lg">
+                                    <span class="text-green-700 flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> مدفوع</span>
+                                    <span class="font-black text-green-700">{{ emp.paid }}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm font-bold bg-red-50 p-2 rounded-lg">
+                                    <span class="text-red-600 flex items-center gap-1"><i data-lucide="x-circle" class="w-3 h-3"></i> غير مدفوع</span>
+                                    <span class="font-black text-red-600">{{ emp.unpaid }}</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm font-black border-t pt-3 mt-3">
+                                    <span class="text-[#142952]">إجمالي الإيرادات</span>
+                                    <span class="text-green-600">{{ emp.revenue.toFixed(2) }} SAR</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="filteredReportData.length > 0 && (reportType === 'general' || selectedEmployee)" class="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div class="bg-white p-6 rounded-3xl shadow-sm border text-center">
                         <div class="text-3xl font-black text-[#142952]">{{ reportSummary.totalOrders }}</div>
                         <div class="text-xs font-black text-gray-400 mt-2 uppercase">إجمالي الطلبات</div>
                     </div>
                     <div class="bg-white p-6 rounded-3xl shadow-sm border text-center">
                         <div class="text-3xl font-black text-green-600">{{ reportSummary.totalRevenue }} SAR</div>
-                        <div class="text-xs font-black text-gray-400 mt-2 uppercase">إجمالي الإيرادات</div>
+                        <div class="text-xs font-black text-gray-400 mt-2 uppercase">الإيرادات المحققة</div>
                     </div>
                     <div class="bg-white p-6 rounded-3xl shadow-sm border text-center">
                         <div class="text-3xl font-black text-blue-600">{{ reportSummary.paidOrders }}</div>
@@ -485,17 +481,17 @@
                     </div>
                 </div>
 
-                <!-- Report Table -->
-                <div v-if="reportData.length > 0" class="bg-white rounded-3xl shadow-sm border overflow-hidden" id="report-table-area">
+                <div v-if="filteredReportData.length > 0" class="bg-white rounded-3xl shadow-sm border overflow-hidden">
                     <div class="p-6 bg-gray-50 border-b flex justify-between items-center">
-                        <h3 class="font-black text-[#142952] text-lg">تفاصيل الطلبات</h3>
+                        <h3 class="font-black text-[#142952] text-lg">تفاصيل الطلبات <span v-if="selectedEmployee" class="text-blue-600">- الموظف {{ selectedEmployee }}</span></h3>
                         <span class="text-sm font-bold text-gray-400">{{ reportStartDate }} — {{ reportEndDate }}</span>
                     </div>
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto max-h-[500px]">
                         <table class="w-full text-right border-collapse report-table text-sm">
-                            <thead>
+                            <thead class="sticky top-0 shadow-sm">
                                 <tr>
                                     <th>رقم الطلب</th>
+                                    <th>رمز الموظف</th>
                                     <th>العميل</th>
                                     <th>التاريخ</th>
                                     <th>المبلغ الإجمالي</th>
@@ -503,8 +499,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="row in reportData" :key="row['رقم الطلب']">
+                                <tr v-for="row in filteredReportData" :key="row['رقم الطلب']">
                                     <td class="font-mono font-black text-blue-700">{{ row['رقم الطلب'] }}</td>
+                                    <td class="font-black text-gray-500">{{ row['رمز المسؤول'] || 'غير محدد' }}</td>
                                     <td class="font-bold">{{ row['العميل'] }}</td>
                                     <td class="text-gray-500 font-bold">{{ formatDate(row['التاريخ']) }}</td>
                                     <td class="font-black text-green-600">{{ row['المبلغ الإجمالي'] }} SAR</td>
@@ -519,18 +516,15 @@
                     </div>
                 </div>
 
-                <div v-if="reportData.length === 0 && reportGenerated" class="py-32 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100">
-                    <p class="text-gray-400 font-black text-xl">لا توجد بيانات في هذه الفترة</p>
+                <div v-if="filteredReportData.length === 0 && reportGenerated" class="py-32 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100">
+                    <p class="text-gray-400 font-black text-xl">لا توجد بيانات متاحة لعرضها</p>
                 </div>
             </section>
-
         </main>
 
-        <!-- ==================== INVOICE CAPTURE AREA ==================== -->
         <div id="capture-area" dir="rtl">
             <div v-for="invoice in bulkList" :key="invoice.orderId" :id="'inv-' + invoice.orderId" class="invoice-a4">
-
-                <div class="flex justify-between items-center mb-4 border-b-2 border-gray-100 pb-3">
+               <div class="flex justify-between items-center mb-4 border-b-2 border-gray-100 pb-3">
                     <div class="w-20 h-20 bg-white flex items-center justify-center p-2 rounded-xl">
                         <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
                     </div>
@@ -543,7 +537,6 @@
                         <p>الرقم الضريبي : 310236446600003</p>
                     </div>
                 </div>
-
                 <div class="grid grid-cols-2 gap-4 mb-4 text-[11px]">
                     <div class="inv-info-box space-y-1">
                         <span class="text-gray-400 font-bold">مصدرة إلى :</span>
@@ -561,7 +554,6 @@
                         <p dir="ltr" class="font-black">+966 54 478 2301</p>
                     </div>
                 </div>
-
                 <div class="grid grid-cols-2 gap-4 border-y py-3 mb-4 text-[11px]">
                     <div class="space-y-2">
                         <span class="text-gray-400 font-bold">تفاصيل الدفع :</span>
@@ -596,7 +588,6 @@
                         </div>
                     </div>
                 </div>
-
                 <table class="inv-table">
                     <thead>
                         <tr>
@@ -611,10 +602,7 @@
                             <td>
                                 <div class="flex gap-3">
                                     <div class="w-12 h-12 bg-gray-50 border rounded-lg flex items-center justify-center p-1 shrink-0">
-                                        <img :src="'products/' + p.name + '.webp'"
-                                             :data-name="p.name"
-                                             onerror="if(!this.dataset.j){this.dataset.j=1; this.src='products/'+this.dataset.name+'.jpg';}else if(!this.dataset.p){this.dataset.p=1; this.src='products/'+this.dataset.name+'.png';}else{this.onerror=null;this.src='logo1.png';}"
-                                             class="w-full h-full object-contain rounded-md">
+                                        <img :src="'products/' + p.name + '.webp'" :data-name="p.name" onerror="if(!this.dataset.j){this.dataset.j=1; this.src='products/'+this.dataset.name+'.jpg';}else if(!this.dataset.p){this.dataset.p=1; this.src='products/'+this.dataset.name+'.png';}else{this.onerror=null;this.src='logo1.png';}" class="w-full h-full object-contain rounded-md">
                                     </div>
                                     <div class="space-y-1 flex-1">
                                         <p class="font-black text-sm text-gray-900">{{ p.name }} <span v-if="p.villaNo" class="text-[10px] text-gray-400 font-bold">(فيلا {{ p.villaNo }})</span></p>
@@ -635,7 +623,6 @@
                         </tr>
                     </tbody>
                 </table>
-
                 <div class="mt-4 mr-auto w-80 space-y-1.5 border-t pt-3 text-xs">
                     <div class="flex justify-between font-bold text-gray-500">
                         <span>مجموع المنتجات</span>
@@ -654,7 +641,6 @@
                             <span>إجمالي الطلب</span>
                             <div v-if="invoice.isPaid" class="flex items-center gap-1.5 bg-green-100 text-green-700 px-2 py-1 rounded-lg border border-green-300">
                                 <span class="text-[10px] font-black">✓ تم الدفع</span>
-                                <img v-if="invoice.receiptImage" :src="invoice.receiptImage" class="w-6 h-6 rounded border border-green-400 object-cover bg-white">
                             </div>
                             <div v-else class="flex items-center gap-1.5 bg-red-100 text-red-700 px-2 py-1 rounded-lg border border-red-300">
                                 <span class="text-[10px] font-black">✗ غير مدفوع</span>
@@ -663,69 +649,46 @@
                         <span>SAR {{ invoice.totalAmount }}</span>
                     </div>
                 </div>
-
-                <div class="absolute bottom-6 left-12 right-12 text-center border-t border-gray-200 pt-3 bg-white">
-                    <p class="text-gray-400 font-black italic text-[11px] mb-2">شكراً لثقتكم بهوية بيتك - نسعد بخدمتكم دائماً</p>
-                    <div class="flex justify-center gap-8 text-[9px] font-bold text-gray-500">
-                        <p>📞 +966 54 478 2301</p>
-                        <p>📧 hwytbytk@gmail.com</p>
-                        <p>🌐 المتجر الإلكتروني: هوية بيتك</p>
-                    </div>
-                </div>
             </div>
         </div>
-
     </template>
 </div>
 
 <script type="module">
     const { createApp, ref, computed, onMounted, watchEffect, nextTick } = Vue;
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz8XmLq2B6fqnXBZBfdzAbnllky5CPabRNm7XuRkgIMS3RLK_OE5z8afQVOWjbxuy2w/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZiIYA4HcTl2nI6nnDcyPVdJqHPL99gpmz4ZeQwfs_NfxfB58z57u8Mm4WmYS8FsXD/exec";
 
-    const STATIC_PRICES = {
-        1:149,2:149,3:199,4:199,5:225,6:225,7:249,8:229,9:215,10:225,
-        11:149,12:225,13:225,14:126,15:166,16:235,17:199,18:218,19:299,20:299,
-        21:344,22:344,23:344,24:344,25:288,26:259,27:219,28:288,29:219,30:259,
-        34:219,35:299,36:219,37:219,38:219,39:288,40:199,41:199,42:199,43:199,
-        44:249,46:299,47:288,48:288,49:288,50:288,51:288
-    };
-
-    const DEFAULT_CATALOG = Array.from({length:51}, (_,i) => ({
-        id: `design-${i+1}`,
-        name: `design-${i+1}`,
-        price: STATIC_PRICES[i+1] || 199
-    }));
+    const DEFAULT_CATALOG = Array.from({length:51}, (_,i) => ({ id: `design-${i+1}`, name: `design-${i+1}`, price: 199 }));
 
     const EMPTY_ORDER_FORM = () => ({
-        managerCode: '',
-        discountRate: 0,
-        isPaid: false,
-        receiptImage: null,
+        managerCode: '', discountRate: 0, isPaid: false, receiptImage: null,
         client: { name: '', city: '', address: '', phone: '+966' },
         products: [{ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 }]
     });
 
+    // Helper لدعم قراءة التواريخ المكتوبة بطريقة خاطئة من الإكسيل وحماية المزامنة من التعليق
+    function safeIsoDate(dateStr) {
+        if (!dateStr) return new Date().toISOString();
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+    }
+
     createApp({
         setup() {
-            // ==================== STATE ====================
-
-            // Auth state
             const currentUser = ref(JSON.parse(sessionStorage.getItem('hb_user') || 'null'));
             const loginForm = ref({ username: '', password: '' });
             const loginLoading = ref(false);
             const loginError = ref('');
 
-            // App state
             const activeTab = ref('create');
-            const orders = ref(JSON.parse(localStorage.getItem('hwayt_orders_v7') || '[]'));
+            const orders = ref(JSON.parse(localStorage.getItem('hwayt_orders_v8') || '[]'));
             const catalog = ref(DEFAULT_CATALOG);
             const catalogForm = ref({ name: '', price: '' });
             const orderForm = ref(EMPTY_ORDER_FORM());
             const editingOrder = ref(null);
             const receiptInput = ref(null);
 
-            // UI state
             const loading = ref(false);
             const syncLoading = ref(false);
             const isSaving = ref(false);
@@ -733,12 +696,13 @@
             const notification = ref(null);
             const bulkList = ref([]);
 
-            // Filter state
             const searchQuery = ref('');
             const filterDate = ref(new Date().toISOString().split('T')[0]);
             const filterPaymentStatus = ref('all');
 
-            // Report state
+            // Reports variables
+            const reportType = ref('general');
+            const selectedEmployee = ref('');
             const reportStartDate = ref(new Date().toISOString().split('T')[0]);
             const reportEndDate = ref(new Date().toISOString().split('T')[0]);
             const reportData = ref([]);
@@ -746,35 +710,20 @@
 
             let notifyTimeout = null;
 
-            // ==================== COMPUTED ====================
-
             const isAdmin = computed(() => currentUser.value?.role === 'admin');
+            const archiveLabel = computed(() => currentUser.value?.role === 'admin' ? 'أرشيف الطلبات العام' : 'طلباتي وأرشيف البحث');
 
-            const archiveLabel = computed(() => currentUser.value?.role === 'admin' ? 'أرشيف الطلبات' : 'طلباتي');
+            const calcSubTotal = computed(() => orderForm.value.products.reduce((sum, p) => sum + (p.price * p.count), 0));
+            const calcDiscountValue = computed(() => parseFloat(((calcSubTotal.value * (orderForm.value.discountRate || 0)) / 100).toFixed(2)));
+            const calcTotal = computed(() => Math.round(calcSubTotal.value - calcDiscountValue.value));
 
-            const calcSubTotal = computed(() =>
-                orderForm.value.products.reduce((sum, p) => sum + (p.price * p.count), 0)
-            );
-
-            const calcDiscountValue = computed(() =>
-                parseFloat(((calcSubTotal.value * (orderForm.value.discountRate || 0)) / 100).toFixed(2))
-            );
-
-            const calcTotal = computed(() =>
-                Math.round(calcSubTotal.value - calcDiscountValue.value)
-            );
-
+            // تعديل نظام الأرشيف ليسمح للموظف بالبحث في قاعدة البيانات كاملة
             const filteredOrders = computed(() => {
-                const q = (searchQuery.value || '').toString().toUpperCase();
+                const q = (searchQuery.value || '').toString().toUpperCase().trim();
                 const rawPhone = (searchQuery.value || '').toString().replace(/[\s+]/g, '');
                 const queryPhone = rawPhone.startsWith('05') ? rawPhone.substring(1) : rawPhone;
 
                 return orders.value.filter(o => {
-                    // Role-based filter
-                    if (!isAdmin.value) {
-                        if ((o.managerCode || '').toUpperCase() !== (currentUser.value?.managerCode || '').toUpperCase()) return false;
-                    }
-
                     const matchId   = String(o.orderId || '').toUpperCase().includes(q);
                     const matchName = String(o.client?.name || '').includes(searchQuery.value || '');
                     let matchPhone  = false;
@@ -783,13 +732,21 @@
                         const orderPhone = rawOrder.startsWith('05') ? rawOrder.substring(1) : rawOrder;
                         if (queryPhone.length > 0 && orderPhone.includes(queryPhone)) matchPhone = true;
                     }
-                    return matchId || matchName || matchPhone;
+                    const isMatch = matchId || matchName || matchPhone;
+
+                    // إذا كان يبحث، اعرض النتيجة حتى لو لم تكن تابعة لكوده (للتأكد من العميل)
+                    if (q.length > 0) return isMatch;
+
+                    // بدون بحث، يرى الموظف طلباته فقط
+                    if (!isAdmin.value) {
+                        if ((o.managerCode || '').toUpperCase() !== (currentUser.value?.managerCode || '').toUpperCase()) return false;
+                    }
+                    return true;
                 }).sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
             });
 
             const filteredByDateOrders = computed(() => {
                 return orders.value.filter(o => {
-                    // Role-based filter
                     if (!isAdmin.value) {
                         if ((o.managerCode || '').toUpperCase() !== (currentUser.value?.managerCode || '').toUpperCase()) return false;
                     }
@@ -801,17 +758,40 @@
                 });
             });
 
+            // حسابات تقرير لوحة تحكم الموظفين
+            const employeeStats = computed(() => {
+                const stats = {};
+                reportData.value.forEach(r => {
+                    const code = (r['رمز المسؤول'] || 'غير محدد').toUpperCase();
+                    if (!stats[code]) stats[code] = { code, total: 0, paid: 0, unpaid: 0, revenue: 0 };
+                    stats[code].total++;
+                    if (r['حالة الدفع'] === 'تم الدفع') {
+                        stats[code].paid++;
+                        stats[code].revenue += parseFloat(r['المبلغ الإجمالي'] || 0);
+                    } else {
+                        stats[code].unpaid++;
+                    }
+                });
+                return Object.values(stats).sort((a,b) => b.total - a.total);
+            });
+
+            // تصفية البيانات في الجدول العام للتقارير
+            const filteredReportData = computed(() => {
+                if (reportType.value === 'employee' && selectedEmployee.value) {
+                    return reportData.value.filter(r => (r['رمز المسؤول'] || '').toUpperCase() === selectedEmployee.value);
+                }
+                return reportData.value;
+            });
+
             const reportSummary = computed(() => {
-                const totalOrders   = reportData.value.length;
-                const totalRevenue  = reportData.value.reduce((s, r) => s + parseFloat(r['المبلغ الإجمالي'] || 0), 0).toFixed(2);
-                const paidOrders    = reportData.value.filter(r => r['حالة الدفع'] === 'تم الدفع').length;
+                const dataToSum = filteredReportData.value;
+                const totalOrders   = dataToSum.length;
+                const totalRevenue  = dataToSum.reduce((s, r) => s + parseFloat(r['المبلغ الإجمالي'] || 0), 0).toFixed(2);
+                const paidOrders    = dataToSum.filter(r => r['حالة الدفع'] === 'تم الدفع').length;
                 const unpaidOrders  = totalOrders - paidOrders;
                 return { totalOrders, totalRevenue, paidOrders, unpaidOrders };
             });
 
-            // ==================== METHODS ====================
-
-            // --- Notifications ---
             const showNotify = (msg, type = 'success') => {
                 if (notifyTimeout) clearTimeout(notifyTimeout);
                 notification.value = { msg, type };
@@ -819,91 +799,46 @@
                 setTimeout(() => lucide.createIcons(), 50);
             };
 
-            // --- Navigation ---
-            const setTab = (t) => {
-                activeTab.value = t;
-                if (t !== 'create') cancelEdit();
-                setTimeout(() => lucide.createIcons(), 50);
-            };
+            const setTab = (t) => { activeTab.value = t; if (t !== 'create') cancelEdit(); setTimeout(() => lucide.createIcons(), 50); };
 
-            // --- Auth ---
             const doLogin = async () => {
-                if (!loginForm.value.username || !loginForm.value.password) {
-                    loginError.value = 'يرجى إدخال اسم المستخدم وكلمة المرور';
-                    return;
-                }
-                loginLoading.value = true;
-                loginError.value = '';
+                if (!loginForm.value.username || !loginForm.value.password) { loginError.value = 'يرجى إدخال اسم المستخدم وكلمة المرور'; return; }
+                loginLoading.value = true; loginError.value = '';
                 try {
                     const res = await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
+                        method: 'POST', redirect: 'follow', // حل مشكلة الـ CORS والـ redirects الخاصة بجوجل
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({
-                            action: 'login',
-                            username: loginForm.value.username,
-                            password: loginForm.value.password
-                        })
+                        body: JSON.stringify({ action: 'login', username: loginForm.value.username, password: loginForm.value.password })
                     });
                     const data = await res.json();
                     if (data.success && data.user) {
                         currentUser.value = data.user;
                         sessionStorage.setItem('hb_user', JSON.stringify(data.user));
                         syncFromSheet();
-                        setTimeout(() => lucide.createIcons(), 200);
                     } else {
                         loginError.value = 'اسم المستخدم أو كلمة المرور غير صحيحة';
                     }
                 } catch (e) {
                     loginError.value = 'خطأ في الاتصال بالخادم. يرجى المحاولة مرة أخرى.';
-                } finally {
-                    loginLoading.value = false;
-                }
+                } finally { loginLoading.value = false; }
             };
 
-            const doLogout = () => {
-                currentUser.value = null;
-                sessionStorage.removeItem('hb_user');
-                loginForm.value = { username: '', password: '' };
-            };
+            const doLogout = () => { currentUser.value = null; sessionStorage.removeItem('hb_user'); loginForm.value = { username: '', password: '' }; };
 
-            // --- Product row management ---
-            const addProductRow = () => {
-                orderForm.value.products.push({
-                    id: Date.now(), productId: '', name: '', nationalAddress: '',
-                    villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0
-                });
-            };
-
+            const addProductRow = () => orderForm.value.products.push({ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 });
             const removeProductRow = (idx) => orderForm.value.products.splice(idx, 1);
+            const syncProductData = (p) => { const item = catalog.value.find(c => c.id === p.productId); if (item) { p.name = item.name; p.basePrice = item.price; updatePrice(p); } };
+            const updatePrice = (p) => { if (p.basePrice !== undefined) p.price = p.color === 'gold' ? p.basePrice + 19 : p.basePrice; };
 
-            const syncProductData = (p) => {
-                const item = catalog.value.find(c => c.id === p.productId);
-                if (item) {
-                    p.name = item.name;
-                    p.basePrice = item.price;
-                    updatePrice(p);
-                }
-            };
-
-            const updatePrice = (p) => {
-                if (p.basePrice !== undefined) {
-                    p.price = p.color === 'gold' ? p.basePrice + 19 : p.basePrice;
-                }
-            };
-
-            // --- Receipt upload ---
             const handleReceiptUpload = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
+                const file = e.target.files[0]; if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 400;
-                        const scale = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
-                        canvas.width  = img.width  * scale;
-                        canvas.height = img.height * scale;
+                        const scale = img.width > 400 ? 400 / img.width : 1;
+                        canvas.width = img.width * scale; canvas.height = img.height * scale;
                         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                         orderForm.value.receiptImage = canvas.toDataURL('image/jpeg', 0.5);
                         orderForm.value.isPaid = true;
@@ -913,32 +848,18 @@
                 reader.readAsDataURL(file);
             };
 
-            // --- Save / Update order ---
             const saveOrder = async () => {
-                isSaving.value = true;
-                isSuccess.value = false;
+                isSaving.value = true; isSuccess.value = false;
                 showNotify('جاري تسجيل الطلب في السحاب...', 'info');
 
                 const mCode = (orderForm.value.managerCode || 'XX').toUpperCase().substring(0, 2);
-                const orderId = editingOrder.value
-                    ? editingOrder.value.orderId
-                    : `${mCode}-${Math.floor(100000 + Math.random() * 900000)}`;
-
-                const subTotal      = calcSubTotal.value;
-                const discountValue = calcDiscountValue.value;
-                const totalAmount   = calcTotal.value;
+                const orderId = editingOrder.value ? editingOrder.value.orderId : `${mCode}-${Math.floor(100000 + Math.random() * 900000)}`;
 
                 const payload = {
-                    action: editingOrder.value ? 'update' : 'create',
-                    target: 'orders',
-                    orderId,
-                    managerCode: mCode,
-                    discountRate: orderForm.value.discountRate || 0,
-                    discountValue,
-                    subTotal,
-                    totalAmount,
-                    isPaid: orderForm.value.isPaid,
-                    receiptImage: orderForm.value.receiptImage || '',
+                    action: editingOrder.value ? 'update' : 'create', target: 'orders',
+                    orderId, managerCode: mCode, discountRate: orderForm.value.discountRate || 0,
+                    discountValue: calcDiscountValue.value, subTotal: calcSubTotal.value, totalAmount: calcTotal.value,
+                    isPaid: orderForm.value.isPaid, receiptImage: orderForm.value.receiptImage || '',
                     client: JSON.parse(JSON.stringify(orderForm.value.client)),
                     products: JSON.parse(JSON.stringify(orderForm.value.products)),
                     timestamp: editingOrder.value ? editingOrder.value.timestamp : new Date().toISOString()
@@ -946,11 +867,13 @@
 
                 try {
                     const response = await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
+                        method: 'POST', redirect: 'follow', // حل التعليق
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify(payload)
                     });
-                    const result = await response.json();
+                    const text = await response.text();
+                    let result;
+                    try { result = JSON.parse(text); } catch(e) { throw new Error('استجابة غير صالحة من السيرفر'); }
 
                     if (result.result === 'success' || result.status === 'success') {
                         if (editingOrder.value) {
@@ -959,313 +882,163 @@
                         } else {
                             orders.value.unshift(payload);
                         }
-                        localStorage.setItem('hwayt_orders_v7', JSON.stringify(orders.value));
-
-                        isSaving.value = false;
-                        isSuccess.value = true;
+                        localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
+                        isSaving.value = false; isSuccess.value = true;
                         showNotify('تم تسجيل الطلب في السحاب بنجاح!', 'success');
-                        nextTick(() => lucide.createIcons());
-
-                        setTimeout(() => {
-                            isSuccess.value = false;
-                            cancelEdit();
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }, 2500);
-                    } else {
-                        throw new Error('السيرفر رفض الحفظ');
-                    }
+                        setTimeout(() => { isSuccess.value = false; cancelEdit(); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 2500);
+                    } else { throw new Error('السيرفر رفض الحفظ'); }
                 } catch (e) {
-                    console.error('Cloud Error:', e);
                     showNotify('حدث خطأ أثناء الاتصال بالسحاب. يرجى المحاولة مرة أخرى', 'error');
                     isSaving.value = false;
                 }
             };
 
-            // --- Delete order ---
             const deleteOrder = async (order) => {
                 if (!confirm(`حذف الطلب ${order.orderId} نهائياً؟`)) return;
                 orders.value = orders.value.filter(o => o.orderId !== order.orderId);
-                localStorage.setItem('hwayt_orders_v7', JSON.stringify(orders.value));
+                localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
                 try {
-                    await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ action: 'delete', orderId: order.orderId, target: 'orders' })
-                    });
-                    showNotify('تم الحذف بنجاح من النظام والسحاب');
-                } catch {
-                    showNotify('تم الحذف محلياً فقط (يوجد مشكلة في السحاب)', 'error');
-                }
+                    await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'delete', orderId: order.orderId, target: 'orders' }) });
+                    showNotify('تم الحذف بنجاح');
+                } catch { showNotify('تم الحذف محلياً فقط', 'error'); }
             };
 
-            // --- Edit order ---
             const editOrder = (order) => {
                 editingOrder.value = order;
                 orderForm.value = {
                     managerCode: order.managerCode || order.orderId.split('-')[0] || '',
-                    discountRate: order.discountRate || 0,
-                    isPaid: order.isPaid || false,
-                    receiptImage: order.receiptImage || null,
-                    client: JSON.parse(JSON.stringify(order.client)),
-                    products: JSON.parse(JSON.stringify(order.products))
+                    discountRate: order.discountRate || 0, isPaid: order.isPaid || false, receiptImage: order.receiptImage || null,
+                    client: JSON.parse(JSON.stringify(order.client)), products: JSON.parse(JSON.stringify(order.products))
                 };
                 if (receiptInput.value) receiptInput.value.value = '';
-                orderForm.value.products.forEach(p => {
-                    if (!p.basePrice) p.basePrice = p.color === 'gold' ? p.price - 19 : p.price;
-                    if (!p.productId) p.productId = p.name;
-                });
+                orderForm.value.products.forEach(p => { if (!p.basePrice) p.basePrice = p.color === 'gold' ? p.price - 19 : p.price; if (!p.productId) p.productId = p.name; });
                 setTab('create');
             };
 
-            // --- Cancel edit ---
-            const cancelEdit = () => {
-                editingOrder.value = null;
-                if (receiptInput.value) receiptInput.value.value = '';
-                orderForm.value = EMPTY_ORDER_FORM();
-            };
+            const cancelEdit = () => { editingOrder.value = null; if (receiptInput.value) receiptInput.value.value = ''; orderForm.value = EMPTY_ORDER_FORM(); };
 
-            // --- Sync from sheet ---
             const syncFromSheet = async () => {
                 syncLoading.value = true;
                 try {
-                    const res    = await fetch(GOOGLE_SCRIPT_URL);
-                    const result = await res.json();
+                    // تم إضافة redirect: follow لحل مشكلة CORS ورفض جوجل
+                    const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
+                    const text = await res.text();
+                    let result;
+                    try { result = JSON.parse(text); } catch(e) { throw new Error('خطأ في صيغة البيانات'); }
 
-                    // Update catalog
                     if (result.catalog?.length > 0) {
-                        const sheetCatalog = result.catalog.map(r => ({
-                            id:    String(r['id'] || r['اسم المنتج'] || ''),
-                            name:  String(r['name'] || r['اسم المنتج'] || ''),
-                            price: parseFloat(r['price'] || r['السعر'] || 0)
-                        })).filter(i => i.name);
+                        const sheetCatalog = result.catalog.map(r => ({ id: String(r['id'] || r['اسم المنتج'] || ''), name: String(r['name'] || r['اسم المنتج'] || ''), price: parseFloat(r['price'] || r['السعر'] || 0) })).filter(i => i.name);
                         if (sheetCatalog.length > 0) catalog.value = sheetCatalog;
                     }
 
-                    // Group orders by ID
                     const grouped = {};
                     (result.orders || []).forEach(row => {
                         const oid = String(row['رقم الطلب'] || '').trim();
                         if (!oid) return;
                         if (!grouped[oid]) {
                             grouped[oid] = {
-                                orderId:      oid,
-                                managerCode:  String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim(),
-                                discountRate: parseFloat(row['نسبة الخصم'] || 0),
-                                discountValue:parseFloat(row['قيمة الخصم'] || 0),
-                                isPaid:       row['حالة الدفع'] === 'تم الدفع',
-                                receiptImage: row['صورة الإيصال'] || null,
-                                client: {
-                                    name:    row['العميل']            || '',
-                                    city:    row['المدينة']           || '',
-                                    phone:   row['الجوال']            || '',
-                                    address: row['العنوان بالتفصيل'] || ''
-                                },
-                                products:   [],
-                                totalAmount:0,
-                                subTotal:   0,
-                                timestamp:  row['التاريخ'] ? new Date(row['التاريخ']).toISOString() : new Date().toISOString()
+                                orderId: oid, managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim(),
+                                discountRate: parseFloat(row['نسبة الخصم'] || 0), discountValue: parseFloat(row['قيمة الخصم'] || 0),
+                                isPaid: row['حالة الدفع'] === 'تم الدفع', receiptImage: row['صورة الإيصال'] || null,
+                                client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: row['الجوال'] || '', address: row['العنوان بالتفصيل'] || '' },
+                                products: [], totalAmount: 0, subTotal: 0,
+                                timestamp: safeIsoDate(row['التاريخ']) // الحماية من خطأ التواريخ الخاطئة هنا
                             };
                         }
                         const p = {
-                            productId:      row['المنتج'] || '',
-                            name:           row['المنتج'] || '',
-                            color:          row['اللون']  || 'silver',
-                            count:          parseInt(row['العدد'] || 1),
-                            price:          parseFloat(row['السعر الفردي'] || 0),
-                            nationalAddress:row['العنوان الوطني'] || '',
-                            villaNo:        row['رقم الفيلا']     || '',
-                            customName:     row['الاسم المخصص']   || '',
-                            notes:          row['ملاحظات']        || ''
+                            productId: row['المنتج'] || '', name: row['المنتج'] || '', color: row['اللون'] || 'silver',
+                            count: parseInt(row['العدد'] || 1), price: parseFloat(row['السعر الفردي'] || 0),
+                            nationalAddress: row['العنوان الوطني'] || '', villaNo: row['رقم الفيلا'] || '',
+                            customName: row['الاسم المخصص'] || '', notes: row['ملاحظات'] || ''
                         };
                         p.basePrice = p.color === 'gold' ? p.price - 19 : p.price;
-                        grouped[oid].products.push(p);
-                        grouped[oid].subTotal += p.price * p.count;
+                        grouped[oid].products.push(p); grouped[oid].subTotal += p.price * p.count;
                     });
 
-                    // Calculate final totals with discount
                     Object.values(grouped).forEach(o => {
                         if (o.discountRate > 0) {
                             o.discountValue = parseFloat(((o.subTotal * o.discountRate) / 100).toFixed(2));
                             o.totalAmount   = Math.round(o.subTotal - o.discountValue);
-                        } else {
-                            o.totalAmount = o.subTotal;
-                        }
+                        } else { o.totalAmount = o.subTotal; }
                     });
 
                     orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                    localStorage.setItem('hwayt_orders_v7', JSON.stringify(orders.value));
-                    showNotify('تمت المزامنة الكاملة من السحاب');
-                } catch {
-                    showNotify('خطأ في المزامنة السحابية', 'error');
-                } finally {
-                    syncLoading.value = false;
-                }
+                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
+                    showNotify('تمت المزامنة بنجاح');
+                } catch(e) {
+                    console.error("Sync Error Details: ", e);
+                    showNotify('خطأ في المزامنة السحابية. تم استخدام النسخة المحلية.', 'error');
+                } finally { syncLoading.value = false; }
             };
 
-            // --- Catalog ---
-            const saveCatalogItem = async () => {
-                const newItem = { id: Date.now().toString(), ...catalogForm.value, action: 'create', target: 'catalog' };
-                catalog.value.push(newItem);
-                showNotify('تمت إضافة المنتج بنجاح');
-                catalogForm.value = { name: '', price: '' };
-            };
-
-            const deleteCatalogItem = (item) => {
-                if (confirm('حذف المنتج من الكتالوج؟')) {
-                    catalog.value = catalog.value.filter(i => i.id !== item.id);
-                    showNotify('تم حذف المنتج');
-                }
-            };
-
-            // --- Invoice / PDF ---
-            const viewInvoice = (order) => {
-                bulkList.value = [order];
-                nextTick(() => setTimeout(() => window.print(), 800));
-            };
-
-            const generatePDFBlob = async (orderId) => {
-                const { jsPDF } = window.jspdf;
-                const element = document.getElementById('inv-' + orderId);
-                const canvas  = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
-                return pdf;
-            };
-
+            const saveCatalogItem = () => { catalog.value.push({ id: Date.now().toString(), ...catalogForm.value }); showNotify('تمت الإضافة'); catalogForm.value = { name: '', price: '' }; };
+            const deleteCatalogItem = (item) => { if (confirm('حذف المنتج؟')) { catalog.value = catalog.value.filter(i => i.id !== item.id); showNotify('تم الحذف'); } };
+            
+            const viewInvoice = (order) => { bulkList.value = [order]; nextTick(() => setTimeout(() => window.print(), 800)); };
+            const printBulk = () => { if (!filteredByDateOrders.value.length) return showNotify('لا يوجد فواتير اليوم', 'error'); bulkList.value = filteredByDateOrders.value; nextTick(() => setTimeout(() => window.print(), 800)); };
+            
             const downloadBulkPDF = async () => {
                 if (!filteredByDateOrders.value.length) return showNotify('لا يوجد فواتير', 'error');
-                const { jsPDF } = window.jspdf;
-                const finalPDF  = new jsPDF('p', 'mm', 'a4');
-                loading.value = true;
-                showNotify('جاري بناء الملف المجمع (يرجى الانتظار)...');
-
+                loading.value = true; showNotify('جاري بناء الملف المجمع (يرجى الانتظار)...');
+                const { jsPDF } = window.jspdf; const finalPDF = new jsPDF('p', 'mm', 'a4');
                 for (let i = 0; i < filteredByDateOrders.value.length; i++) {
-                    const order = filteredByDateOrders.value[i];
-                    bulkList.value = [order];
-                    await nextTick();
-                    await new Promise(r => setTimeout(r, 300));
-                    const canvas = await html2canvas(document.getElementById('inv-' + order.orderId), { scale: 1.5 });
+                    bulkList.value = [filteredByDateOrders.value[i]]; await nextTick(); await new Promise(r => setTimeout(r, 300));
+                    const canvas = await html2canvas(document.getElementById('inv-' + filteredByDateOrders.value[i].orderId), { scale: 1.5 });
                     if (i > 0) finalPDF.addPage();
                     finalPDF.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
                 }
-                finalPDF.save(`فواتير_هوية_بيتك_${filterDate.value}.pdf`);
-                loading.value = false;
+                finalPDF.save(`فواتير_${filterDate.value}.pdf`); loading.value = false;
             };
 
-            const downloadZIP = async () => {
-                if (!filteredByDateOrders.value.length) return showNotify('لا يوجد فواتير', 'error');
-                const zip = new JSZip();
-                loading.value = true;
-                showNotify('جاري بناء الملفات المنفصلة...');
-
-                for (const order of filteredByDateOrders.value) {
-                    bulkList.value = [order];
-                    await nextTick();
-                    await new Promise(r => setTimeout(r, 300));
-                    const pdf = await generatePDFBlob(order.orderId);
-                    zip.file(`${order.orderId}.pdf`, pdf.output('blob'));
-                }
-                const content = await zip.generateAsync({ type: 'blob' });
-                const link    = document.createElement('a');
-                link.href     = URL.createObjectURL(content);
-                link.download = `فواتير_هوية_بيتك_${filterDate.value}.zip`;
-                link.click();
-                loading.value = false;
-            };
-
-            const printBulk = () => {
-                if (!filteredByDateOrders.value.length) return showNotify('لا يوجد فواتير اليوم', 'error');
-                bulkList.value = filteredByDateOrders.value;
-                nextTick(() => setTimeout(() => window.print(), 800));
-            };
-
-            // --- Reports ---
             const generateReport = async () => {
-                reportGenerated.value = true;
-                reportData.value = [];
-                loading.value = true;
+                reportGenerated.value = true; reportData.value = []; loading.value = true;
                 try {
-                    const res    = await fetch(GOOGLE_SCRIPT_URL);
-                    const result = await res.json();
+                    const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
+                    const text = await res.text();
+                    const result = JSON.parse(text);
                     const accounts = result.accounts || [];
 
-                    const start = new Date(reportStartDate.value);
-                    const end   = new Date(reportEndDate.value);
-                    end.setHours(23, 59, 59);
+                    const start = new Date(reportStartDate.value); start.setHours(0,0,0);
+                    const end = new Date(reportEndDate.value); end.setHours(23, 59, 59);
 
                     reportData.value = accounts.filter(r => {
-                        const d = new Date(r['التاريخ']);
+                        const dStr = r['التاريخ'];
+                        if(!dStr) return false;
+                        const d = new Date(safeIsoDate(dStr));
                         return d >= start && d <= end;
                     });
-                    showNotify(`تم تحميل ${reportData.value.length} سجل`);
-                } catch {
-                    showNotify('خطأ في تحميل بيانات التقارير', 'error');
-                } finally {
-                    loading.value = false;
-                }
-            };
-
-            const exportReportPDF = async () => {
-                const { jsPDF } = window.jspdf;
-                const el = document.getElementById('report-table-area');
-                if (!el) return;
-                loading.value = true;
-                const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff' });
-                const pdf    = new jsPDF('p', 'mm', 'a4');
-                const ratio  = canvas.width / canvas.height;
-                const pdfH   = 210 / ratio;
-                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, pdfH);
-                pdf.save(`تقرير_هوية_بيتك_${reportStartDate.value}_${reportEndDate.value}.pdf`);
-                loading.value = false;
+                    showNotify(`تم جلب وتحليل البيانات بنجاح`);
+                } catch { showNotify('خطأ في تحميل بيانات التقارير', 'error'); } finally { loading.value = false; }
             };
 
             const exportReportExcel = () => {
-                if (!reportData.value.length) return;
-                const headers = ['رقم الطلب', 'العميل', 'المبلغ الإجمالي', 'التاريخ', 'حالة الدفع'];
-                const rows = reportData.value.map(r => headers.map(h => r[h] || '').join('\t')).join('\n');
+                if (!filteredReportData.value.length) return;
+                const headers = ['رقم الطلب', 'رمز المسؤول', 'العميل', 'المبلغ الإجمالي', 'التاريخ', 'حالة الدفع'];
+                const rows = filteredReportData.value.map(r => headers.map(h => r[h] || '').join('\t')).join('\n');
                 const tsv  = headers.join('\t') + '\n' + rows;
                 const blob = new Blob(['\uFEFF' + tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href  = URL.createObjectURL(blob);
-                link.download = `تقرير_هوية_بيتك_${reportStartDate.value}_${reportEndDate.value}.xls`;
-                link.click();
+                const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
+                link.download = `تقرير_${reportStartDate.value}.xls`; link.click();
             };
 
-            // --- Date / Time Formatters ---
-            const formatDate     = (ts) => ts ? new Date(ts).toLocaleDateString('ar-SA')                                              : '-';
+            const formatDate = (ts) => ts ? new Date(ts).toLocaleDateString('ar-SA') : '-';
             const formatDateLong = (ts) => ts ? new Date(ts).toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) : '-';
-            const formatTime     = (ts) => ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' })        : '-';
+            const formatTime = (ts) => ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }) : '-';
 
-            // ==================== LIFECYCLE ====================
-            onMounted(() => {
-                setTimeout(() => lucide.createIcons(), 500);
-                if (currentUser.value) syncFromSheet();
-            });
+            onMounted(() => { setTimeout(() => lucide.createIcons(), 500); if (currentUser.value) syncFromSheet(); });
             watchEffect(() => setTimeout(() => lucide.createIcons(), 100));
 
-            // ==================== EXPOSE ====================
             return {
-                // Auth
                 currentUser, loginForm, loginLoading, loginError, doLogin, doLogout,
-                // State
                 activeTab, orders, catalog, catalogForm, orderForm, editingOrder, receiptInput,
                 bulkList, loading, syncLoading, isSaving, isSuccess, notification,
-                // Filters
                 searchQuery, filterDate, filterPaymentStatus,
-                // Reports
-                reportStartDate, reportEndDate, reportData, reportGenerated, reportSummary,
-                // Computed
+                reportType, selectedEmployee, reportStartDate, reportEndDate, reportData, filteredReportData, reportGenerated, reportSummary, employeeStats,
                 isAdmin, archiveLabel, calcSubTotal, calcDiscountValue, calcTotal,
                 filteredOrders, filteredByDateOrders,
-                // Methods
-                setTab,
-                addProductRow, removeProductRow, syncProductData, updatePrice,
-                handleReceiptUpload,
-                saveOrder, deleteOrder, editOrder, cancelEdit,
-                saveCatalogItem, deleteCatalogItem,
-                syncFromSheet,
-                viewInvoice, printBulk, downloadBulkPDF, downloadZIP,
-                generateReport, exportReportPDF, exportReportExcel,
+                setTab, addProductRow, removeProductRow, syncProductData, updatePrice, handleReceiptUpload,
+                saveOrder, deleteOrder, editOrder, cancelEdit, saveCatalogItem, deleteCatalogItem, syncFromSheet,
+                viewInvoice, printBulk, downloadBulkPDF, generateReport, exportReportExcel,
                 formatDate, formatDateLong, formatTime
             };
         }
