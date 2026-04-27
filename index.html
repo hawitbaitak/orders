@@ -225,10 +225,18 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <div class="space-y-1">
                                     <label class="text-[10px] font-black text-gray-400 uppercase">اختر المنتج</label>
-                                    <select v-model="p.productId" @change="syncProductData(p)" required class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
-                                        <option value="">اختر من القائمة...</option>
-                                        <option v-for="item in catalog" :value="item.id">{{ item.name }} (SAR {{ item.price }})</option>
-                                    </select>
+                                    <div class="flex items-center gap-3">
+                                        <div v-if="p.name" class="w-12 h-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center p-1 shrink-0 shadow-sm">
+                                            <img :src="'products/' + p.name + '.webp'"
+                                                 :data-name="p.name"
+                                                 onerror="if(!this.dataset.j){this.dataset.j=1; this.src='products/'+this.dataset.name+'.jpg';}else if(!this.dataset.p){this.dataset.p=1; this.src='products/'+this.dataset.name+'.png';}else{this.onerror=null;this.src='logo1.png';}"
+                                                 class="w-full h-full object-contain rounded-md">
+                                        </div>
+                                        <select v-model="p.productId" @change="syncProductData(p)" required class="flex-1 w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
+                                            <option value="" disabled>اختر من القائمة...</option>
+                                            <option v-for="item in catalog" :key="item.id" :value="item.id">{{ item.name }} (SAR {{ item.price }})</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div class="space-y-1">
                                     <label class="text-[10px] font-black text-gray-400 uppercase">اللون</label>
@@ -270,6 +278,7 @@
                             <div v-if="orderForm.discountRate > 0" class="text-sm font-bold text-red-500">
                                 خصم {{ orderForm.discountRate }}% = - {{ calcDiscountValue }} SAR
                             </div>
+                            <div v-if="orderForm.discountRate > 0" class="font-bold text-gray-400 text-sm line-through decoration-red-400">{{ calcSubTotal }} SAR</div>
                             <div class="font-black text-4xl text-green-600">{{ calcTotal }} SAR</div>
                         </div>
                         <div class="flex gap-4">
@@ -668,7 +677,7 @@
                         <span class="font-black text-red-600">- SAR {{ invoice.discountValue || (((invoice.subTotal || invoice.totalAmount) * invoice.discountRate) / 100).toFixed(2) }}</span>
                     </div>
                     <div class="flex justify-between font-bold text-green-600">
-                        <span>تكلفة التوصيل</span>
+                        <span>تكلفة التوصيل و التركيب</span>
                         <span class="font-black underline decoration-2">مجاناً</span>
                     </div>
                     <div class="flex justify-between items-center bg-[#142952] text-white p-3 rounded-xl font-black text-lg shadow-md mt-2 relative">
@@ -694,7 +703,20 @@
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZiIYA4HcTl2nI6nnDcyPVdJqHPL99gpmz4ZeQwfs_NfxfB58z57u8Mm4WmYS8FsXD/exec";
 
-    const DEFAULT_CATALOG = Array.from({length:51}, (_,i) => ({ id: `design-${i+1}`, name: `design-${i+1}`, price: 199 }));
+    // أسعار المنتجات المحدثة
+    const STATIC_PRICES = {
+        1: 149, 2: 149, 3: 199, 4: 199, 5: 225, 6: 225, 7: 249, 8: 229, 9: 215, 10: 225,
+        11: 149, 12: 225, 13: 225, 14: 126, 15: 166, 16: 235, 17: 199, 18: 218, 19: 299, 20: 299,
+        21: 344, 22: 344, 23: 344, 24: 344, 25: 288, 26: 259, 27: 219, 28: 288, 29: 219, 30: 259,
+        34: 219, 35: 299, 36: 219, 37: 219, 38: 219, 39: 288, 40: 199, 41: 199, 42: 199, 43: 199,
+        44: 249, 46: 299, 47: 288, 48: 288, 49: 288, 50: 288, 51: 288
+    };
+
+    const DEFAULT_CATALOG = Array.from({length:51}, (_,i) => ({ 
+        id: `design-${i+1}`, 
+        name: `design-${i+1}`, 
+        price: STATIC_PRICES[i+1] || 199 
+    }));
 
     const EMPTY_ORDER_FORM = () => ({
         managerCode: '', discountRate: 0, isPaid: false, receiptImage: null,
@@ -725,7 +747,6 @@
         catch (e) { console.warn("الذاكرة ممتلئة. يعمل النظام على الذاكرة الحية."); localStorage.clear(); }
     }
 
-    // Chart.js Instances
     let chart1Instance = null;
     let chart2Instance = null;
 
@@ -765,11 +786,12 @@
 
             const isAdmin = computed(() => currentUser.value?.role === 'admin');
 
+            const archiveLabel = computed(() => 'أرشيف الطلبات العام');
+
             const calcSubTotal = computed(() => orderForm.value.products.reduce((sum, p) => sum + (p.price * p.count), 0));
             const calcDiscountValue = computed(() => parseFloat(((calcSubTotal.value * (orderForm.value.discountRate || 0)) / 100).toFixed(2)));
             const calcTotal = computed(() => Math.round(calcSubTotal.value - calcDiscountValue.value));
 
-            // الأرشيف العام: يبحث في جميع الطلبات (يراه الجميع، لكن التعديل للمدير أو صاحب الطلب فقط)
             const filteredArchiveOrders = computed(() => {
                 const q = (searchQuery.value || '').toString().toUpperCase().trim();
                 const rawPhone = (searchQuery.value || '').toString().replace(/[\s+]/g, '');
@@ -788,14 +810,12 @@
                 }).sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
             });
 
-            // طلباتي: تعرض فقط الطلبات الخاصة بالموظف المسجل دخول
             const myOrdersList = computed(() => {
                 return orders.value.filter(o => 
                     (o.managerCode || '').toUpperCase() === (currentUser.value?.managerCode || '').toUpperCase()
                 ).sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
             });
 
-            // مركز الفواتير: يعرض فواتير الموظف نفسه في تاريخ محدد
             const filteredByDateOrders = computed(() => {
                 return orders.value.filter(o => {
                     if (!isAdmin.value) {
@@ -883,7 +903,16 @@
 
             const addProductRow = () => orderForm.value.products.push({ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 });
             const removeProductRow = (idx) => orderForm.value.products.splice(idx, 1);
-            const syncProductData = (p) => { const item = catalog.value.find(c => c.id === p.productId); if (item) { p.name = item.name; p.basePrice = item.price; updatePrice(p); } };
+            
+            const syncProductData = (p) => { 
+                const item = catalog.value.find(c => String(c.id) === String(p.productId)); 
+                if (item) { 
+                    p.name = item.name; 
+                    p.basePrice = item.price; 
+                    updatePrice(p); 
+                } 
+            };
+            
             const updatePrice = (p) => { if (p.basePrice !== undefined) p.price = p.color === 'gold' ? p.basePrice + 19 : p.basePrice; };
 
             const handleReceiptUpload = (e) => {
@@ -925,7 +954,6 @@
                     timestamp: editingOrder.value ? editingOrder.value.timestamp : new Date().toISOString()
                 };
 
-                // الحفظ اللحظي محلياً لإلغاء التعليق
                 if (editingOrder.value) {
                     const idx = orders.value.findIndex(o => o.orderId === editingOrder.value.orderId);
                     if (idx !== -1) orders.value[idx] = payload;
@@ -938,16 +966,14 @@
                 isSuccess.value = true;
                 showNotify('تم حفظ الطلب بنجاح!', 'success');
 
-                // إعادة تهيئة الواجهة لطلب جديد فوراً
                 setTimeout(() => { 
                     isSuccess.value = false; 
                     cancelEdit(); 
                     window.scrollTo({ top: 0, behavior: 'smooth' }); 
                 }, 1500);
 
-                // إرسال البيانات للسحاب في الخلفية (بدون تأخير الواجهة)
                 fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST', mode: 'no-cors', // يمنع التعليق
+                    method: 'POST', mode: 'no-cors', 
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 }).catch(e => console.log('Background Sync:', e));
@@ -971,7 +997,10 @@
                     client: JSON.parse(JSON.stringify(order.client)), products: JSON.parse(JSON.stringify(order.products))
                 };
                 if (receiptInput.value) receiptInput.value.value = '';
-                orderForm.value.products.forEach(p => { if (!p.basePrice) p.basePrice = p.color === 'gold' ? p.price - 19 : p.price; if (!p.productId) p.productId = p.name; });
+                orderForm.value.products.forEach(p => { 
+                    if (!p.basePrice) p.basePrice = p.color === 'gold' ? p.price - 19 : p.price; 
+                    p.productId = String(p.productId || p.name || ''); // تأمين وتثبيت رقم الموديل لكي لا يختفي
+                });
                 setTab('create');
             };
 
