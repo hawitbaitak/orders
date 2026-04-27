@@ -162,8 +162,8 @@
                             <i data-lucide="settings"></i> إعدادات الطلب والدفع
                         </div>
                         <div class="space-y-1">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رمز المسؤول</label>
-                            <input v-model="orderForm.managerCode" maxlength="2" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold uppercase tracking-widest text-center" placeholder="مثال: AB">
+                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رمز المسؤول (تلقائي)</label>
+                            <input v-model="orderForm.managerCode" disabled required class="w-full p-3.5 border-2 border-transparent bg-gray-200 text-gray-500 rounded-2xl shadow-inner focus:outline-none font-black uppercase tracking-widest text-center cursor-not-allowed" placeholder="رمزك">
                         </div>
                         <div class="space-y-1">
                             <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">الخصم (%)</label>
@@ -171,10 +171,9 @@
                         </div>
                         <div class="space-y-1">
                             <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">حالة الدفع</label>
-                            <div class="flex items-center gap-3 mt-2 h-[46px]">
-                                <div class="relative inline-block w-12 h-6 cursor-pointer rounded-full transition-colors duration-300 shadow-inner"
-                                     :class="orderForm.isPaid ? 'bg-green-500' : 'bg-gray-300'"
-                                     @click="orderForm.isPaid = !orderForm.isPaid">
+                            <div class="flex items-center gap-3 mt-2 h-[46px]" @click="togglePayment" :title="!orderForm.receiptImage ? 'يرجى رفع الإيصال لتفعيل الدفع' : 'إلغاء الدفع'">
+                                <div class="relative inline-block w-12 h-6 rounded-full transition-colors duration-300 shadow-inner"
+                                     :class="orderForm.receiptImage ? (orderForm.isPaid ? 'bg-green-500 cursor-pointer' : 'bg-gray-300 cursor-pointer') : 'bg-gray-200 cursor-not-allowed'">
                                     <div class="absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow"
                                          :class="orderForm.isPaid ? 'left-1' : 'right-1'"></div>
                                 </div>
@@ -184,7 +183,7 @@
                             </div>
                         </div>
                         <div class="space-y-1 lg:col-span-2">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رفع الإيصال (اختياري)</label>
+                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رفع الإيصال (إلزامي للدفع)</label>
                             <div class="flex items-center gap-4">
                                 <input type="file" ref="receiptInput" accept="image/*" @change="handleReceiptUpload" class="flex-1 w-full p-2.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold text-sm">
                                 <div v-if="orderForm.receiptImage" class="w-12 h-12 rounded-xl overflow-hidden shadow-sm border border-gray-200 shrink-0">
@@ -361,6 +360,7 @@
                                 <th class="p-6">العميل</th>
                                 <th class="p-6">الجوال</th>
                                 <th class="p-6">المبلغ</th>
+                                <th class="p-6 text-center">الإيصال</th>
                                 <th class="p-6 text-center">إجراءات</th>
                             </tr>
                         </thead>
@@ -378,6 +378,12 @@
                                 </td>
                                 <td class="p-6 font-bold text-gray-600" dir="ltr">{{ order.client?.phone || '' }}</td>
                                 <td class="p-6 font-black text-green-600">{{ order.totalAmount }} SAR</td>
+                                <td class="p-6 text-center">
+                                    <button v-if="order.receiptImage && order.receiptImage.length > 10" @click="showReceipt(order.receiptImage)" class="text-blue-500 hover:text-blue-700 transition-colors flex flex-col items-center justify-center gap-1 mx-auto">
+                                        <i data-lucide="image" class="w-5 h-5"></i>
+                                    </button>
+                                    <span v-else class="text-gray-300">-</span>
+                                </td>
                                 <td class="p-6">
                                     <div class="flex justify-center gap-2">
                                         <button @click="viewInvoice(order)" class="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all"><i data-lucide="eye" class="w-4 h-4"></i></button>
@@ -550,8 +556,8 @@
                                     <td class="text-gray-500 font-bold" dir="ltr">{{ formatDate(row['التاريخ']) }}</td>
                                     <td class="font-black text-green-600">{{ row['المبلغ الإجمالي'] }} SAR</td>
                                     <td>
-                                        <span :class="row['حالة الدفع'].includes('تم الدفع') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="px-2 py-1 rounded font-black text-[10px]">
-                                            {{ row['حالة الدفع'].includes('تم الدفع') ? 'تم الدفع' : 'لم يتم الدفع' }}
+                                        <span :class="isPaidStatus(row['حالة الدفع']) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="px-2 py-1 rounded font-black text-[10px]">
+                                            {{ isPaidStatus(row['حالة الدفع']) ? 'تم الدفع' : 'لم يتم الدفع' }}
                                         </span>
                                     </td>
                                 </tr>
@@ -703,7 +709,6 @@
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZiIYA4HcTl2nI6nnDcyPVdJqHPL99gpmz4ZeQwfs_NfxfB58z57u8Mm4WmYS8FsXD/exec";
 
-    // تحديث الأسعار (النسخة النهائية الثابتة التي لا تُمسح)
     const STATIC_PRICES = {
         1: 149, 2: 149, 3: 199, 4: 199, 5: 225, 6: 225, 7: 249, 8: 229, 9: 215, 10: 225,
         11: 149, 12: 225, 13: 225, 14: 126, 15: 166, 16: 235, 17: 199, 18: 218, 19: 299, 20: 299,
@@ -746,6 +751,11 @@
         try { localStorage.setItem(key, JSON.stringify(data)); } 
         catch (e) { console.warn("الذاكرة ممتلئة. يعمل النظام على الذاكرة الحية."); localStorage.clear(); }
     }
+
+    const isPaidStatus = (statusStr) => {
+        const s = String(statusStr || '').trim();
+        return s === 'تم الدفع' || (s.includes('تم الدفع') && !s.includes('لم'));
+    };
 
     let chart1Instance = null;
     let chart2Instance = null;
@@ -835,7 +845,7 @@
                     const code = (r['رمز المسؤول'] || 'غير محدد').toUpperCase();
                     if (!stats[code]) stats[code] = { code, total: 0, paid: 0, unpaid: 0, revenue: 0 };
                     stats[code].total++;
-                    if (String(r['حالة الدفع'] || '').includes('تم الدفع')) {
+                    if (isPaidStatus(r['حالة الدفع'])) {
                         stats[code].paid++;
                         stats[code].revenue += parseFloat(r['المبلغ الإجمالي'] || 0);
                     } else {
@@ -856,7 +866,7 @@
                 const dataToSum = filteredReportData.value;
                 const totalOrders   = dataToSum.length;
                 const totalRevenue  = dataToSum.reduce((s, r) => s + parseFloat(r['المبلغ الإجمالي'] || 0), 0).toFixed(2);
-                const paidOrders    = dataToSum.filter(r => String(r['حالة الدفع'] || '').includes('تم الدفع')).length;
+                const paidOrders    = dataToSum.filter(r => isPaidStatus(r['حالة الدفع'])).length;
                 const unpaidOrders  = totalOrders - paidOrders;
                 return { totalOrders, totalRevenue, paidOrders, unpaidOrders };
             });
@@ -916,6 +926,14 @@
             
             const updatePrice = (p) => { if (p.basePrice !== undefined) p.price = p.color === 'gold' ? p.basePrice + 19 : p.basePrice; };
 
+            const togglePayment = () => {
+                if (!orderForm.value.receiptImage) {
+                    showNotify('عفواً، يجب رفع الإيصال أولاً لتفعيل حالة الدفع', 'error');
+                    return;
+                }
+                orderForm.value.isPaid = !orderForm.value.isPaid;
+            };
+
             const handleReceiptUpload = (e) => {
                 const file = e.target.files[0]; if (!file) return;
                 const reader = new FileReader();
@@ -927,7 +945,7 @@
                         canvas.width = img.width * scale; canvas.height = img.height * scale;
                         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                         orderForm.value.receiptImage = canvas.toDataURL('image/jpeg', 0.5);
-                        orderForm.value.isPaid = true;
+                        orderForm.value.isPaid = true; // تحويله لمدفوع تلقائياً بمجرد رفع الصورة
                     };
                     img.src = event.target.result;
                 };
@@ -942,7 +960,7 @@
             const saveOrder = () => {
                 isSaving.value = true;
                 
-                const mCode = (orderForm.value.managerCode || 'XX').toUpperCase().substring(0, 2);
+                const mCode = editingOrder.value ? orderForm.value.managerCode : (currentUser.value?.managerCode || 'XX');
                 const orderId = editingOrder.value ? editingOrder.value.orderId : `${mCode}-${Math.floor(100000 + Math.random() * 900000)}`;
 
                 const payload = {
@@ -1052,7 +1070,7 @@
                             grouped[oid] = {
                                 orderId: oid, managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim(),
                                 discountRate: parseFloat(row['نسبة الخصم'] || 0), discountValue: parseFloat(row['قيمة الخصم'] || 0),
-                                isPaid: String(row['حالة الدفع'] || '').includes('تم الدفع'), 
+                                isPaid: isPaidStatus(row['حالة الدفع']), 
                                 receiptImage: row['صورة الإيصال'] || null,
                                 client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: row['الجوال'] || '', address: row['العنوان بالتفصيل'] || '' },
                                 products: [], totalAmount: 0, subTotal: 0,
@@ -1121,7 +1139,7 @@
                         filteredReportData.value.forEach(r => {
                             const d = formatDate(r['التاريخ']);
                             if (!dates[d]) dates[d] = 0;
-                            if (String(r['حالة الدفع']).includes('تم الدفع')) {
+                            if (isPaidStatus(r['حالة الدفع'])) {
                                 dates[d] += parseFloat(r['المبلغ الإجمالي'] || 0);
                                 paid++;
                             } else { unpaid++; }
@@ -1205,9 +1223,9 @@
                 reportType, selectedEmployee, reportStartDate, reportEndDate, reportData, filteredReportData, reportGenerated, reportSummary, employeeStats,
                 isAdmin, calcSubTotal, calcDiscountValue, calcTotal,
                 filteredArchiveOrders, myOrdersList, filteredByDateOrders,
-                setTab, addProductRow, removeProductRow, syncProductData, updatePrice, handleReceiptUpload, showReceipt,
+                setTab, addProductRow, removeProductRow, syncProductData, updatePrice, handleReceiptUpload, showReceipt, togglePayment,
                 saveOrder, deleteOrder, editOrder, cancelEdit, saveCatalogItem, deleteCatalogItem, syncFromSheet,
-                viewInvoice, printBulk, downloadBulkPDF, generateReport, renderCharts, exportReportExcel,
+                viewInvoice, printBulk, downloadBulkPDF, generateReport, renderCharts, exportReportExcel, isPaidStatus,
                 formatDate, formatDateLong, formatTime
             };
         }
