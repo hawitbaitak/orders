@@ -17,588 +17,758 @@
         .sidebar { background: #142952; }
         .active-tab { background: rgba(255, 255, 255, 0.1); border-right: 4px solid #fbbf24; }
         
-        .invoice-a4 {
-            width: 210mm;
-            height: 296mm;
-            max-height: 296mm;
-            background: white;
-            margin: 0 auto;
-            padding: 8mm 12mm;
-            box-sizing: border-box;
-            color: #000;
-            line-height: 1.3;
-            position: relative;
-            overflow: hidden;
+        .invoice-a4, .report-a4 {
+            width: 210mm; height: 296mm; max-height: 296mm; background: white;
+            margin: 0 auto; padding: 8mm 12mm; box-sizing: border-box; color: #000;
+            line-height: 1.3; position: relative; overflow: hidden;
         }
 
-        .inv-header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border-bottom: 2px solid #142952; padding-bottom: 10px; margin-bottom: 15px; }
         .inv-info-box { background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9; }
-        .inv-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-        .inv-table th { background: #142952; color: white; padding: 6px 8px; text-align: right; font-size: 12px; border: 1px solid #142952; }
-        .inv-table td { border: 1px solid #e2e8f0; padding: 6px 8px; vertical-align: top; font-size: 11px; }
-        .inv-total-row { background: #142952; color: white; font-weight: 900; }
+        .inv-table, .report-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        .inv-table th, .report-table th { background: #142952; color: white; padding: 6px 8px; text-align: right; font-size: 12px; border: 1px solid #142952; }
+        .inv-table td, .report-table td { border: 1px solid #e2e8f0; padding: 6px 8px; vertical-align: top; font-size: 11px; }
         
         @media print {
             @page { size: A4; margin: 0; }
             .no-print { display: none !important; }
             body { background: white; margin: 0; padding: 0; }
-            .invoice-a4 { 
-                width: 210mm; 
-                height: 297mm; 
-                margin: 0; 
-                padding: 8mm 12mm; 
-                border: none; 
-                page-break-after: always; 
-                position: relative; 
-                overflow: hidden; 
+            .invoice-a4, .report-a4 { 
+                width: 210mm; height: 297mm; margin: 0; padding: 8mm 12mm; 
+                border: none; page-break-after: always; position: relative; overflow: hidden; 
             }
-            #capture-area { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; }
+            #capture-area, #report-capture-area { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; }
         }
 
-        #capture-area { position: absolute; left: -9999px; top: 0; width: 210mm; }
+        #capture-area, #report-capture-area { position: absolute; left: -9999px; top: 0; width: 210mm; }
         .loader-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div id="app" class="min-h-screen flex">
-        
-        <aside class="sidebar w-64 text-white flex flex-col no-print fixed h-full z-50 shadow-2xl">
-            <div class="p-8 text-center border-b border-white/5">
-                <div class="w-24 h-24 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center p-2 shadow-xl overflow-hidden">
-                    <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
+
+        <div v-if="!currentUser" class="fixed inset-0 z-50 flex items-center justify-center bg-[#142952] bg-opacity-95 backdrop-blur-sm">
+            <div class="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md animate-in">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-gray-50 rounded-full mx-auto mb-4 flex items-center justify-center p-3 shadow-inner">
+                        <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
+                    </div>
+                    <h2 class="text-2xl font-black text-[#142952]">تسجيل الدخول للنظام</h2>
+                    <p class="text-sm text-gray-500 font-bold mt-2">هوية بيتك - نظام إدارة المبيعات</p>
                 </div>
-                <h1 class="text-xl font-black">هوية بيتك</h1>
-                <p class="text-blue-300 text-[10px] mt-1 tracking-widest font-bold uppercase">نظام إدارة المبيعات</p>
+                <form @submit.prevent="login" class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-black text-gray-400 mb-2 uppercase">اسم المستخدم</label>
+                        <input v-model="loginForm.username" required class="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-[#142952] focus:bg-white transition-all font-bold" placeholder="ادخل اسم المستخدم">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-gray-400 mb-2 uppercase">كلمة المرور</label>
+                        <input v-model="loginForm.password" type="password" required class="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-[#142952] focus:bg-white transition-all font-bold" placeholder="ادخل كلمة المرور">
+                    </div>
+                    <button type="submit" :disabled="authLoading" class="w-full bg-[#142952] text-white py-4 rounded-2xl font-black shadow-lg hover:bg-blue-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                        <i v-if="authLoading" data-lucide="loader" class="animate-spin w-5 h-5"></i>
+                        <span>{{ authLoading ? 'جاري التحقق...' : 'تسجيل الدخول' }}</span>
+                    </button>
+                </form>
             </div>
-            
-            <nav class="flex-1 py-10 px-4 space-y-2">
-                <button @click="setTab('create')" :class="{'active-tab': activeTab === 'create'}" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
-                    <i data-lucide="plus-circle" class="w-5 h-5 text-yellow-400"></i> تسجيل طلب
-                </button>
-                <button @click="setTab('archive')" :class="{'active-tab': activeTab === 'archive'}" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
-                    <i data-lucide="database" class="w-5 h-5 text-yellow-400"></i> أرشيف الطلبات
-                </button>
-                <button @click="setTab('invoices')" :class="{'active-tab': activeTab === 'invoices'}" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
-                    <i data-lucide="printer" class="w-5 h-5 text-yellow-400"></i> مركز الفواتير
-                </button>
-                <button @click="setTab('catalog')" :class="{'active-tab': activeTab === 'catalog'}" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
-                    <i data-lucide="package" class="w-5 h-5 text-yellow-400"></i> المنتجات
-                </button>
-            </nav>
-        </aside>
+        </div>
 
-        <main class="flex-1 mr-64 p-8 no-print relative min-h-screen">
-            
-            <div v-if="notification" class="fixed top-10 left-10 z-[100] p-5 rounded-2xl shadow-2xl bg-white border-l-8 flex items-center gap-4 transition-all" 
-                 :class="{'border-red-500 text-red-600 animate-bounce': notification.type === 'error', 'border-green-500 text-green-600 animate-bounce': notification.type === 'success', 'border-blue-500 text-blue-700': notification.type === 'info'}">
-                <i v-if="notification.type === 'success'" data-lucide="check-circle"></i>
-                <i v-else-if="notification.type === 'error'" data-lucide="alert-circle"></i>
-                <i v-else data-lucide="loader" class="animate-spin"></i>
-                <span class="font-black">{{ notification.msg }}</span>
-            </div>
-
-            <div v-if="loading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm">
-                <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
-                <p class="font-black text-[#142952]">جاري مزامنة البيانات...</p>
-            </div>
-
-            <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <div>
-                    <h2 class="text-3xl font-black text-[#142952]">
-                        <span v-if="activeTab === 'create'">{{ editingOrder ? 'تعديل بيانات الطلب' : 'تسجيل طلب جديد' }}</span>
-                        <span v-if="activeTab === 'archive'">الأرشيف والمزامنة</span>
-                        <span v-if="activeTab === 'invoices'">إصدار وتحميل الفواتير</span>
-                        <span v-if="activeTab === 'catalog'">إدارة المنتجات</span>
-                    </h2>
+        <template v-else>
+            <aside class="sidebar w-64 text-white flex flex-col no-print fixed h-full z-40 shadow-2xl">
+                <div class="p-8 text-center border-b border-white/5">
+                    <div class="w-24 h-24 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center p-2 shadow-xl overflow-hidden">
+                        <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
+                    </div>
+                    <h1 class="text-xl font-black">هوية بيتك</h1>
+                    <p class="text-yellow-400 text-[10px] mt-1 tracking-widest font-black uppercase">مرحباً, {{ currentUser.username }} ({{ currentUser.role === 'admin' ? 'مدير' : 'موظف' }})</p>
                 </div>
-                <div class="flex gap-2">
-                    <button @click="syncFromSheet" class="bg-[#142952] text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 shadow-lg hover:bg-blue-800 transition-all">
-                        <i data-lucide="refresh-cw" :class="{'loader-spin': syncLoading}" class="w-4 h-4"></i>
-                        مزامنة السحاب
+                
+                <nav class="flex-1 py-10 px-4 space-y-2 overflow-y-auto">
+                    <button @click="setTab('create')" :class="{'active-tab': activeTab === 'create'}" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
+                        <i data-lucide="plus-circle" class="w-5 h-5 text-yellow-400"></i> تسجيل طلب
+                    </button>
+                    <button @click="setTab('invoices')" :class="{'active-tab': activeTab === 'invoices'}" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
+                        <i data-lucide="printer" class="w-5 h-5 text-yellow-400"></i> مركز الفواتير
+                    </button>
+                    <button @click="setTab('archive')" :class="{'active-tab': activeTab === 'archive'}" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
+                        <i data-lucide="database" class="w-5 h-5 text-yellow-400"></i> {{ currentUser.role === 'admin' ? 'أرشيف الطلبات' : 'طلباتي' }}
+                    </button>
+                    <button @click="setTab('catalog')" :class="{'active-tab': activeTab === 'catalog'}" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
+                        <i data-lucide="package" class="w-5 h-5 text-yellow-400"></i> المنتجات
+                    </button>
+                    <button v-if="currentUser.role === 'admin'" @click="setTab('reports')" :class="{'active-tab': activeTab === 'reports'}" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
+                        <i data-lucide="pie-chart" class="w-5 h-5 text-yellow-400"></i> التقارير المالية
+                    </button>
+                </nav>
+
+                <div class="p-4 border-t border-white/5">
+                    <button @click="logout" class="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl transition-all font-black text-red-400 hover:bg-red-500 hover:text-white">
+                        <i data-lucide="log-out" class="w-4 h-4"></i> تسجيل الخروج
                     </button>
                 </div>
-            </header>
+            </aside>
 
-            <section v-if="activeTab === 'create'" class="bg-white p-8 rounded-3xl shadow-sm border animate-in">
-                <form @submit.prevent="saveOrder" class="space-y-8">
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 bg-blue-50/50 p-8 rounded-3xl mb-4 border border-blue-100">
-                        <div class="col-span-full font-black text-[#142952] flex items-center gap-2 mb-2 text-lg">
-                            <i data-lucide="settings"></i> إعدادات الطلب والدفع
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رمز المسؤول</label>
-                            <input v-model="orderForm.managerCode" maxlength="2" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold uppercase tracking-widest text-center" placeholder="مثال: AB">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">الخصم (%)</label>
-                            <input v-model.number="orderForm.discountRate" type="number" min="0" max="100" step="any" class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold text-center text-red-500" placeholder="0">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">حالة الدفع</label>
-                            <div class="flex items-center gap-3 mt-2 h-[46px]">
-                                <div class="relative inline-block w-12 h-6 cursor-pointer rounded-full transition-colors duration-300 shadow-inner"
-                                     :class="orderForm.isPaid ? 'bg-green-500' : 'bg-gray-300'"
-                                     @click="orderForm.isPaid = !orderForm.isPaid">
-                                    <div class="absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow"
-                                         :class="orderForm.isPaid ? 'left-1' : 'right-1'"></div>
-                                </div>
-                                <span class="text-sm font-black" :class="orderForm.isPaid ? 'text-green-600' : 'text-gray-500'">
-                                    {{ orderForm.isPaid ? 'مدفوع' : 'غير مدفوع' }}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="space-y-1 lg:col-span-2">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رفع الإيصال (اختياري)</label>
-                            <div class="flex items-center gap-4">
-                                <input type="file" ref="receiptInput" accept="image/*" @change="handleReceiptUpload" class="flex-1 w-full p-2.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold text-sm">
-                                <div v-if="orderForm.receiptImage" class="w-12 h-12 rounded-xl overflow-hidden shadow-sm border border-gray-200 shrink-0">
-                                    <img :src="orderForm.receiptImage" class="w-full h-full object-cover">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 bg-gray-50 p-8 rounded-3xl">
-                        <div class="col-span-full font-black text-[#142952] flex items-center gap-2 mb-2 text-lg">
-                            <i data-lucide="user"></i> بيانات العميل الأساسية
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">اسم العميل</label>
-                            <input v-model="orderForm.client.name" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">المدينة</label>
-                            <input v-model="orderForm.client.city" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">الجوال</label>
-                            <input v-model="orderForm.client.phone" @input="orderForm.client.phone = orderForm.client.phone.replace(/\s+/g, '')" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold" dir="ltr">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">العنوان بالتفصيل</label>
-                            <input v-model="orderForm.client.address" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold">
-                        </div>
-                    </div>
-
-                    <div class="space-y-6">
-                        <div class="flex justify-between items-center border-b pb-4">
-                            <h3 class="text-xl font-black text-[#142952]">قائمة المنتجات المطلوبة</h3>
-                            <button type="button" @click="addProductRow" class="bg-blue-50 text-blue-600 px-6 py-2 rounded-xl font-black text-sm transition-all hover:bg-blue-100">+ إضافة منتج</button>
-                        </div>
-                        <div v-for="(p, index) in orderForm.products" :key="p.id" class="p-8 border-2 border-gray-50 rounded-3xl relative bg-white hover:border-blue-100 transition-all shadow-sm">
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">اختر المنتج</label>
-                                    <select v-model="p.productId" @change="syncProductData(p)" required class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
-                                        <option value="">اختر من القائمة...</option>
-                                        <option v-for="item in catalog" :value="item.id">{{ item.name }} (SAR {{ item.price }})</option>
-                                    </select>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">اللون</label>
-                                    <select v-model="p.color" @change="updatePrice(p)" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
-                                        <option value="silver">سيلفر (فضي)</option>
-                                        <option value="gold">جولد (ذهبي) +19 SAR</option>
-                                    </select>
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">الكمية</label>
-                                    <input v-model.number="p.count" type="number" min="1" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm text-center">
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-blue-600 uppercase">العنوان الوطني</label>
-                                    <input v-model="p.nationalAddress" class="w-full p-3 border-2 border-blue-50 rounded-xl bg-blue-50/30 font-bold text-sm">
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">رقم الفيلا</label>
-                                    <input v-model="p.villaNo" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
-                                </div>
-                                <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">الاسم المطلوب</label>
-                                    <input v-model="p.customName" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
-                                </div>
-                                <div class="lg:col-span-2 space-y-1">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">ملاحظات إضافية</label>
-                                    <input v-model="p.notes" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
-                                </div>
-                            </div>
-                            <button v-if="orderForm.products.length > 1" @click="removeProductRow(index)" type="button" class="absolute -top-3 -left-3 bg-red-500 text-white p-2.5 rounded-full shadow-lg transition-transform hover:scale-110">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center border-t pt-10">
-                        <div class="flex flex-col">
-                            <div v-if="orderForm.discountRate > 0" class="font-bold text-gray-400 text-sm line-through decoration-red-400">{{ calculateSubTotal() }} SAR</div>
-                            <div class="font-black text-4xl text-green-600">{{ calculateTotal() }} SAR</div>
-                            <div v-if="orderForm.discountRate > 0" class="font-bold text-red-500 text-xs mt-1">تم تطبيق خصم {{ orderForm.discountRate }}%</div>
-                        </div>
-                        <div class="flex gap-4">
-                            <button v-if="editingOrder" type="button" @click="cancelEdit" class="bg-gray-200 px-10 py-4 rounded-2xl font-black text-gray-600 shadow-sm transition-all hover:bg-gray-300">إلغاء</button>
-                            <button type="submit" :disabled="isSaving || isSuccess" :class="isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-[#142952] hover:bg-blue-800'" class="text-white px-16 py-4 rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all flex justify-center items-center gap-3 min-w-[280px]">
-                                <i v-if="isSuccess" data-lucide="check-circle" class="w-6 h-6 text-white"></i>
-                                <span>{{ isSaving ? 'جاري المزامنة مع السحاب...' : (isSuccess ? 'تم التسجيل بنجاح' : (editingOrder ? 'تحديث الطلب' : 'حفظ الطلب')) }}</span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </section>
-
-            <section v-if="activeTab === 'archive'" class="bg-white rounded-3xl shadow-sm border overflow-hidden animate-in">
-                <div class="p-8 bg-gray-50 flex justify-between items-center border-b">
-                    <div class="relative w-96">
-                        <i data-lucide="search" class="absolute right-4 top-3.5 text-gray-400 w-5 h-5"></i>
-                        <input v-model="searchQuery" class="w-full pr-12 pl-6 py-3.5 bg-white border-none rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold" placeholder="ابحث باسم العميل أو رقم الطلب أو الجوال...">
-                    </div>
-                    <div class="font-black text-gray-400">الإجمالي: {{ filteredOrders.length }} طلب</div>
+            <main class="flex-1 mr-64 p-8 no-print relative min-h-screen">
+                
+                <div v-if="notification" class="fixed top-10 left-10 z-[100] p-5 rounded-2xl shadow-2xl bg-white border-l-8 flex items-center gap-4 transition-all" 
+                     :class="{'border-red-500 text-red-600': notification.type === 'error', 'border-green-500 text-green-600': notification.type === 'success', 'border-blue-500 text-blue-700': notification.type === 'info'}">
+                    <i v-if="notification.type === 'success'" data-lucide="check-circle"></i>
+                    <i v-else-if="notification.type === 'error'" data-lucide="alert-circle"></i>
+                    <i v-else data-lucide="loader" class="animate-spin"></i>
+                    <span class="font-black">{{ notification.msg }}</span>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-right border-collapse text-sm">
-                        <thead class="bg-[#142952] text-white">
+
+                <div v-if="loading" class="fixed inset-0 bg-white/70 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
+                    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
+                    <p class="font-black text-[#142952]">جاري معالجة البيانات...</p>
+                </div>
+
+                <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div>
+                        <h2 class="text-3xl font-black text-[#142952]">
+                            <span v-if="activeTab === 'create'">{{ editingOrder ? 'تعديل بيانات الطلب' : 'تسجيل طلب جديد' }}</span>
+                            <span v-if="activeTab === 'invoices'">إصدار وتحميل الفواتير</span>
+                            <span v-if="activeTab === 'archive'">{{ currentUser.role === 'admin' ? 'أرشيف الطلبات والمزامنة' : 'متابعة طلباتي' }}</span>
+                            <span v-if="activeTab === 'catalog'">إدارة المنتجات</span>
+                            <span v-if="activeTab === 'reports'">التقارير المالية والتحليلات</span>
+                        </h2>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="syncFromSheet" class="bg-[#142952] text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 shadow-lg hover:bg-blue-800 transition-all">
+                            <i data-lucide="refresh-cw" :class="{'loader-spin': syncLoading}" class="w-4 h-4"></i>
+                            مزامنة السحاب
+                        </button>
+                    </div>
+                </header>
+
+                <section v-if="activeTab === 'create'" class="bg-white p-8 rounded-3xl shadow-sm border animate-in">
+                    <form @submit.prevent="saveOrder" class="space-y-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 bg-blue-50/50 p-8 rounded-3xl mb-4 border border-blue-100">
+                            <div class="col-span-full font-black text-[#142952] flex items-center gap-2 mb-2 text-lg">
+                                <i data-lucide="settings"></i> إعدادات الطلب والدفع
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رمز المسؤول</label>
+                                <input v-model="orderForm.managerCode" :readonly="currentUser.role !== 'admin'" maxlength="2" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold uppercase tracking-widest text-center" placeholder="مثال: AB">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">الخصم (%)</label>
+                                <input v-model.number="orderForm.discountRate" type="number" min="0" max="100" step="any" class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold text-center text-red-500" placeholder="0">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">حالة الدفع</label>
+                                <div class="flex items-center gap-3 mt-2 h-[46px]">
+                                    <div class="relative inline-block w-12 h-6 cursor-pointer rounded-full transition-colors duration-300 shadow-inner"
+                                         :class="orderForm.isPaid ? 'bg-green-500' : 'bg-gray-300'"
+                                         @click="orderForm.isPaid = !orderForm.isPaid">
+                                        <div class="absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow"
+                                             :class="orderForm.isPaid ? 'left-1' : 'right-1'"></div>
+                                    </div>
+                                    <span class="text-sm font-black" :class="orderForm.isPaid ? 'text-green-600' : 'text-gray-500'">
+                                        {{ orderForm.isPaid ? 'مدفوع' : 'غير مدفوع' }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="space-y-1 lg:col-span-2">
+                                <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رفع الإيصال (اختياري)</label>
+                                <div class="flex items-center gap-4">
+                                    <input type="file" ref="receiptInput" accept="image/*" @change="handleReceiptUpload" class="flex-1 w-full p-2.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold text-sm">
+                                    <div v-if="orderForm.receiptImage" class="w-12 h-12 rounded-xl overflow-hidden shadow-sm border border-gray-200 shrink-0">
+                                        <img :src="orderForm.receiptImage" class="w-full h-full object-cover">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 bg-gray-50 p-8 rounded-3xl">
+                            <div class="col-span-full font-black text-[#142952] flex items-center gap-2 mb-2 text-lg">
+                                <i data-lucide="user"></i> بيانات العميل الأساسية
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">اسم العميل</label>
+                                <input v-model="orderForm.client.name" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">المدينة</label>
+                                <input v-model="orderForm.client.city" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">الجوال</label>
+                                <input v-model="orderForm.client.phone" @input="orderForm.client.phone = orderForm.client.phone.replace(/\s+/g, '')" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold" dir="ltr">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">العنوان بالتفصيل</label>
+                                <input v-model="orderForm.client.address" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold">
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="flex justify-between items-center border-b pb-4">
+                                <h3 class="text-xl font-black text-[#142952]">قائمة المنتجات المطلوبة</h3>
+                                <button type="button" @click="addProductRow" class="bg-blue-50 text-blue-600 px-6 py-2 rounded-xl font-black text-sm transition-all hover:bg-blue-100">+ إضافة منتج</button>
+                            </div>
+                            <div v-for="(p, index) in orderForm.products" :key="p.id" class="p-8 border-2 border-gray-50 rounded-3xl relative bg-white hover:border-blue-100 transition-all shadow-sm">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black text-gray-400 uppercase">اختر المنتج</label>
+                                        <select v-model="p.productId" @change="syncProductData(p)" required class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
+                                            <option value="">اختر من القائمة...</option>
+                                            <option v-for="item in catalog" :value="item.id">{{ item.name }} (SAR {{ item.price }})</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black text-gray-400 uppercase">اللون</label>
+                                        <select v-model="p.color" @change="updatePrice(p)" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
+                                            <option value="silver">سيلفر (فضي)</option>
+                                            <option value="gold">جولد (ذهبي) +19 SAR</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black text-gray-400 uppercase">الكمية</label>
+                                        <input v-model.number="p.count" type="number" min="1" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm text-center">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black text-blue-600 uppercase">العنوان الوطني</label>
+                                        <input v-model="p.nationalAddress" class="w-full p-3 border-2 border-blue-50 rounded-xl bg-blue-50/30 font-bold text-sm">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black text-gray-400 uppercase">رقم الفيلا</label>
+                                        <input v-model="p.villaNo" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] font-black text-gray-400 uppercase">الاسم المطلوب</label>
+                                        <input v-model="p.customName" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
+                                    </div>
+                                    <div class="lg:col-span-2 space-y-1">
+                                        <label class="text-[10px] font-black text-gray-400 uppercase">ملاحظات إضافية</label>
+                                        <input v-model="p.notes" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
+                                    </div>
+                                </div>
+                                <button v-if="orderForm.products.length > 1" @click="removeProductRow(index)" type="button" class="absolute -top-3 -left-3 bg-red-500 text-white p-2.5 rounded-full shadow-lg transition-transform hover:scale-110">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center border-t pt-10">
+                            <div class="flex flex-col">
+                                <div v-if="orderForm.discountRate > 0" class="font-bold text-gray-400 text-sm line-through decoration-red-400">{{ calculateSubTotal() }} SAR</div>
+                                <div class="font-black text-4xl text-green-600">{{ calculateTotal() }} SAR</div>
+                                <div v-if="orderForm.discountRate > 0" class="font-bold text-red-500 text-xs mt-1">قيمة الخصم: {{ calculateDiscount().toFixed(2) }} SAR</div>
+                            </div>
+                            <div class="flex gap-4">
+                                <button v-if="editingOrder" type="button" @click="cancelEdit" class="bg-gray-200 px-10 py-4 rounded-2xl font-black text-gray-600 shadow-sm transition-all hover:bg-gray-300">إلغاء</button>
+                                <button type="submit" :disabled="isSaving || isSuccess" :class="isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-[#142952] hover:bg-blue-800'" class="text-white px-16 py-4 rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all flex justify-center items-center gap-3 min-w-[280px]">
+                                    <i v-if="isSuccess" data-lucide="check-circle" class="w-6 h-6 text-white"></i>
+                                    <i v-else-if="isSaving" data-lucide="loader" class="animate-spin w-5 h-5"></i>
+                                    <span>{{ isSaving ? 'جاري المزامنة...' : (isSuccess ? 'تم التسجيل بنجاح' : (editingOrder ? 'تحديث الطلب' : 'حفظ الطلب')) }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+
+                <section v-if="activeTab === 'invoices'" class="space-y-8 animate-in">
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border flex flex-col xl:flex-row justify-between items-center gap-6">
+                        <div class="flex flex-wrap items-center gap-6">
+                            <div class="flex items-center gap-3">
+                                <label class="font-black text-[#142952] text-lg">التاريخ:</label>
+                                <input type="date" v-model="filterDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold shadow-inner">
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <label class="font-black text-[#142952] text-lg">الدفع:</label>
+                                <select v-model="filterPaymentStatus" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold shadow-inner">
+                                    <option value="all">الكل</option>
+                                    <option value="paid">مدفوع</option>
+                                    <option value="unpaid">غير مدفوع</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-3">
+                            <button @click="printBulk" class="bg-[#142952] text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-blue-800 transition-all">
+                                <i data-lucide="printer" class="w-5 h-5 text-yellow-400"></i> طباعة مجمعة
+                            </button>
+                            <button @click="downloadBulkPDF" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-blue-700 transition-all">
+                                <i data-lucide="file-down" class="w-5 h-5 text-white"></i> PDF مجمع
+                            </button>
+                            <button @click="downloadZIP" class="bg-green-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-green-700 transition-all">
+                                <i data-lucide="archive" class="w-5 h-5 text-white"></i> ZIP (فواتير منفصلة)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="filteredByDateOrders.length === 0" class="py-32 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 shadow-none">
+                        <i data-lucide="inbox" class="w-20 h-20 text-gray-100 mx-auto mb-6"></i>
+                        <p class="text-gray-400 font-black text-xl">لا توجد سجلات تطابق بحثك</p>
+                    </div>
+
+                    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div v-for="order in filteredByDateOrders" :key="order.orderId" class="bg-white p-8 rounded-3xl border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer group relative overflow-hidden" @click="viewInvoice(order)">
+                            <div class="flex justify-between items-start mb-6">
+                                <span class="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase">{{ order.orderId }}</span>
+                                <span class="text-[10px] font-bold text-gray-300">{{ formatTime(order.timestamp) }}</span>
+                            </div>
+                            <h4 class="font-black text-[#142952] text-xl mb-1 truncate">{{ order.client?.name || 'بدون اسم' }}</h4>
+                            <p class="text-xs text-gray-400 line-clamp-1 mb-6">📍 {{ order.client?.address || '' }}</p>
+                            <div class="flex justify-between items-center border-t border-dashed border-gray-100 pt-6">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-black text-green-600 text-lg">{{ order.totalAmount }} SAR</span>
+                                </div>
+                                <div v-if="order.isPaid" class="text-green-500 font-black text-xs flex items-center gap-1">
+                                    <i data-lucide="check-circle" class="w-3 h-3"></i> مدفوع
+                                </div>
+                                <div v-else class="text-red-400 font-black text-xs flex items-center gap-1">
+                                    <i data-lucide="x-circle" class="w-3 h-3"></i> غير مدفوع
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section v-if="activeTab === 'archive'" class="bg-white rounded-3xl shadow-sm border overflow-hidden animate-in">
+                    <div class="p-8 bg-gray-50 flex justify-between items-center border-b">
+                        <div class="relative w-96">
+                            <i data-lucide="search" class="absolute right-4 top-3.5 text-gray-400 w-5 h-5"></i>
+                            <input v-model="searchQuery" class="w-full pr-12 pl-6 py-3.5 bg-white border-none rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold" placeholder="ابحث باسم العميل أو رقم الطلب أو الجوال...">
+                        </div>
+                        <div class="font-black text-gray-400">الإجمالي: {{ filteredOrders.length }} طلب</div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse text-sm">
+                            <thead class="bg-[#142952] text-white">
+                                <tr>
+                                    <th class="p-6">رقم الطلب</th>
+                                    <th class="p-6">التاريخ</th>
+                                    <th class="p-6">العميل</th>
+                                    <th class="p-6">العنوان</th>
+                                    <th class="p-6">الإجمالي (بعد الخصم)</th>
+                                    <th class="p-6 text-center">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="order in filteredOrders" :key="order.orderId" class="border-b hover:bg-blue-50/50 transition-all">
+                                    <td class="p-6 font-mono font-black text-blue-700 uppercase">
+                                        {{ order.orderId }}
+                                        <span v-if="order.isPaid" class="block mt-1 bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded w-fit">مدفوع</span>
+                                        <span v-else class="block mt-1 bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded w-fit">غير مدفوع</span>
+                                    </td>
+                                    <td class="p-6 text-xs text-gray-500 font-bold">{{ formatDate(order.timestamp) }}</td>
+                                    <td class="p-6 font-black text-gray-800">{{ order.client?.name || 'غير متوفر' }}</td>
+                                    <td class="p-4 max-w-xs truncate font-bold text-gray-400">{{ order.client?.address || '' }}</td>
+                                    <td class="p-6 font-black text-green-600">
+                                        {{ order.totalAmount }} SAR
+                                        <div v-if="order.discountRate > 0" class="text-[10px] text-red-500 line-through mt-1">{{ order.subTotal }} SAR</div>
+                                    </td>
+                                    <td class="p-6">
+                                        <div class="flex justify-center gap-2">
+                                            <button @click="viewInvoice(order)" class="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                                            <button @click="editOrder(order)" class="p-3 bg-yellow-50 text-yellow-600 rounded-xl hover:bg-yellow-600 hover:text-white transition-all"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                            <button v-if="currentUser.role === 'admin'" @click="deleteOrder(order)" class="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section v-if="activeTab === 'catalog'" class="bg-white p-8 rounded-3xl border animate-in shadow-sm">
+                    <form v-if="currentUser.role === 'admin'" @submit.prevent="saveCatalogItem" class="flex flex-wrap gap-6 mb-12 p-8 bg-gray-50 rounded-[2.5rem] items-end border border-white">
+                        <div class="flex-1 min-w-[280px]">
+                            <label class="block text-xs font-black text-gray-400 mb-2 uppercase">اسم المنتج الجديد</label>
+                            <input v-model="catalogForm.name" required class="w-full p-4 bg-white border-none rounded-2xl shadow-inner outline-none font-black text-[#142952]">
+                        </div>
+                        <div class="w-48">
+                            <label class="block text-xs font-black text-gray-400 mb-2 uppercase">السعر (SAR)</label>
+                            <input v-model.number="catalogForm.price" required type="number" class="w-full p-4 bg-white border-none rounded-2xl shadow-inner outline-none font-black text-green-600">
+                        </div>
+                        <button type="submit" class="bg-[#142952] text-white px-10 py-4 rounded-2xl font-black shadow-lg transition-transform hover:scale-105">إضافة للمتجر</button>
+                    </form>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div v-for="item in catalog" :key="item.id" class="p-8 bg-white border-2 border-gray-50 rounded-2xl flex justify-between items-center hover:shadow-xl transition-all">
+                            <div>
+                                <h5 class="font-black text-[#142952] text-lg">{{ item.name }}</h5>
+                                <p class="text-blue-600 font-black text-lg mt-1">{{ item.price }} SAR</p>
+                            </div>
+                            <button v-if="currentUser.role === 'admin'" @click="deleteCatalogItem(item)" class="text-red-400 p-4 hover:bg-red-50 rounded-2xl transition-colors">
+                                <i data-lucide="trash-2" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <section v-if="activeTab === 'reports' && currentUser.role === 'admin'" class="space-y-8 animate-in">
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div class="flex flex-wrap items-center gap-6">
+                            <div class="flex items-center gap-3">
+                                <label class="font-black text-[#142952] text-sm uppercase">من تاريخ:</label>
+                                <input type="date" v-model="reportStartDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold">
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <label class="font-black text-[#142952] text-sm uppercase">إلى تاريخ:</label>
+                                <input type="date" v-model="reportEndDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold">
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button @click="downloadReportPDF" class="bg-[#142952] text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-blue-800 transition-all">
+                                <i data-lucide="file-down" class="w-5 h-5 text-yellow-400"></i> تصدير التقرير PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-3xl border shadow-sm border-l-4 border-l-[#142952]">
+                            <p class="text-gray-400 font-black text-sm mb-2">إجمالي الطلبات</p>
+                            <h3 class="text-3xl font-black text-[#142952]">{{ reportStats.totalOrders }}</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border shadow-sm border-l-4 border-l-green-500">
+                            <p class="text-gray-400 font-black text-sm mb-2">إجمالي الإيرادات</p>
+                            <h3 class="text-3xl font-black text-green-600">{{ reportStats.totalRevenue.toFixed(2) }} SAR</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border shadow-sm border-l-4 border-l-blue-500">
+                            <p class="text-gray-400 font-black text-sm mb-2">الطلبات المدفوعة</p>
+                            <h3 class="text-3xl font-black text-blue-600">{{ reportStats.paidCount }}</h3>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl border shadow-sm border-l-4 border-l-red-500">
+                            <p class="text-gray-400 font-black text-sm mb-2">الطلبات المعلقة (غير مدفوعة)</p>
+                            <h3 class="text-3xl font-black text-red-500">{{ reportStats.unpaidCount }}</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl shadow-sm border overflow-hidden">
+                        <div class="p-6 bg-gray-50 border-b font-black text-[#142952]">سجل الحسابات للفترة المحددة</div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right border-collapse text-sm">
+                                <thead class="bg-[#142952] text-white">
+                                    <tr>
+                                        <th class="p-4">رقم الطلب</th>
+                                        <th class="p-4">تاريخ</th>
+                                        <th class="p-4">العميل</th>
+                                        <th class="p-4">الخصم</th>
+                                        <th class="p-4">الإجمالي النهائي</th>
+                                        <th class="p-4">الحالة</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="acc in filteredAccounts" :key="acc.orderId" class="border-b">
+                                        <td class="p-4 font-mono font-bold">{{ acc.orderId }}</td>
+                                        <td class="p-4 text-gray-500">{{ formatDate(acc.timestamp) }}</td>
+                                        <td class="p-4 font-bold">{{ acc.clientName }}</td>
+                                        <td class="p-4 text-red-500">{{ acc.discountValue }} SAR</td>
+                                        <td class="p-4 font-black text-green-600">{{ acc.totalAmount }} SAR</td>
+                                        <td class="p-4">
+                                            <span v-if="acc.isPaid" class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">مدفوع</span>
+                                            <span v-else class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">غير مدفوع</span>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="filteredAccounts.length === 0">
+                                        <td colspan="6" class="p-8 text-center text-gray-400 font-bold">لا توجد بيانات لهذه الفترة</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <div id="capture-area" dir="rtl">
+                <div v-for="invoice in bulkList" :key="invoice.orderId" :id="'inv-' + invoice.orderId" class="invoice-a4">
+                    <div class="flex justify-between items-center mb-4 border-b-2 border-gray-100 pb-3">
+                        <div class="w-20 h-20 bg-white flex items-center justify-center p-2 rounded-xl">
+                            <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
+                        </div>
+                        <div class="text-center">
+                            <h1 class="text-3xl font-black text-[#142952]">فاتورة</h1>
+                        </div>
+                        <div class="text-left font-black text-[11px] space-y-0.5">
+                            <p class="text-2xl text-[#142952] pb-1">رقم الفاتورة : #{{ invoice.orderId }}</p>
+                            <p>تاريخ الطلب : {{ formatDateLong(invoice.timestamp) }}</p>
+                            <p>الرقم الضريبي : 310236446600003</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4 text-[11px]">
+                        <div class="inv-info-box space-y-1">
+                            <span class="text-gray-400 font-bold">مصدرة إلى :</span>
+                            <p class="font-black text-base text-gray-900">{{ invoice.client?.name }}</p>
+                            <p class="font-black text-[#142952] text-sm">{{ invoice.client?.address }}</p>
+                            <p class="font-bold text-gray-600">المملكة العربية السعودية، {{ invoice.client?.city }}</p>
+                            <p dir="ltr" class="font-black text-sm">{{ invoice.client?.phone }}</p>
+                        </div>
+                        <div class="inv-info-box text-left space-y-1 border-r-4 border-[#142952]">
+                            <span class="text-gray-400 font-bold">مصدرة من :</span>
+                            <p class="font-black text-sm text-[#142952]">المتجر الإلكتروني: هوية بيتك</p>
+                            <p class="font-bold">المملكة العربية السعودية، الرياض</p>
+                            <p class="font-bold">المعيقلية، الديرة، SA</p>
+                            <p class="text-blue-600 font-bold">hwytbytk@gmail.com</p>
+                            <p dir="ltr" class="font-black">+966 54 478 2301</p>
+                        </div>
+                    </div>
+
+                    <table class="inv-table">
+                        <thead>
                             <tr>
-                                <th class="p-6">رقم الطلب</th>
-                                <th class="p-6">التاريخ</th>
-                                <th class="p-6">العميل</th>
-                                <th class="p-6">العنوان</th>
-                                <th class="p-6">المبلغ</th>
-                                <th class="p-6 text-center">إجراءات</th>
+                                <th class="rounded-tr-lg">وصف المنتج والخيارات المخصصة</th>
+                                <th class="text-center w-16">الكمية</th>
+                                <th class="text-center w-24">السعر</th>
+                                <th class="text-left rounded-tl-lg w-24">المجموع</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="order in filteredOrders" :key="order.orderId" class="border-b hover:bg-blue-50/50 transition-all">
-                                <td class="p-6 font-mono font-black text-blue-700 uppercase">
-                                    {{ order.orderId }}
-                                    <span v-if="order.isPaid" class="block mt-1 bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded w-fit">مدفوع</span>
-                                    <span v-else class="block mt-1 bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded w-fit">غير مدفوع</span>
-                                </td>
-                                <td class="p-6 text-xs text-gray-500 font-bold">{{ formatDate(order.timestamp) }}</td>
-                                <td class="p-6 font-black text-gray-800">{{ order.client?.name || 'غير متوفر' }}</td>
-                                <td class="p-4 max-w-xs truncate font-bold text-gray-400">{{ order.client?.address || '' }}</td>
-                                <td class="p-6 font-black text-green-600">{{ order.totalAmount }} SAR</td>
-                                <td class="p-6">
-                                    <div class="flex justify-center gap-2">
-                                        <button @click="viewInvoice(order)" class="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all"><i data-lucide="eye" class="w-4 h-4"></i></button>
-                                        <button @click="editOrder(order)" class="p-3 bg-yellow-50 text-yellow-600 rounded-xl hover:bg-yellow-600 hover:text-white transition-all"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                                        <button @click="deleteOrder(order)" class="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            <tr v-for="p in invoice.products" :key="p.id">
+                                <td>
+                                    <div class="flex gap-3">
+                                        <div class="space-y-1 flex-1">
+                                            <p class="font-black text-sm text-gray-900">{{ p.name }} <span v-if="p.villaNo" class="text-[10px] text-gray-400 font-bold">(فيلا {{ p.villaNo }})</span></p>
+                                            <div class="text-[10px] bg-blue-50/50 p-2 rounded-lg border border-blue-100 space-y-0.5">
+                                                <p class="font-black text-[#142952]">الخيارات: 
+                                                    <span class="font-normal text-black ml-2">• اللون: <span class="font-black">{{ p.color === 'silver' ? 'فضي' : 'ذهبي' }}</span></span>
+                                                    <span v-if="p.nationalAddress" class="font-normal text-black ml-2">• العنوان الوطني: <span class="font-black">{{ p.nationalAddress }}</span></span>
+                                                    <span v-if="p.customName" class="font-normal text-black ml-2">• الاسم: <span class="font-black text-blue-700 italic">{{ p.customName }}</span></span>
+                                                    <span v-if="p.notes" class="font-normal text-gray-500 ml-2 italic">• ملاحظة: {{ p.notes }}</span>
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
+                                <td class="text-center font-black text-sm bg-gray-50/30 align-middle">{{ p.count }}</td>
+                                <td class="text-center font-bold text-xs align-middle">SAR {{ p.price }}</td>
+                                <td class="text-left font-black text-sm text-[#142952] align-middle">SAR {{ p.price * p.count }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="mt-4 mr-auto w-80 space-y-1.5 border-t pt-3 text-xs">
+                        <div class="flex justify-between font-bold text-gray-500">
+                            <span>مجموع المنتجات</span>
+                            <span class="font-black text-black">SAR {{ (invoice.subTotal || 0).toFixed(2) }}</span>
+                        </div>
+                        <div v-if="invoice.discountRate > 0" class="flex justify-between font-bold text-red-500">
+                            <span>الخصم ({{ invoice.discountRate }}%)</span>
+                            <span class="font-black text-red-600">- SAR {{ invoice.discountValue || (((invoice.subTotal || 0) * invoice.discountRate) / 100).toFixed(2) }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center bg-[#142952] text-white p-3 rounded-xl font-black text-lg shadow-md mt-2 relative">
+                            <div class="flex items-center gap-3">
+                                <span>إجمالي الطلب</span>
+                                <div v-if="invoice.isPaid" class="flex items-center gap-1.5 bg-green-100 text-green-700 px-2 py-1 rounded-lg border border-green-300">
+                                    <span class="text-[10px] font-black">✓ تم الدفع</span>
+                                </div>
+                                <div v-else class="flex items-center gap-1.5 bg-red-100 text-red-700 px-2 py-1 rounded-lg border border-red-300">
+                                    <span class="text-[10px] font-black">✗ غير مدفوع</span>
+                                </div>
+                            </div>
+                            <span>SAR {{ invoice.totalAmount }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="report-capture-area" dir="rtl">
+                <div v-if="activeTab === 'reports'" id="report-pdf-content" class="report-a4">
+                    <div class="text-center mb-6 border-b-2 pb-4">
+                        <h1 class="text-3xl font-black text-[#142952]">تقرير مبيعات - هوية بيتك</h1>
+                        <p class="mt-2 font-bold">للفترة من {{ reportStartDate }} إلى {{ reportEndDate }}</p>
+                    </div>
+                    <div class="flex justify-between mb-6 font-bold">
+                        <div>إجمالي الإيرادات: <span class="text-green-600">{{ reportStats.totalRevenue.toFixed(2) }} SAR</span></div>
+                        <div>إجمالي الطلبات: {{ reportStats.totalOrders }}</div>
+                        <div>المدفوع: {{ reportStats.paidCount }} | المعلق: {{ reportStats.unpaidCount }}</div>
+                    </div>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th><th>التاريخ</th><th>العميل</th><th>الخصم</th><th>الإجمالي</th><th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="acc in filteredAccounts" :key="acc.orderId">
+                                <td>{{ acc.orderId }}</td>
+                                <td>{{ formatDate(acc.timestamp) }}</td>
+                                <td>{{ acc.clientName }}</td>
+                                <td>{{ acc.discountValue }}</td>
+                                <td>{{ acc.totalAmount }}</td>
+                                <td>{{ acc.isPaid ? 'مدفوع' : 'غير مدفوع' }}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-            </section>
-
-            <section v-if="activeTab === 'invoices'" class="space-y-8 animate-in">
-                <div class="bg-white p-8 rounded-3xl shadow-sm border flex flex-col xl:flex-row justify-between items-center gap-6">
-                    <div class="flex flex-wrap items-center gap-6">
-                        <div class="flex items-center gap-3">
-                            <label class="font-black text-[#142952] text-lg">التاريخ:</label>
-                            <input type="date" v-model="filterDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold shadow-inner">
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <label class="font-black text-[#142952] text-lg">الدفع:</label>
-                            <select v-model="filterPaymentStatus" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold shadow-inner">
-                                <option value="all">الكل</option>
-                                <option value="paid">مدفوع</option>
-                                <option value="unpaid">غير مدفوع</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap gap-3">
-                        <button @click="printBulk" class="bg-[#142952] text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-blue-800 transition-all">
-                            <i data-lucide="printer" class="w-5 h-5 text-yellow-400"></i> طباعة مجمعة
-                        </button>
-                        <button @click="downloadBulkPDF" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-blue-700 transition-all">
-                            <i data-lucide="file-down" class="w-5 h-5 text-white"></i> PDF مجمع
-                        </button>
-                        <button @click="downloadZIP" class="bg-green-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-green-700 transition-all">
-                            <i data-lucide="archive" class="w-5 h-5 text-white"></i> ZIP (فواتير منفصلة)
-                        </button>
-                    </div>
-                </div>
-
-                <div v-if="filteredByDateOrders.length === 0" class="py-32 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 shadow-none">
-                    <i data-lucide="inbox" class="w-20 h-20 text-gray-100 mx-auto mb-6"></i>
-                    <p class="text-gray-400 font-black text-xl">لا توجد سجلات تطابق بحثك</p>
-                </div>
-
-                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div v-for="order in filteredByDateOrders" :key="order.orderId" class="bg-white p-8 rounded-3xl border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer group relative overflow-hidden" @click="viewInvoice(order)">
-                        <div class="flex justify-between items-start mb-6">
-                            <span class="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase">{{ order.orderId }}</span>
-                            <span class="text-[10px] font-bold text-gray-300">{{ formatTime(order.timestamp) }}</span>
-                        </div>
-                        <h4 class="font-black text-[#142952] text-xl mb-1 truncate">{{ order.client?.name || 'بدون اسم' }}</h4>
-                        <p class="text-xs text-gray-400 line-clamp-1 mb-6">📍 {{ order.client?.address || '' }}</p>
-                        <div class="flex justify-between items-center border-t border-dashed border-gray-100 pt-6">
-                            <div class="flex items-center gap-2">
-                                <span class="font-black text-green-600 text-lg">{{ order.totalAmount }} SAR</span>
-                            </div>
-                            <div v-if="order.isPaid" class="text-green-500 font-black text-xs flex items-center gap-1">
-                                <i data-lucide="check-circle" class="w-3 h-3"></i> مدفوع
-                            </div>
-                            <div v-else class="text-red-400 font-black text-xs flex items-center gap-1">
-                                <i data-lucide="x-circle" class="w-3 h-3"></i> غير مدفوع
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section v-if="activeTab === 'catalog'" class="bg-white p-8 rounded-3xl border animate-in shadow-sm">
-                <form @submit.prevent="saveCatalogItem" class="flex flex-wrap gap-6 mb-12 p-8 bg-gray-50 rounded-[2.5rem] items-end border border-white">
-                    <div class="flex-1 min-w-[280px]">
-                        <label class="block text-xs font-black text-gray-400 mb-2 uppercase">اسم المنتج الجديد</label>
-                        <input v-model="catalogForm.name" required class="w-full p-4 bg-white border-none rounded-2xl shadow-inner outline-none font-black text-[#142952]">
-                    </div>
-                    <div class="w-48">
-                        <label class="block text-xs font-black text-gray-400 mb-2 uppercase">السعر (SAR)</label>
-                        <input v-model.number="catalogForm.price" required type="number" class="w-full p-4 bg-white border-none rounded-2xl shadow-inner outline-none font-black text-green-600">
-                    </div>
-                    <button type="submit" class="bg-[#142952] text-white px-10 py-4 rounded-2xl font-black shadow-lg transition-transform hover:scale-105">إضافة للمتجر</button>
-                </form>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div v-for="item in catalog" :key="item.id" class="p-8 bg-white border-2 border-gray-50 rounded-2xl flex justify-between items-center hover:shadow-xl transition-all">
-                        <div>
-                            <h5 class="font-black text-[#142952] text-lg">{{ item.name }}</h5>
-                            <p class="text-blue-600 font-black text-lg mt-1">{{ item.price }} SAR</p>
-                        </div>
-                        <button @click="deleteCatalogItem(item)" class="text-red-400 p-4 hover:bg-red-50 rounded-2xl transition-colors">
-                            <i data-lucide="trash-2" class="w-6 h-6"></i>
-                        </button>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <div id="capture-area" dir="rtl">
-            <div v-for="invoice in bulkList" :key="invoice.orderId" :id="'inv-' + invoice.orderId" class="invoice-a4">
-                
-                <div class="flex justify-between items-center mb-4 border-b-2 border-gray-100 pb-3">
-                    <div class="w-20 h-20 bg-white flex items-center justify-center p-2 rounded-xl">
-                        <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
-                    </div>
-                    <div class="text-center">
-                        <h1 class="text-3xl font-black text-[#142952]">فاتورة</h1>
-                    </div>
-                    <div class="text-left font-black text-[11px] space-y-0.5">
-                        <p class="text-2xl text-[#142952] pb-1">رقم الفاتورة : #{{ invoice.orderId }}</p>
-                        <p>تاريخ الطلب : {{ formatDateLong(invoice.timestamp) }}</p>
-                        <p>الرقم الضريبي : 310236446600003</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mb-4 text-[11px]">
-                    <div class="inv-info-box space-y-1">
-                        <span class="text-gray-400 font-bold">مصدرة إلى :</span>
-                        <p class="font-black text-base text-gray-900">{{ invoice.client?.name }}</p>
-                        <p class="font-black text-[#142952] text-sm">{{ invoice.client?.address }}</p>
-                        <p class="font-bold text-gray-600">المملكة العربية السعودية، {{ invoice.client?.city }}</p>
-                        <p dir="ltr" class="font-black text-sm">{{ invoice.client?.phone }}</p>
-                    </div>
-                    <div class="inv-info-box text-left space-y-1 border-r-4 border-[#142952]">
-                        <span class="text-gray-400 font-bold">مصدرة من :</span>
-                        <p class="font-black text-sm text-[#142952]">المتجر الإلكتروني: هوية بيتك</p>
-                        <p class="font-bold">المملكة العربية السعودية، الرياض</p>
-                        <p class="font-bold">المعيقلية، الديرة، SA</p>
-                        <p class="text-blue-600 font-bold">hwytbytk@gmail.com</p>
-                        <p dir="ltr" class="font-black">+966 54 478 2301</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 border-y py-3 mb-4 text-[11px]">
-                    <div class="space-y-2">
-                        <span class="text-gray-400 font-bold">تفاصيل الدفع :</span>
-                        <div class="flex justify-between font-bold">
-                            <span>المبلغ الإجمالي :</span>
-                            <span class="font-black text-[#142952]">SAR {{ invoice.totalAmount }}</span>
-                        </div>
-                        <div class="flex justify-between font-bold">
-                            <span>طريقة السداد :</span>
-                            <span class="font-black">مدى / أونلاين</span>
-                        </div>
-                    </div>
-                    <div class="text-left space-y-2">
-                        <span class="text-gray-400 font-bold">تفاصيل الشحن :</span>
-                        <div class="flex flex-row-reverse gap-4 font-bold">
-                            <div class="text-right space-y-1 text-gray-500">
-                                <p>بواسطة :</p>
-                                <p>أيام الشحن المتوقعة :</p>
-                            </div>
-                            <div class="text-left space-y-1 font-black text-[#142952]">
-                                <p>مندوبنا</p>
-                                <p>(7 - 12 يوم عمل)</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <table class="inv-table">
-                    <thead>
-                        <tr>
-                            <th class="rounded-tr-lg">وصف المنتج والخيارات المخصصة</th>
-                            <th class="text-center w-16">الكمية</th>
-                            <th class="text-center w-24">السعر</th>
-                            <th class="text-left rounded-tl-lg w-24">المجموع</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="p in invoice.products" :key="p.id">
-                            <td>
-                                <div class="flex gap-3">
-                                    <div class="w-12 h-12 bg-gray-50 border rounded-lg flex items-center justify-center p-1 shrink-0">
-                                        <img :src="'products/' + p.name + '.webp'" 
-                                             :data-name="p.name"
-                                             onerror="if(!this.dataset.j){this.dataset.j=1; this.src='products/'+this.dataset.name+'.jpg';}else if(!this.dataset.p){this.dataset.p=1; this.src='products/'+this.dataset.name+'.png';}else{this.onerror=null;this.src='logo1.png';}"
-                                             class="w-full h-full object-contain rounded-md">
-                                    </div>
-                                    <div class="space-y-1 flex-1">
-                                        <p class="font-black text-sm text-gray-900">{{ p.name }} <span v-if="p.villaNo" class="text-[10px] text-gray-400 font-bold">(فيلا {{ p.villaNo }})</span></p>
-                                        <div class="text-[10px] bg-blue-50/50 p-2 rounded-lg border border-blue-100 space-y-0.5">
-                                            <p class="font-black text-[#142952]">الخيارات: 
-                                                <span class="font-normal text-black ml-2">• اللون: <span class="font-black">{{ p.color === 'silver' ? 'فضي' : 'ذهبي' }}</span></span>
-                                                <span v-if="p.nationalAddress" class="font-normal text-black ml-2">• العنوان الوطني: <span class="font-black">{{ p.nationalAddress }}</span></span>
-                                                <span v-if="p.customName" class="font-normal text-black ml-2">• الاسم: <span class="font-black text-blue-700 italic">{{ p.customName }}</span></span>
-                                                <span v-if="p.notes" class="font-normal text-gray-500 ml-2 italic">• ملاحظة: {{ p.notes }}</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="text-center font-black text-sm bg-gray-50/30 align-middle">{{ p.count }}</td>
-                            <td class="text-center font-bold text-xs align-middle">SAR {{ p.price }}</td>
-                            <td class="text-left font-black text-sm text-[#142952] align-middle">SAR {{ p.price * p.count }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="mt-4 mr-auto w-80 space-y-1.5 border-t pt-3 text-xs">
-                    <div class="flex justify-between font-bold text-gray-500">
-                        <span>مجموع المنتجات</span>
-                        <span class="font-black text-black">SAR {{ (invoice.subTotal || invoice.totalAmount).toFixed(2) }}</span>
-                    </div>
-                    <div v-if="invoice.discountRate > 0" class="flex justify-between font-bold text-red-500">
-                        <span>الخصم ({{ invoice.discountRate }}%)</span>
-                        <span class="font-black text-red-600">- SAR {{ (((invoice.subTotal || invoice.totalAmount) * invoice.discountRate) / 100).toFixed(2) }}</span>
-                    </div>
-                    <div class="flex justify-between font-bold text-green-600">
-                        <span>تكلفة التوصيل</span>
-                        <span class="font-black underline decoration-2">مجاناً</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center bg-[#142952] text-white p-3 rounded-xl font-black text-lg shadow-md mt-2 relative">
-                        <div class="flex items-center gap-3">
-                            <span>إجمالي الطلب</span>
-                            <div v-if="invoice.isPaid" class="flex items-center gap-1.5 bg-green-100 text-green-700 px-2 py-1 rounded-lg border border-green-300">
-                                <span class="text-[10px] font-black">✓ تم الدفع</span>
-                                <img v-if="invoice.receiptImage" :src="invoice.receiptImage" class="w-6 h-6 rounded border border-green-400 object-cover bg-white">
-                            </div>
-                            <div v-else class="flex items-center gap-1.5 bg-red-100 text-red-700 px-2 py-1 rounded-lg border border-red-300">
-                                <span class="text-[10px] font-black">✗ غير مدفوع</span>
-                            </div>
-                        </div>
-                        <span>SAR {{ invoice.totalAmount }}</span>
-                    </div>
-                </div>
-
-                <div class="absolute bottom-6 left-12 right-12 text-center border-t border-gray-200 pt-3 bg-white">
-                    <p class="text-gray-400 font-black italic text-[11px] mb-2">شكراً لثقتكم بهوية بيتك - نسعد بخدمتكم دائماً</p>
-                    <div class="flex justify-center gap-8 text-[9px] font-bold text-gray-500">
-                        <p>📞 +966 54 478 2301</p>
-                        <p>📧 hwytbytk@gmail.com</p>
-                        <p>🌐 المتجر الإلكتروني: هوية بيتك</p>
-                    </div>
-                </div>
             </div>
-        </div>
+
+        </template>
     </div>
 
     <script type="module">
         const { createApp, ref, computed, onMounted, watchEffect, nextTick } = Vue;
-
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzpjCLgmN9nSJlHsTbrLPE33I76hJAF3boosakQImQ1IGo_mb8SdHJx-OjQ4BB0AD1X/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbws2JgKrGe2NlJ1EbJ7B0XVsM9hHyux5BIqU9J5tihySp5bPDYyWvok30tDgHcrDe3C/exec";
 
         createApp({
             setup() {
+                /* ================= STATE ================= */
+                // Auth & Global UI
+                const currentUser = ref(JSON.parse(localStorage.getItem('hwayt_user')) || null);
+                const authLoading = ref(false);
+                const loginForm = ref({ username: '', password: '' });
                 const activeTab = ref('create');
-                const orders = ref(JSON.parse(localStorage.getItem('hwayt_orders_v7') || '[]'));
+                const notification = ref(null);
                 const loading = ref(false);
                 const syncLoading = ref(false);
-                const notification = ref(null);
-                const searchQuery = ref('');
-                const filterDate = ref(new Date().toISOString().split('T')[0]);
                 
-                const filterPaymentStatus = ref('all'); 
-                
-                const isSaving = ref(false);
-                const isSuccess = ref(false);
+                // Data Store
+                const orders = ref(JSON.parse(localStorage.getItem('hwayt_orders_v8') || '[]'));
+                const accounts = ref(JSON.parse(localStorage.getItem('hwayt_accounts_v8') || '[]'));
+                const catalog = ref([]);
                 const bulkList = ref([]);
                 const editingOrder = ref(null);
-                const receiptInput = ref(null);
-
-                const staticPrices = {
-                    1: 149, 2: 149, 3: 199, 4: 199, 5: 225, 6: 225, 7: 249, 8: 229, 9: 215, 10: 225,
-                    11: 149, 12: 225, 13: 225, 14: 126, 15: 166, 16: 235, 17: 199, 18: 218, 19: 299, 20: 299,
-                    21: 344, 22: 344, 23: 344, 24: 344, 25: 288, 26: 259, 27: 219, 28: 288, 29: 219, 30: 259,
-                    34: 219, 35: 299, 36: 219, 37: 219, 38: 219, 39: 288, 40: 199, 41: 199, 42: 199, 43: 199,
-                    44: 249, 46:299, 47: 288, 48: 288, 49: 288, 50: 288, 51: 288
-                };
-                const defaultDesigns = Array.from({length: 51}, (_, i) => ({
-                    id: `design-${i+1}`,
-                    name: `design-${i+1}`,
-                    price: staticPrices[i+1] || 199
-                }));
-                const catalog = ref(defaultDesigns);
+                
+                // Form States
+                const orderForm = ref({ managerCode: '', discountRate: 0, isPaid: false, receiptImage: null, client: { name: '', city: '', address: '', phone: '+966' }, products: [{ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 }] });
                 const catalogForm = ref({ name: '', price: '' });
+                
+                // Filters & Reports
+                const searchQuery = ref('');
+                const filterDate = ref(new Date().toISOString().split('T')[0]);
+                const filterPaymentStatus = ref('all');
+                const reportStartDate = ref(new Date(new Date().setDate(1)).toISOString().split('T')[0]);
+                const reportEndDate = ref(new Date().toISOString().split('T')[0]);
+                const receiptInput = ref(null);
+                const isSaving = ref(false);
+                const isSuccess = ref(false);
 
-                const orderForm = ref({
-                    managerCode: '',
-                    discountRate: 0,
-                    isPaid: false, 
-                    receiptImage: null,
-                    client: { name: '', city: '', address: '', phone: '+966' },
-                    products: [{ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 }]
-                });
+                // Default Catalog Mapping (Fallback)
+                const staticPrices = { 1: 149, 2: 149, 3: 199, 4: 199, 5: 225, 6: 225, 7: 249, 8: 229, 9: 215, 10: 225, 11: 149, 12: 225, 13: 225, 14: 126, 15: 166, 16: 235, 17: 199, 18: 218, 19: 299, 20: 299, 21: 344, 22: 344, 23: 344, 24: 344, 25: 288, 26: 259, 27: 219, 28: 288, 29: 219, 30: 259, 34: 219, 35: 299, 36: 219, 37: 219, 38: 219, 39: 288, 40: 199, 41: 199, 42: 199, 43: 199, 44: 249, 46:299, 47: 288, 48: 288, 49: 288, 50: 288, 51: 288 };
+                catalog.value = Array.from({length: 51}, (_, i) => ({ id: `design-${i+1}`, name: `design-${i+1}`, price: staticPrices[i+1] || 199 }));
 
                 let notifyTimeout = null;
+
+                /* ================= COMPUTED ================= */
+                
+                const filteredOrders = computed(() => {
+                    let list = orders.value;
+                    // Access Control Filter
+                    if (currentUser.value?.role !== 'admin') {
+                        list = list.filter(o => o.managerCode === currentUser.value?.managerCode);
+                    }
+                    // Search Query Filter
+                    const q = (searchQuery.value || '').toString().toUpperCase();
+                    const queryPhone = q.replace(/[\s+]/g, '').replace(/^05/, '5');
+                    
+                    return list.filter(o => {
+                        const matchId = String(o.orderId || '').toUpperCase().includes(q);
+                        const matchName = String(o.client?.name || "").includes(q);
+                        const orderPhone = String(o.client?.phone || "").replace(/[\s+]/g, '').replace(/^05/, '5');
+                        const matchPhone = queryPhone && orderPhone.includes(queryPhone);
+                        return matchId || matchName || matchPhone;
+                    }).sort((a,b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+                });
+
+                const filteredByDateOrders = computed(() => {
+                    let list = orders.value;
+                    if (currentUser.value?.role !== 'admin') {
+                        list = list.filter(o => o.managerCode === currentUser.value?.managerCode);
+                    }
+                    return list.filter(o => {
+                        const dateMatch = (o.timestamp || "").split('T')[0] === filterDate.value;
+                        let statusMatch = true;
+                        if (filterPaymentStatus.value === 'paid') statusMatch = o.isPaid === true;
+                        if (filterPaymentStatus.value === 'unpaid') statusMatch = o.isPaid !== true;
+                        return dateMatch && statusMatch;
+                    });
+                });
+
+                const filteredAccounts = computed(() => {
+                    const start = new Date(reportStartDate.value).getTime();
+                    const end = new Date(reportEndDate.value).getTime() + 86400000; // include full end day
+                    return accounts.value.filter(a => {
+                        const t = new Date(a.timestamp).getTime();
+                        return t >= start && t <= end;
+                    }).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+                });
+
+                const reportStats = computed(() => {
+                    const accs = filteredAccounts.value;
+                    let totalOrders = accs.length;
+                    let totalRevenue = 0, paidCount = 0, unpaidCount = 0;
+                    accs.forEach(a => {
+                        totalRevenue += parseFloat(a.totalAmount) || 0;
+                        if(a.isPaid) paidCount++; else unpaidCount++;
+                    });
+                    return { totalOrders, totalRevenue, paidCount, unpaidCount };
+                });
+
+
+                /* ================= METHODS: AUTH ================= */
+                
+                const login = async () => {
+                    authLoading.value = true;
+                    try {
+                        const res = await fetch(GOOGLE_SCRIPT_URL, {
+                            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify({ action: 'login', username: loginForm.value.username, password: loginForm.value.password })
+                        });
+                        const data = await res.json();
+                        if (data.result === 'success') {
+                            currentUser.value = data.user;
+                            localStorage.setItem('hwayt_user', JSON.stringify(data.user));
+                            orderForm.value.managerCode = data.user.managerCode;
+                            showNotify(`تم تسجيل الدخول بنجاح، أهلاً بك ${data.user.username}`);
+                            syncFromSheet(); // Load data after login
+                        } else {
+                            showNotify('بيانات الدخول غير صحيحة', 'error');
+                        }
+                    } catch (e) {
+                        showNotify('خطأ في الاتصال بالخادم', 'error');
+                    } finally {
+                        authLoading.value = false;
+                    }
+                };
+
+                const logout = () => {
+                    currentUser.value = null;
+                    localStorage.removeItem('hwayt_user');
+                    localStorage.removeItem('hwayt_orders_v8');
+                    localStorage.removeItem('hwayt_accounts_v8');
+                    orders.value = [];
+                    accounts.value = [];
+                    loginForm.value = { username: '', password: '' };
+                };
+
+
+                /* ================= METHODS: HELPERS ================= */
+
                 const showNotify = (msg, type = 'success') => {
                     if (notifyTimeout) clearTimeout(notifyTimeout);
                     notification.value = { msg, type };
-                    if (type !== 'info') {
-                        notifyTimeout = setTimeout(() => notification.value = null, 4000);
-                    }
-                    setTimeout(() => lucide.createIcons(), 50);
+                    if (type !== 'info') notifyTimeout = setTimeout(() => notification.value = null, 4000);
+                    nextTick(() => setTimeout(() => lucide.createIcons(), 50));
                 };
 
                 const setTab = (t) => {
                     activeTab.value = t;
                     if (t !== 'create') cancelEdit();
-                    setTimeout(() => lucide.createIcons(), 50);
+                    nextTick(() => setTimeout(() => lucide.createIcons(), 50));
                 };
 
-                const addProductRow = () => {
-                    orderForm.value.products.push({ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 });
-                };
+                const formatDate = (ts) => ts ? new Date(ts).toLocaleDateString('ar-SA') : '-';
+                const formatDateLong = (ts) => ts ? new Date(ts).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+                const formatTime = (ts) => ts ? new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '-';
 
+                /* ================= METHODS: ORDERS (CALC & FORM) ================= */
+
+                const calculateSubTotal = () => orderForm.value.products.reduce((sum, p) => sum + (p.price * p.count), 0);
+                const calculateDiscount = () => (calculateSubTotal() * (orderForm.value.discountRate || 0)) / 100;
+                const calculateTotal = () => Math.round(calculateSubTotal() - calculateDiscount());
+
+                const addProductRow = () => orderForm.value.products.push({ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 });
                 const removeProductRow = (idx) => orderForm.value.products.splice(idx, 1);
-
+                
                 const syncProductData = (p) => {
                     const item = catalog.value.find(c => c.id === p.productId);
-                    if (item) { 
-                        p.name = item.name; 
-                        p.basePrice = item.price; 
-                        updatePrice(p);
-                    }
+                    if (item) { p.name = item.name; p.basePrice = item.price; updatePrice(p); }
                 };
-
-                const updatePrice = (p) => {
-                    if (p.basePrice !== undefined) {
-                        p.price = p.color === 'gold' ? p.basePrice + 19 : p.basePrice;
-                    }
-                };
+                
+                const updatePrice = (p) => { if (p.basePrice !== undefined) p.price = p.color === 'gold' ? p.basePrice + 19 : p.basePrice; };
 
                 const handleReceiptUpload = (e) => {
                     const file = e.target.files[0];
@@ -608,13 +778,9 @@
                         const img = new Image();
                         img.onload = () => {
                             const canvas = document.createElement('canvas');
-                            const MAX_WIDTH = 400; 
-                            let scaleSize = 1;
-                            if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
-                            canvas.width = img.width * scaleSize;
-                            canvas.height = img.height * scaleSize;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            let scaleSize = img.width > 400 ? 400 / img.width : 1;
+                            canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
+                            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                             orderForm.value.receiptImage = canvas.toDataURL('image/jpeg', 0.5); 
                             orderForm.value.isPaid = true;
                         };
@@ -623,71 +789,78 @@
                     reader.readAsDataURL(file);
                 };
 
-                const calculateSubTotal = () => orderForm.value.products.reduce((sum, p) => sum + (p.price * p.count), 0);
-                const calculateDiscount = () => (calculateSubTotal() * (orderForm.value.discountRate || 0)) / 100;
-                const calculateTotal = () => Math.round(calculateSubTotal() - calculateDiscount());
+                const cancelEdit = () => {
+                    editingOrder.value = null;
+                    if (receiptInput.value) receiptInput.value.value = ''; 
+                    orderForm.value = {
+                        managerCode: currentUser.value?.managerCode || '', discountRate: 0, isPaid: false, receiptImage: null,
+                        client: { name: '', city: '', address: '', phone: '+966' },
+                        products: [{ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 }]
+                    };
+                };
+
+                const editOrder = (order) => {
+                    editingOrder.value = order;
+                    orderForm.value = {
+                        managerCode: order.managerCode || currentUser.value?.managerCode, discountRate: order.discountRate || 0,
+                        isPaid: order.isPaid || false, receiptImage: order.receiptImage || null,
+                        client: JSON.parse(JSON.stringify(order.client)), products: JSON.parse(JSON.stringify(order.products))
+                    };
+                    if (receiptInput.value) receiptInput.value.value = ''; 
+                    orderForm.value.products.forEach(p => {
+                        if(!p.basePrice) p.basePrice = p.color === 'gold' ? p.price - 19 : p.price;
+                        if(!p.productId) p.productId = p.name;
+                    });
+                    setTab('create');
+                };
+
+                /* ================= METHODS: API & SYNC ================= */
 
                 const saveOrder = async () => {
-                    isSaving.value = true;
-                    isSuccess.value = false;
-                    showNotify('جاري تسجيل الطلب في السحاب...', 'info');
+                    isSaving.value = true; isSuccess.value = false;
+                    showNotify('جاري التسجيل في السحاب...', 'info');
                     
-                    const mCode = (orderForm.value.managerCode || 'XX').toUpperCase().substring(0,2);
-                    const orderId = editingOrder.value ? editingOrder.value.orderId : (`${mCode}-` + Math.floor(100000 + Math.random() * 900000).toString());
+                    const subT = calculateSubTotal();
+                    const disRate = orderForm.value.discountRate || 0;
+                    const disValue = calculateDiscount();
+                    const finalTotal = calculateTotal();
+                    const mCode = (orderForm.value.managerCode || currentUser.value.managerCode).toUpperCase();
+                    const oid = editingOrder.value ? editingOrder.value.orderId : (`${mCode}-` + Math.floor(100000 + Math.random() * 900000).toString());
                     
                     const payload = {
-                        orderId,
-                        managerCode: orderForm.value.managerCode,
-                        discountRate: orderForm.value.discountRate || 0,
-                        isPaid: orderForm.value.isPaid,
-                        receiptImage: orderForm.value.receiptImage || "", 
-                        subTotal: calculateSubTotal(),
+                        orderId: oid, managerCode: mCode, discountRate: disRate, discountValue: disValue,
+                        isPaid: orderForm.value.isPaid, receiptImage: orderForm.value.receiptImage || "", 
+                        subTotal: subT, totalAmount: finalTotal,
                         client: JSON.parse(JSON.stringify(orderForm.value.client)),
                         products: JSON.parse(JSON.stringify(orderForm.value.products)),
-                        totalAmount: calculateTotal(),
                         timestamp: editingOrder.value ? editingOrder.value.timestamp : new Date().toISOString(),
-                        action: editingOrder.value ? 'update' : 'create',
-                        target: 'orders'
+                        action: editingOrder.value ? 'update' : 'create', target: 'orders'
                     };
 
                     try {
                         const response = await fetch(GOOGLE_SCRIPT_URL, { 
-                            method: 'POST', 
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                             body: JSON.stringify(payload) 
                         });
-                        
                         const result = await response.json();
                         
-                        if (result.result === "success" || result.status === "success") {
-                            if (editingOrder.value) {
-                                const idx = orders.value.findIndex(o => o.orderId === editingOrder.value.orderId);
-                                if (idx !== -1) orders.value[idx] = payload;
-                            } else {
-                                orders.value.unshift(payload);
-                            }
-                            localStorage.setItem('hwayt_orders_v7', JSON.stringify(orders.value));
+                        if (result.result === "success") {
+                            // Update Local
+                            const idx = orders.value.findIndex(o => o.orderId === oid);
+                            if (idx !== -1) orders.value[idx] = payload; else orders.value.unshift(payload);
+                            localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
 
-                            showNotify('تم تسجيل الطلب في السحاب بنجاح!', 'success');
-                            
-                            // تحويل الزرار لعلامة الصح الخضراء
+                            showNotify('تم الحفظ بنجاح!', 'success');
                             isSuccess.value = true;
-                            nextTick(() => setTimeout(() => lucide.createIcons(), 50));
                             
-                            // الانتظار ثانيتين وبعدين تصفير الفورم والبقاء في نفس الصفحة
                             setTimeout(() => {
                                 isSuccess.value = false;
                                 cancelEdit();
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             }, 2500);
-
-                        } else {
-                            throw new Error("السيرفر رفض الحفظ");
-                        }
-
+                        } else throw new Error("السيرفر رفض الحفظ");
                     } catch (e) {
-                        console.error("Cloud Error:", e);
-                        showNotify("حدث خطأ أثناء الاتصال بالسحاب. يرجى المحاولة مرة أخرى", "error");
+                        showNotify("حدث خطأ أثناء الاتصال. حاول مرة أخرى", "error");
                     } finally { 
                         isSaving.value = false; 
                     }
@@ -696,95 +869,75 @@
                 const deleteOrder = async (order) => {
                     if (confirm(`حذف الطلب ${order.orderId} نهائياً؟`)) {
                         orders.value = orders.value.filter(o => o.orderId !== order.orderId);
-                        localStorage.setItem('hwayt_orders_v7', JSON.stringify(orders.value));
-                        
+                        localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
                         try {
                             await fetch(GOOGLE_SCRIPT_URL, { 
-                                method: 'POST', 
-                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                                 body: JSON.stringify({ action: 'delete', orderId: order.orderId, target: 'orders' }) 
                             });
-                            showNotify("تم الحذف بنجاح من النظام والسحاب");
-                        } catch(e) {
-                            showNotify("تم الحذف محلياً فقط (يوجد مشكلة في السحاب)", "error");
-                        }
+                            showNotify("تم الحذف بنجاح");
+                        } catch(e) { showNotify("تم الحذف محلياً فقط", "error"); }
                     }
-                };
-                
-                const editOrder = (order) => {
-                    editingOrder.value = order;
-                    orderForm.value = {
-                        managerCode: order.managerCode || order.orderId.split('-')[0] || '',
-                        discountRate: order.discountRate || 0,
-                        isPaid: order.isPaid || false,
-                        receiptImage: order.receiptImage || null,
-                        client: JSON.parse(JSON.stringify(order.client)),
-                        products: JSON.parse(JSON.stringify(order.products))
-                    };
-                    
-                    if (receiptInput.value) receiptInput.value.value = ''; 
-                    
-                    orderForm.value.products.forEach(p => {
-                        if(!p.basePrice) p.basePrice = p.color === 'gold' ? p.price - 19 : p.price;
-                        if(!p.productId) p.productId = p.name;
-                    });
-                    
-                    setTab('create');
-                };
-
-                const cancelEdit = () => {
-                    editingOrder.value = null;
-                    if (receiptInput.value) receiptInput.value.value = ''; 
-                    orderForm.value = {
-                        managerCode: '',
-                        discountRate: 0,
-                        isPaid: false,
-                        receiptImage: null,
-                        client: { name: '', city: '', address: '', phone: '+966' },
-                        products: [{ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', price: 0, basePrice: 0 }]
-                    };
                 };
 
                 const syncFromSheet = async () => {
+                    if (!currentUser.value) return;
                     syncLoading.value = true;
                     try {
                         const res = await fetch(GOOGLE_SCRIPT_URL);
                         const result = await res.json();
                         
+                        // Parse Orders
                         const grouped = {};
                         result.orders.forEach(row => {
-                            const oid = row['رقم الطلب'] || row['رقم الطلب '] || row['رقم الطلب'];
+                            const oid = row['رقم الطلب'] || row['رقم الطلب '] || '';
                             if (!oid) return;
                             if (!grouped[oid]) {
                                 grouped[oid] = {
                                     orderId: oid,
-                                    managerCode: oid.split('-')[0] || 'XX',
-                                    isPaid: row['حالة الدفع'] === 'تم الدفع' || row['حالة الدفع '] === 'تم الدفع',
-                                    receiptImage: row['صورة الإيصال'] || row['صورة الايصال'] || row['صورة الإيصال '] || null, 
-                                    client: { 
-                                        name: row['العميل'] || '', 
-                                        city: row['المدينة'] || '', 
-                                        phone: row['الجوال'] || '', 
-                                        address: row['العنوان بالتفصيل'] || row['العنوان بالتفصيل '] || row['العنوان'] || '' 
-                                    },
-                                    products: [], totalAmount: 0, subTotal: 0, discountRate: 0,
+                                    managerCode: row['كود المسؤول'] || oid.split('-')[0] || 'XX',
+                                    isPaid: row['حالة الدفع'] === 'تم الدفع',
+                                    receiptImage: row['صورة الإيصال'] || null, 
+                                    discountRate: parseFloat(row['نسبة الخصم']) || 0,
+                                    discountValue: parseFloat(row['قيمة الخصم']) || 0,
+                                    client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: row['الجوال'] || '', address: row['العنوان بالتفصيل'] || '' },
+                                    products: [], totalAmount: parseFloat(row['المبلغ الإجمالي']) || 0, subTotal: 0,
                                     timestamp: row['التاريخ'] || new Date().toISOString()
                                 };
                             }
-                            const p = {
-                                productId: row['المنتج'],
-                                name: row['المنتج'], color: row['اللون'], count: parseInt(row['العدد'] || 1), 
-                                price: parseFloat(row['السعر الفردي'] || 0), nationalAddress: row['العنوان الوطني'] || '',
-                                villaNo: row['رقم الفيلا'] || '', customName: row['الاسم المخصص'] || '', notes: row['ملاحظات'] || ''
-                            };
+                            const p = { productId: row['المنتج'], name: row['المنتج'], color: row['اللون'], count: parseInt(row['العدد'] || 1), price: parseFloat(row['السعر الفردي'] || 0), nationalAddress: row['العنوان الوطني'] || '', villaNo: row['رقم الفيلا'] || '', customName: row['الاسم المخصص'] || '', notes: row['ملاحظات'] || '' };
                             p.basePrice = p.color === 'gold' ? p.price - 19 : p.price;
                             grouped[oid].products.push(p);
-                            grouped[oid].totalAmount += (p.price * p.count);
-                            grouped[oid].subTotal = grouped[oid].totalAmount;
+                            grouped[oid].subTotal += (p.price * p.count);
+                            // Fallback if totalAmount missing
+                            if(!grouped[oid].totalAmount && grouped[oid].totalAmount !== 0) {
+                                grouped[oid].totalAmount = grouped[oid].subTotal - grouped[oid].discountValue;
+                            }
                         });
                         orders.value = Object.values(grouped).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
-                        localStorage.setItem('hwayt_orders_v7', JSON.stringify(orders.value));
-                        showNotify("تمت المزامنة الكاملة من السحاب");
+                        localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
+
+                        // Parse Accounts
+                        if(result.accounts) {
+                            accounts.value = result.accounts.map(a => ({
+                                orderId: a['رقم الطلب'],
+                                managerCode: a['كود المسؤول'],
+                                clientName: a['العميل'],
+                                discountRate: parseFloat(a['نسبة الخصم']) || 0,
+                                discountValue: parseFloat(a['قيمة الخصم']) || 0,
+                                totalAmount: parseFloat(a['المبلغ الإجمالي']) || 0,
+                                timestamp: a['التاريخ'],
+                                isPaid: a['حالة الدفع'] === 'تم الدفع'
+                            }));
+                            localStorage.setItem('hwayt_accounts_v8', JSON.stringify(accounts.value));
+                        }
+
+                        // Parse Catalog
+                        if (result.catalog && result.catalog.length > 0) {
+                            catalog.value = result.catalog.map(c => ({ id: c.id, name: c.name, price: c.price }));
+                        }
+
+                        showNotify("تمت المزامنة الكاملة");
                     } catch (e) {
                         showNotify("خطأ في المزامنة السحابية", "error");
                     } finally { syncLoading.value = false; }
@@ -793,137 +946,83 @@
                 const saveCatalogItem = async () => {
                     const newItem = { id: Date.now().toString(), ...catalogForm.value, action: 'create', target: 'catalog' };
                     catalog.value.push(newItem);
-                    showNotify("تمت إضافة المنتج بنجاح (محلياً)");
+                    showNotify("تمت الإضافة");
                     catalogForm.value = { name: '', price: '' };
                 };
-
                 const deleteCatalogItem = (item) => {
-                    if (confirm("حذف المنتج من الكتالوج؟")) {
-                        catalog.value = catalog.value.filter(i => i.id !== item.id);
-                        showNotify("تم حذف المنتج");
-                    }
+                    if (confirm("حذف المنتج؟")) { catalog.value = catalog.value.filter(i => i.id !== item.id); showNotify("تم الحذف"); }
                 };
 
-                const generatePDFBlob = async (orderId) => {
+                /* ================= METHODS: PRINTING & PDF ================= */
+
+                const generatePDFBlob = async (elementId, layout='p') => {
                     const { jsPDF } = window.jspdf;
-                    const element = document.getElementById('inv-' + orderId);
-                    const canvas = await html2canvas(element, { 
-                        scale: 2, 
-                        useCORS: true,
-                        allowTaint: true,
-                        backgroundColor: '#ffffff'
-                    });
-                    const imgData = canvas.toDataURL('image/png');
-                    const pdf = new jsPDF('p', 'mm', 'a4');
-                    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+                    const element = document.getElementById(elementId);
+                    const canvas = await html2canvas(element, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
+                    const pdf = new jsPDF(layout, 'mm', 'a4');
+                    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
                     return pdf;
                 };
 
-                const viewInvoice = (order) => {
-                    bulkList.value = [order];
-                    nextTick(() => setTimeout(() => window.print(), 800));
-                };
+                const viewInvoice = (order) => { bulkList.value = [order]; nextTick(() => setTimeout(() => window.print(), 800)); };
+                const printBulk = () => { if (filteredByDateOrders.value.length === 0) return; bulkList.value = filteredByDateOrders.value; nextTick(() => setTimeout(() => window.print(), 800)); };
 
                 const downloadBulkPDF = async () => {
                     if (filteredByDateOrders.value.length === 0) return showNotify("لا يوجد فواتير", "error");
                     const { jsPDF } = window.jspdf;
                     const finalPDF = new jsPDF('p', 'mm', 'a4');
-                    loading.value = true;
-                    showNotify("جاري بناء الملف المجمع (يرجى الانتظار)...");
-                    
+                    loading.value = true; showNotify("جاري بناء الملف المجمع...");
                     for (let i = 0; i < filteredByDateOrders.value.length; i++) {
-                        const order = filteredByDateOrders.value[i];
-                        bulkList.value = [order];
-                        await nextTick();
-                        await new Promise(r => setTimeout(r, 300));
+                        const order = filteredByDateOrders.value[i]; bulkList.value = [order];
+                        await nextTick(); await new Promise(r => setTimeout(r, 300));
                         const canvas = await html2canvas(document.getElementById('inv-' + order.orderId), { scale: 1.5 });
-                        const img = canvas.toDataURL('image/png');
                         if (i > 0) finalPDF.addPage();
-                        finalPDF.addImage(img, 'PNG', 0, 0, 210, 297);
+                        finalPDF.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
                     }
-                    finalPDF.save(`فواتير_هوية_بيتك_${filterDate.value}.pdf`);
-                    loading.value = false;
+                    finalPDF.save(`فواتير_${filterDate.value}.pdf`); loading.value = false;
                 };
 
                 const downloadZIP = async () => {
                     if (filteredByDateOrders.value.length === 0) return showNotify("لا يوجد فواتير", "error");
-                    const zip = new JSZip();
-                    loading.value = true;
-                    showNotify("جاري بناء الملفات المنفصلة...");
-
+                    const zip = new JSZip(); loading.value = true; showNotify("جاري ضغط الملفات...");
                     for (const order of filteredByDateOrders.value) {
-                        bulkList.value = [order];
-                        await nextTick();
-                        await new Promise(r => setTimeout(r, 300));
-                        const pdf = await generatePDFBlob(order.orderId);
+                        bulkList.value = [order]; await nextTick(); await new Promise(r => setTimeout(r, 300));
+                        const pdf = await generatePDFBlob('inv-' + order.orderId);
                         zip.file(`${order.orderId}.pdf`, pdf.output('blob'));
                     }
-                    
-                    zip.generateAsync({type:"blob"}).then(content => {
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(content);
-                        link.download = `فواتير_هوية_بيتك_${filterDate.value}.zip`;
-                        link.click();
-                        loading.value = false;
+                    zip.generateAsync({type:"blob"}).then(c => {
+                        const link = document.createElement('a'); link.href = URL.createObjectURL(c);
+                        link.download = `فواتير_مفصلة_${filterDate.value}.zip`; link.click(); loading.value = false;
                     });
                 };
 
-                const printBulk = () => {
-                    if (filteredByDateOrders.value.length === 0) return showNotify("لا يوجد فواتير اليوم", "error");
-                    bulkList.value = filteredByDateOrders.value;
-                    nextTick(() => setTimeout(() => window.print(), 800));
+                const downloadReportPDF = async () => {
+                    loading.value = true; showNotify("جاري تصدير التقرير...");
+                    await nextTick(); await new Promise(r => setTimeout(r, 500));
+                    const pdf = await generatePDFBlob('report-pdf-content');
+                    pdf.save(`تقرير_مالي_${reportStartDate.value}.pdf`);
+                    loading.value = false;
                 };
 
-                const filteredOrders = computed(() => {
-                    const q = (searchQuery.value || '').toString().toUpperCase();
-                    
-                    const rawSearchPhone = (searchQuery.value || '').toString().replace(/[\s+]/g, '');
-                    const queryPhone = rawSearchPhone.startsWith('05') ? rawSearchPhone.substring(1) : rawSearchPhone;
-
-                    return orders.value.filter(o => {
-                        const matchId = String(o.orderId || '').toUpperCase().includes(q);
-                        const matchName = String(o.client?.name || "").includes(searchQuery.value || '');
-                        
-                        let matchPhone = false;
-                        if (o.client && o.client.phone) {
-                            const rawOrderPhone = String(o.client.phone).replace(/[\s+]/g, '');
-                            const orderPhone = rawOrderPhone.startsWith('05') ? rawOrderPhone.substring(1) : rawOrderPhone;
-                            if (queryPhone.length > 0 && orderPhone.includes(queryPhone)) {
-                                matchPhone = true;
-                            }
-                        }
-
-                        return matchId || matchName || matchPhone;
-                    }).sort((a,b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-                });
-
-                const filteredByDateOrders = computed(() => {
-                    return orders.value.filter(o => {
-                        const dateMatch = (o.timestamp || "").split('T')[0] === filterDate.value;
-                        let statusMatch = true;
-                        if (filterPaymentStatus.value === 'paid') statusMatch = o.isPaid === true;
-                        if (filterPaymentStatus.value === 'unpaid') statusMatch = o.isPaid !== true;
-                        
-                        return dateMatch && statusMatch;
-                    });
-                });
-
-                const formatDate = (ts) => ts ? new Date(ts).toLocaleDateString('ar-SA') : '-';
-                const formatDateLong = (ts) => ts ? new Date(ts).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
-                const formatTime = (ts) => ts ? new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '-';
+                /* ================= LIFECYCLE ================= */
 
                 onMounted(() => {
+                    if (currentUser.value) { orderForm.value.managerCode = currentUser.value.managerCode; syncFromSheet(); }
                     setTimeout(() => lucide.createIcons(), 500);
-                    syncFromSheet();
                 });
                 watchEffect(() => setTimeout(() => lucide.createIcons(), 100));
 
                 return {
-                    activeTab, orders, catalog, notification, searchQuery, filterDate, filterPaymentStatus, isSaving, isSuccess, syncLoading, loading,
+                    currentUser, authLoading, loginForm, login, logout,
+                    activeTab, setTab, notification, loading, syncLoading, syncFromSheet,
+                    orders, catalog, accounts, filteredOrders, filteredByDateOrders, filteredAccounts, reportStats,
                     orderForm, catalogForm, bulkList, editingOrder, receiptInput,
-                    addProductRow, removeProductRow, syncProductData, updatePrice, handleReceiptUpload, saveOrder, deleteOrder, editOrder, cancelEdit,
-                    saveCatalogItem, deleteCatalogItem, viewInvoice, printBulk, downloadBulkPDF, downloadZIP, syncFromSheet, calculateTotal, calculateSubTotal,
-                    filteredOrders, filteredByDateOrders, formatDate, formatDateLong, formatTime, setTab
+                    searchQuery, filterDate, filterPaymentStatus, reportStartDate, reportEndDate, isSaving, isSuccess,
+                    calculateSubTotal, calculateDiscount, calculateTotal,
+                    addProductRow, removeProductRow, syncProductData, updatePrice, handleReceiptUpload,
+                    saveOrder, deleteOrder, editOrder, cancelEdit, saveCatalogItem, deleteCatalogItem,
+                    viewInvoice, printBulk, downloadBulkPDF, downloadZIP, downloadReportPDF,
+                    formatDate, formatDateLong, formatTime
                 };
             }
         }).mount('#app');
