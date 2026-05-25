@@ -20,14 +20,12 @@
         .loader-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
-        /* إعدادات الفاتورة والطباعة */
         .invoice-a4 { width: 210mm; height: 296mm; max-height: 296mm; background: white; margin: 0 auto; padding: 8mm 12mm 25mm 12mm; box-sizing: border-box; color: #000; line-height: 1.3; position: relative; overflow: hidden; }
         .inv-info-box { background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9; }
         .inv-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
         .inv-table th { background: #142952; color: white; padding: 6px 8px; text-align: right; font-size: 12px; border: 1px solid #142952; }
         .inv-table td { border: 1px solid #e2e8f0; padding: 6px 8px; vertical-align: top; font-size: 11px; }
         .invoice-footer { position: absolute; bottom: 8mm; left: 12mm; right: 12mm; border-top: 2px solid #142952; padding-top: 8px; text-align: center; }
-
         #capture-area { position: absolute; left: -9999px; top: 0; width: 210mm; }
         
         @media print {
@@ -84,7 +82,7 @@
 
     <main class="flex-1 mr-64 p-8 no-print relative min-h-screen">
         <div v-if="notification" class="fixed top-10 left-10 z-[100] p-5 rounded-2xl shadow-2xl bg-white border-l-8 flex items-center gap-4 transition-all"
-             :class="{'border-red-500 text-red-600 animate-bounce': notification.type === 'error', 'border-green-500 text-green-600 animate-bounce': notification.type === 'success', 'border-blue-500 text-blue-700': notification.type === 'info'}">
+             :class="{'border-red-500 text-red-600': notification.type === 'error', 'border-green-500 text-green-600': notification.type === 'success', 'border-blue-500 text-blue-700': notification.type === 'info'}">
             <i v-if="notification.type === 'success'" data-lucide="check-circle"></i>
             <i v-else-if="notification.type === 'error'" data-lucide="alert-circle"></i>
             <i v-else data-lucide="loader" class="animate-spin"></i>
@@ -165,7 +163,6 @@
 
     <div id="capture-area" dir="rtl">
         <div v-for="invoice in bulkList" :key="invoice.orderId" :id="'inv-' + invoice.orderId" class="invoice-a4">
-           
            <div class="flex justify-between items-center mb-4 border-b-2 border-gray-100 pb-3">
                 <div class="w-20 h-20 bg-white flex items-center justify-center p-2 rounded-xl">
                     <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
@@ -179,7 +176,6 @@
                     <p>الرقم الضريبي : 310236446600003</p>
                 </div>
             </div>
-            
             <div class="grid grid-cols-2 gap-4 mb-4 text-[11px]">
                 <div class="inv-info-box space-y-1">
                     <span class="text-gray-400 font-bold">بيانات العميل :</span>
@@ -197,7 +193,6 @@
                     <p dir="ltr" class="font-black">+966 54 478 2301</p>
                 </div>
             </div>
-            
             <table class="inv-table">
                 <thead>
                     <tr>
@@ -217,26 +212,10 @@
                                 <div class="space-y-1 flex-1">
                                     <p class="font-black text-sm text-[#142952]">{{ p.name }} <span v-if="p.villaNo" class="text-[10px] text-gray-500">(فيلا {{ p.villaNo }})</span></p>
                                     <div class="text-[10px] space-y-1 mt-1.5">
-                                        <p class="font-bold text-gray-700 flex justify-between">
-                                            <span>• سعر اللوحة الأساسي:</span> <span class="font-black">{{ p.basePrice }} SAR</span>
-                                        </p>
-                                        <p v-if="p.color === 'gold' || p.color === 'black'" class="font-bold text-gray-700 flex justify-between">
-                                            <span>• اللون ({{ p.color === 'gold' ? 'ذهبي' : 'أسود' }}):</span> <span class="font-black">+19 SAR</span>
-                                        </p>
-                                        <p v-else class="font-bold text-gray-500 flex justify-between">
-                                            <span>• اللون (فضي):</span> <span class="font-black">مجاناً</span>
-                                        </p>
-                                        <p v-if="p.hasLighting" class="font-bold text-gray-700 flex justify-between">
-                                            <span>• إضافة إضاءة:</span> <span class="font-black">+129 SAR</span>
-                                        </p>
-                                        <p v-if="p.customDesign" class="font-bold text-gray-700 flex justify-between">
-                                            <span>• تصميم خاص:</span> <span class="font-black">+50 SAR</span>
-                                        </p>
-                                        <div class="border-t border-dashed mt-1 pt-1 space-y-0.5">
-                                            <p v-if="p.nationalAddress" class="font-bold text-gray-600">العنوان الوطني: <span class="font-black text-black">{{ p.nationalAddress }}</span></p>
-                                            <p v-if="p.customName" class="font-bold text-gray-600">الاسم المطلوب: <span class="font-black text-blue-700 italic">{{ p.customName }}</span></p>
-                                            <p v-if="p.notes" class="font-bold text-gray-500 italic">ملاحظات: {{ p.notes }}</p>
-                                        </div>
+                                        <p class="font-bold text-gray-700 flex justify-between"><span>• سعر اللوحة الأساسي:</span> <span class="font-black">{{ p.basePrice }} SAR</span></p>
+                                        <p v-if="p.color === 'gold' || p.color === 'black'" class="font-bold text-gray-700 flex justify-between"><span>• اللون ({{ p.color === 'gold' ? 'ذهبي' : 'أسود' }}):</span> <span class="font-black">+19 SAR</span></p>
+                                        <p v-if="p.hasLighting" class="font-bold text-gray-700 flex justify-between"><span>• إضافة إضاءة:</span> <span class="font-black">+129 SAR</span></p>
+                                        <p v-if="p.customDesign" class="font-bold text-gray-700 flex justify-between"><span>• تصميم خاص:</span> <span class="font-black">+50 SAR</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -247,52 +226,23 @@
                     </tr>
                 </tbody>
             </table>
-            
             <div class="mt-4 mr-auto w-[350px]">
                 <div class="space-y-2 border-t-2 border-[#142952] pt-3 text-xs mb-3">
-                    <div class="flex justify-between font-bold text-gray-700">
-                        <span>إجمالي المنتجات</span>
-                        <span class="font-black text-black text-sm">SAR {{ invoice.subTotal }}</span>
-                    </div>
-                    <div v-if="invoice.discountRate > 0" class="flex justify-between font-bold text-red-500">
-                        <span>الخصم ({{ invoice.discountRate }}%)</span>
-                        <span class="font-black text-red-600 text-sm">- SAR {{ invoice.discountValue }}</span>
-                    </div>
-                    <div class="flex justify-between font-bold text-green-600 border-b border-gray-100 pb-3">
-                        <span>تكلفة التوصيل والتركيب</span>
-                        <span class="font-black underline decoration-2">مجاناً</span>
-                    </div>
-                    
+                    <div class="flex justify-between font-bold text-gray-700"><span>إجمالي المنتجات</span> <span class="font-black text-black text-sm">SAR {{ invoice.subTotal }}</span></div>
+                    <div v-if="invoice.discountRate > 0" class="flex justify-between font-bold text-red-500"><span>الخصم ({{ invoice.discountRate }}%)</span> <span class="font-black text-red-600 text-sm">- SAR {{ invoice.discountValue }}</span></div>
+                    <div class="flex justify-between font-bold text-green-600 border-b border-gray-100 pb-3"><span>تكلفة التوصيل والتركيب</span> <span class="font-black underline decoration-2">مجاناً</span></div>
                     <div class="flex justify-between items-center bg-[#142952] text-white p-4 rounded-xl shadow-md mt-2 relative">
                         <div class="flex flex-col gap-1">
                             <span class="font-black text-base">الإجمالي النهائي</span>
-                            <div v-if="invoice.isPaid" class="flex items-center gap-1.5 bg-green-500/20 text-green-200 px-2 py-0.5 rounded-md border border-green-400/50 w-fit">
-                                <span class="text-[10px] font-black">✓ تم الدفع</span>
-                            </div>
-                            <div v-else class="flex items-center gap-1.5 bg-red-500/20 text-red-200 px-2 py-0.5 rounded-md border border-red-400/50 w-fit">
-                                <span class="text-[10px] font-black">✗ غير مدفوع</span>
-                            </div>
+                            <div :class="invoice.isPaid ? 'bg-green-500/20 text-green-200' : 'bg-red-500/20 text-red-200'" class="flex items-center gap-1.5 px-2 py-0.5 rounded-md border w-fit"><span class="text-[10px] font-black">{{ invoice.isPaid ? '✓ تم الدفع' : '✗ غير مدفوع' }}</span></div>
                         </div>
                         <span class="font-black text-2xl">SAR {{ invoice.totalAmount }}</span>
                     </div>
                 </div>
-
-                <div v-if="invoice.receipts && invoice.receipts.length > 0" class="border-2 border-dashed border-gray-200 p-3 rounded-xl bg-gray-50/50">
-                    <p class="text-[10px] font-black text-gray-500 mb-2 border-b border-gray-200 pb-1">إيصالات الدفع المرفقة للطلب:</p>
-                    <div class="flex flex-wrap gap-2">
-                        <div v-for="(img, idx) in invoice.receipts" :key="idx" class="w-[70px] h-[70px] border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
-                            <img :src="img" class="w-full h-full object-cover">
-                        </div>
-                    </div>
-                </div>
             </div>
-
             <div class="invoice-footer mt-auto">
                 <p class="font-black text-[#142952] text-sm mb-1">شكراً لتسوقكم معنا في هوية بيتك</p>
                 <p class="text-[10px] text-gray-500 mb-1">البضاعة المباعة لا ترد ولا تستبدل إلا في حالة وجود عيب مصنعي خلال 3 أيام من تاريخ الاستلام.</p>
-                <p class="text-[10px] font-bold text-gray-600">
-                    للتواصل والدعم الفني: <span dir="ltr" class="text-blue-700">hwytbytk@gmail.com</span> | <span dir="ltr" class="text-[#142952]">+966 54 478 2301</span>
-                </p>
             </div>
         </div>
     </div>
@@ -300,21 +250,12 @@
 
 <script type="module">
     const { createApp, ref, computed, onMounted, nextTick } = Vue;
-
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
 
     function parseSheetDate(dateStr) {
         if (!dateStr) return new Date().toISOString();
         let d = new Date(dateStr);
         if (!isNaN(d.getTime())) return d.toISOString();
-        if (typeof dateStr === 'string') {
-            const s = dateStr.trim();
-            const parts = s.split(/[\/\-]/);
-            if (parts.length === 3 && parts[2].length === 4) {
-                d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-                if (!isNaN(d.getTime())) return d.toISOString();
-            }
-        }
         return new Date().toISOString();
     }
 
@@ -328,21 +269,19 @@
             const currentUser = ref(null);
             const orders = ref([]);
             const bulkList = ref([]);
-            
             const filterDate = ref(new Date().toISOString().split('T')[0]);
             const filterPaymentStatus = ref('all');
-            
             const syncLoading = ref(false);
             const notification = ref(null);
 
             const filteredByDateOrders = computed(() => {
                 return orders.value.filter(o => {
                     if (currentUser.value?.role !== 'admin') {
-                        if ((o.managerCode || '').toUpperCase() !== (currentUser.value?.managerCode || '').toUpperCase()) return false;
+                        if ((String(o.managerCode || '').toUpperCase().trim()) !== (String(currentUser.value?.managerCode || '').toUpperCase().trim())) return false;
                     }
                     const dateMatch = (o.timestamp || '').split('T')[0] === filterDate.value;
                     let statusMatch = true;
-                    if (filterPaymentStatus.value === 'paid')   statusMatch = o.isPaid === true;
+                    if (filterPaymentStatus.value === 'paid') statusMatch = o.isPaid === true;
                     if (filterPaymentStatus.value === 'unpaid') statusMatch = o.isPaid !== true;
                     return dateMatch && statusMatch;
                 });
@@ -351,164 +290,95 @@
             const showNotify = (msg, type = 'success') => {
                 notification.value = { msg, type };
                 setTimeout(() => notification.value = null, 4000);
-                setTimeout(() => lucide.createIcons(), 50);
             };
 
             const doLogout = () => { sessionStorage.removeItem('hb_user'); window.location.href = 'index.html'; };
 
             const viewInvoice = (order) => {
                 bulkList.value = [order];
-                nextTick(() => {
-                    setTimeout(() => window.print(), 500);
-                });
+                nextTick(() => setTimeout(() => window.print(), 500));
             };
 
-            const printBulk = () => { 
-                if (!filteredByDateOrders.value.length) return showNotify('لا يوجد فواتير مطابقة لخياراتك', 'error'); 
-                bulkList.value = filteredByDateOrders.value; 
-                nextTick(() => setTimeout(() => window.print(), 800)); 
+            const printBulk = () => {
+                if (!filteredByDateOrders.value.length) return showNotify('لا توجد فواتير', 'error');
+                bulkList.value = filteredByDateOrders.value;
+                nextTick(() => setTimeout(() => window.print(), 800));
             };
-            
+
             const downloadBulkPDF = async () => {
-                if (!filteredByDateOrders.value.length) return showNotify('لا يوجد فواتير لتحميلها', 'error');
-                syncLoading.value = true; 
-                showNotify('جاري بناء الملف المجمع (يرجى الانتظار)...', 'info');
-                
-                const { jsPDF } = window.jspdf; 
+                if (!filteredByDateOrders.value.length) return showNotify('لا يوجد فواتير', 'error');
+                syncLoading.value = true;
+                const { jsPDF } = window.jspdf;
                 const finalPDF = new jsPDF('p', 'mm', 'a4');
-                
                 for (let i = 0; i < filteredByDateOrders.value.length; i++) {
-                    bulkList.value = [filteredByDateOrders.value[i]]; 
-                    await nextTick(); 
-                    await new Promise(r => setTimeout(r, 400)); 
-                    
+                    bulkList.value = [filteredByDateOrders.value[i]];
+                    await nextTick();
+                    await new Promise(r => setTimeout(r, 600));
                     const canvas = await html2canvas(document.getElementById('inv-' + filteredByDateOrders.value[i].orderId), { scale: 2 });
                     if (i > 0) finalPDF.addPage();
                     finalPDF.addImage(canvas.toDataURL('image/jpeg', 0.8), 'JPEG', 0, 0, 210, 297);
                 }
-                
-                finalPDF.save(`فواتير_${filterDate.value}.pdf`); 
+                finalPDF.save(`فواتير_${filterDate.value}.pdf`);
                 syncLoading.value = false;
-                showNotify('تم تحميل الملف بنجاح');
             };
 
-            // 🔴 التحديث الهام لعلاج المزامنة ومنع الـ Type Errors وحل مشكلة المعرفات المفقودة
             const syncFromSheet = async () => {
                 syncLoading.value = true;
                 try {
-                    const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
+                    const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow', cache: 'no-store' });
                     const text = await res.text();
-                    let result = JSON.parse(text);
-
+                    const result = JSON.parse(text);
                     const grouped = {};
-                    (result.orders || []).forEach(row => {
-                        const oid = String(row['رقم الطلب'] || '').trim();
-                        if (!oid) return;
-                        
-                        if (!grouped[oid]) {
-                            // 📥 تأمين تحويل قيمة الإيصال لنص مهما كان نوعها
-                            let rawReceipt = String(row['صورة الإيصال'] || '');
-                            let loadedReceipts = [];
-                            if (rawReceipt.includes('|||')) {
-                                loadedReceipts = rawReceipt.split('|||').filter(x => x.trim().length > 0);
-                            } else if (rawReceipt.trim().length > 0) {
-                                loadedReceipts = [rawReceipt.trim()];
+                    if (result.orders && Array.isArray(result.orders)) {
+                        result.orders.forEach(row => {
+                            const oid = String(row['رقم الطلب'] || '').trim();
+                            if (!oid) return;
+                            if (!grouped[oid]) {
+                                let rawReceipt = String(row['صورة الإيصال'] || '');
+                                let receipts = rawReceipt.includes('|||') ? rawReceipt.split('|||').filter(x => x.trim()) : (rawReceipt.trim() ? [rawReceipt] : []);
+                                grouped[oid] = {
+                                    orderId: oid, managerCode: String(row['رمز المسؤول'] || '').trim(),
+                                    isPaid: isPaidStatus(row['حالة الدفع']), receipts: receipts,
+                                    client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: String(row['الجوال'] || ''), address: row['العنوان بالتفصيل'] || '' },
+                                    products: [], timestamp: parseSheetDate(row['التاريخ']), discountRate: parseFloat(row['نسبة الخصم'] || 0)
+                                };
                             }
-
-                            grouped[oid] = {
-                                orderId: oid, managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim(),
-                                discountRate: parseFloat(row['نسبة الخصم'] || 0), discountValue: parseFloat(row['قيمة الخصم'] || 0),
-                                isPaid: isPaidStatus(row['حالة الدفع']), 
-                                receipts: loadedReceipts,
-                                client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: String(row['الجوال'] || ''), address: row['العنوان بالتفصيل'] || '' },
-                                products: [], totalAmount: 0, subTotal: 0,
-                                timestamp: parseSheetDate(row['التاريخ'])
+                            const p = {
+                                name: String(row['المنتج'] || '').trim(), color: row['اللون'] || 'silver',
+                                count: parseInt(row['العدد'] || 1), price: parseFloat(row['السعر الفردي'] || 0),
+                                hasLighting: ['نعم', true].includes(row['إضافة إضاءة']), customDesign: ['نعم', true].includes(row['تصميم خاص'])
                             };
-                        }
-                        
-                        // 📥 تعيين ID لكل منتج لتفادي تعطل الرسم في Vue
-                        const productNameOrId = String(row['المنتج'] || '').trim();
-                        const p = {
-                            id: Date.now() + Math.random(),
-                            productId: productNameOrId,
-                            name: productNameOrId, 
-                            color: row['اللون'] || 'silver',
-                            count: parseInt(row['العدد'] || 1), 
-                            price: parseFloat(row['السعر الفردي'] || 0),
-                            nationalAddress: row['العنوان الوطني'] || '', 
-                            villaNo: row['رقم الفيلا'] || '',
-                            customName: row['الاسم المخصص'] || '', 
-                            notes: row['ملاحظات'] || '',
-                            hasLighting: row['إضافة إضاءة'] === 'نعم' || row['إضافة إضاءة'] === true,
-                            customDesign: row['تصميم خاص'] === 'نعم' || row['تصميم خاص'] === true
-                        };
-                        
-                        let additions = 0;
-                        if (p.hasLighting) additions += 129;
-                        if (p.customDesign) additions += 50;
-                        if (p.color === 'gold' || p.color === 'black') additions += 19;
-                        p.basePrice = p.price - additions;
-
-                        grouped[oid].products.push(p);
-                    });
-
-                    Object.values(grouped).forEach(o => {
-                        let discountable = 0;
-                        let nonDiscountable = 0;
-                        
-                        o.products.forEach(p => {
-                            let adds = 0;
-                            if (p.hasLighting) adds += 129;
-                            if (p.customDesign) adds += 50;
-                            
-                            let baseAndColor = p.price - adds;
-                            discountable += (baseAndColor * p.count);
-                            nonDiscountable += (adds * p.count);
+                            let additions = (p.hasLighting ? 129 : 0) + (p.customDesign ? 50 : 0) + (['gold', 'black'].includes(p.color) ? 19 : 0);
+                            p.basePrice = p.price - additions;
+                            grouped[oid].products.push(p);
                         });
-                        
-                        o.subTotal = discountable + nonDiscountable;
-                        
-                        if (o.discountRate > 0) {
-                            o.discountValue = parseFloat(((discountable * o.discountRate) / 100).toFixed(2));
-                            o.totalAmount = Math.round(discountable - o.discountValue + nonDiscountable);
-                        } else {
-                            o.totalAmount = o.subTotal;
-                        }
+                    }
+                    Object.values(grouped).forEach(o => {
+                        let discable = 0, nondiscable = 0;
+                        o.products.forEach(p => {
+                            let adds = (p.hasLighting ? 129 : 0) + (p.customDesign ? 50 : 0);
+                            discable += ((p.price - adds) * p.count);
+                            nondiscable += (adds * p.count);
+                        });
+                        o.subTotal = discable + nondiscable;
+                        o.discountValue = (discable * o.discountRate / 100);
+                        o.totalAmount = Math.round(discable - o.discountValue + nondiscable);
                     });
-
-                    orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                    orders.value = Object.values(grouped);
                     localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
-                    showNotify('تم تحديث بيانات الفواتير والمزامنة بنجاح');
-                } catch(e) {
-                    showNotify('خطأ في المزامنة. يتم العمل بالبيانات المحلية.', 'error');
-                } finally { syncLoading.value = false; }
+                    showNotify('تم تحديث البيانات');
+                } catch(e) { showNotify('خطأ في المزامنة', 'error'); } finally { syncLoading.value = false; }
             };
 
-            const formatDate = (ts) => ts ? new Date(ts).toLocaleDateString('ar-SA') : '-';
-            const formatDateLong = (ts) => ts ? new Date(ts).toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) : '-';
-            const formatTime = (ts) => ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }) : '-';
-
-            onMounted(() => { 
+            onMounted(() => {
                 const storedUser = sessionStorage.getItem('hb_user');
-                if (!storedUser) {
-                    window.location.href = 'index.html';
-                    return;
-                }
-                currentUser.value = JSON.parse(storedUser);
-                
-                const localOrders = localStorage.getItem('hwayt_orders_v8');
-                if (localOrders) orders.value = JSON.parse(localOrders);
-
-                setTimeout(() => lucide.createIcons(), 500); 
+                if (storedUser) currentUser.value = JSON.parse(storedUser);
+                const local = localStorage.getItem('hwayt_orders_v8');
+                if (local) orders.value = JSON.parse(local);
                 syncFromSheet();
             });
 
-            return {
-                currentUser, orders, bulkList, syncLoading, notification, 
-                filterDate, filterPaymentStatus, filteredByDateOrders,
-                doLogout, viewInvoice, printBulk, downloadBulkPDF, syncFromSheet,
-                formatDate, formatDateLong, formatTime
-            };
+            return { currentUser, orders, bulkList, syncLoading, notification, filterDate, filterPaymentStatus, filteredByDateOrders, doLogout, viewInvoice, printBulk, downloadBulkPDF, syncFromSheet, formatTime, formatDateLong };
         }
     }).mount('#app');
 </script>
