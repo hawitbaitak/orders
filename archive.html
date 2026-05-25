@@ -18,12 +18,13 @@
         .loader-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
-        /* إعدادات الفاتورة والطباعة */
+        /* إعدادات الفاتورة والطباعة المخفية */
         .invoice-a4 { width: 210mm; height: 296mm; max-height: 296mm; background: white; margin: 0 auto; padding: 8mm 12mm 25mm 12mm; box-sizing: border-box; color: #000; line-height: 1.3; position: relative; overflow: hidden; }
         .inv-info-box { background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9; }
         .inv-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
         .inv-table th { background: #142952; color: white; padding: 6px 8px; text-align: right; font-size: 12px; border: 1px solid #142952; }
         .inv-table td { border: 1px solid #e2e8f0; padding: 6px 8px; vertical-align: top; font-size: 11px; }
+
         .invoice-footer { position: absolute; bottom: 8mm; left: 12mm; right: 12mm; border-top: 2px solid #142952; padding-top: 8px; text-align: center; }
 
         #capture-area { position: absolute; left: -9999px; top: 0; width: 210mm; }
@@ -91,7 +92,7 @@
 
         <div v-if="syncLoading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm">
             <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
-            <p class="font-black text-[#142952]">جاري مزامنة أرشيف الطلبات...</p>
+            <p class="font-black text-[#142952]">جاري مزامنة ومعالجة أرشيف الطلبات...</p>
         </div>
 
         <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -407,6 +408,7 @@
                 });
             };
 
+            // 🔴 التحديث الهام لعلاج أخطاء المزامنة ومنع الـ Type Errors وحل مشكلة جلب البيانات للتعديل
             const syncFromSheet = async () => {
                 syncLoading.value = true;
                 try {
@@ -420,7 +422,8 @@
                         if (!oid) return;
                         
                         if (!grouped[oid]) {
-                            let rawReceipt = row['صورة الإيصال'] || '';
+                            // 📥 تأمين تحويل قيمة الإيصال لنص مهما كان نوعها في الشيت لتفادي انهيار المتصفح
+                            let rawReceipt = String(row['صورة الإيصال'] || '');
                             let loadedReceipts = [];
                             if (rawReceipt.includes('|||')) {
                                 loadedReceipts = rawReceipt.split('|||').filter(x => x.trim().length > 0);
@@ -434,17 +437,25 @@
                                 isPaid: isPaidStatus(row['حالة الدفع']), 
                                 receipts: loadedReceipts,
                                 orderStatus: row['حالة الطلب'] === true || String(row['حالة الطلب']).toLowerCase() === 'true' || row['حالة الطلب'] === 'نعم' || row['حالة الطلب'] === 'تم تسجيل الطلب',
-                                client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: row['الجوال'] || '', address: row['العنوان بالتفصيل'] || '' },
+                                client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: String(row['الجوال'] || ''), address: row['العنوان بالتفصيل'] || '' },
                                 products: [], totalAmount: 0, subTotal: 0,
                                 timestamp: parseSheetDate(row['التاريخ'])
                             };
                         }
 
+                        // 📥 تعيين ID لكل منتج وحل مشكلة جلب اسم المنتج عند التعديل (Mapping Bug)
+                        const productNameOrId = String(row['المنتج'] || '').trim();
                         const p = {
-                            productId: row['المنتج'] || '', name: row['المنتج'] || '', color: row['اللون'] || 'silver',
-                            count: parseInt(row['العدد'] || 1), price: parseFloat(row['السعر الفردي'] || 0),
-                            nationalAddress: row['العنوان الوطني'] || '', villaNo: row['رقم الفيلا'] || '',
-                            customName: row['الاسم المخصص'] || '', notes: row['ملاحظات'] || '',
+                            id: Date.now() + Math.random(), // لتجنب تجميد Vue للجدول
+                            productId: productNameOrId,     // هام جداً لكي تظهر القائمة المنسدلة بشكل صحيح عند التعديل
+                            name: productNameOrId, 
+                            color: row['اللون'] || 'silver',
+                            count: parseInt(row['العدد'] || 1), 
+                            price: parseFloat(row['السعر الفردي'] || 0),
+                            nationalAddress: row['العنوان الوطني'] || '', 
+                            villaNo: row['رقم الفيلا'] || '',
+                            customName: row['الاسم المخصص'] || '', 
+                            notes: row['ملاحظات'] || '',
                             hasLighting: row['إضافة إضاءة'] === 'نعم' || row['إضافة إضاءة'] === true,
                             customDesign: row['تصميم خاص'] === 'نعم' || row['تصميم خاص'] === true
                         };
@@ -483,7 +494,7 @@
 
                     orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
                     localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
-                    showNotify('تمت مزامنة الأرشيف بنجاح');
+                    showNotify('تمت مزامنة ومعالجة الأرشيف بنجاح');
                 } catch(e) {
                     showNotify('خطأ في المزامنة. يرجى التأكد من الاتصال.', 'error');
                 } finally { syncLoading.value = false; }
