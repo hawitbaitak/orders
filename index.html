@@ -18,7 +18,6 @@
         .login-bg { background: linear-gradient(135deg, #0f1f3d 0%, #142952 50%, #1e3a6e 100%); min-height: 100vh; }
         .loader-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        /* Checkbox styling */
         .custom-checkbox { width: 1.25rem; height: 1.25rem; accent-color: #142952; cursor: pointer; }
     </style>
 </head>
@@ -109,28 +108,29 @@
 
             <div v-if="syncLoading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm">
                 <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
-                <p class="font-black text-[#142952]">جاري مزامنة البيانات...</p>
+                <p class="font-black text-[#142952]">جاري تحديث كتللوج المنتجات والأسعار...</p>
             </div>
 
             <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <div>
                     <h2 class="text-3xl font-black text-[#142952]">
-                        <span>{{ editingOrder ? 'تعديل بيانات الطلب' : 'تسجيل طلب جديد' }}</span>
+                        <span>{{ editingOrder ? 'تعديل بيانات الطلب المحدّد' : 'تسجيل طلب مبيعات جديد' }}</span>
                     </h2>
                 </div>
                 <div class="flex gap-2">
                     <button @click="syncCatalogFromSheet" class="bg-[#142952] text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 shadow-lg hover:bg-blue-800 transition-all">
                         <i data-lucide="refresh-cw" :class="{'loader-spin': syncLoading}" class="w-4 h-4"></i>
-                        تحديث المنتجات
+                        تحديث قائمة المنتجات
                     </button>
                 </div>
             </header>
 
             <section class="bg-white p-8 rounded-3xl shadow-sm border animate-in fade-in">
                 <form @submit.prevent="saveOrder" class="space-y-8">
+                    
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 bg-blue-50/50 p-8 rounded-3xl mb-4 border border-blue-100">
                         <div class="col-span-full font-black text-[#142952] flex items-center gap-2 mb-2 text-lg">
-                            <i data-lucide="settings"></i> إعدادات الطلب والدفع
+                            <i data-lucide="settings"></i> إعدادات الطلب والدفع والإيصالات
                         </div>
                         <div class="space-y-1 lg:col-span-1">
                             <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">الخصم (%)</label>
@@ -138,9 +138,9 @@
                         </div>
                         <div class="space-y-1 lg:col-span-1">
                             <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">حالة الدفع</label>
-                            <div class="flex items-center gap-3 mt-2 h-[46px]" @click="togglePayment" :title="!orderForm.receiptImage ? 'يرجى رفع الإيصال لتفعيل الدفع' : 'إلغاء الدفع'">
-                                <div class="relative inline-block w-12 h-6 rounded-full transition-colors duration-300 shadow-inner"
-                                     :class="orderForm.receiptImage ? (orderForm.isPaid ? 'bg-green-500 cursor-pointer' : 'bg-gray-300 cursor-pointer') : 'bg-gray-200 cursor-not-allowed'">
+                            <div class="flex items-center gap-3 mt-2 h-[46px]" @click="togglePayment">
+                                <div class="relative inline-block w-12 h-6 rounded-full transition-colors duration-300 shadow-inner cursor-pointer"
+                                     :class="orderForm.isPaid ? 'bg-green-500' : 'bg-gray-300'">
                                     <div class="absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow"
                                          :class="orderForm.isPaid ? 'left-1' : 'right-1'"></div>
                                 </div>
@@ -149,8 +149,9 @@
                                 </span>
                             </div>
                         </div>
-                        <div class="space-y-1 lg:col-span-2">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">حالة الطلب في الشيت</label>
+
+                        <div v-if="currentUser.role === 'admin'" class="space-y-1 lg:col-span-2">
+                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">حالة الطلب في المتجر (خاص بالأدمن)</label>
                             <div class="flex items-center gap-3 mt-2 h-[46px]" @click="orderForm.orderStatus = !orderForm.orderStatus">
                                 <div class="relative inline-block w-12 h-6 rounded-full transition-colors duration-300 shadow-inner cursor-pointer"
                                      :class="orderForm.orderStatus ? 'bg-blue-600' : 'bg-gray-300'">
@@ -162,12 +163,21 @@
                                 </span>
                             </div>
                         </div>
+                        <div v-else class="space-y-1 lg:col-span-2 invisible"></div>
+
                         <div class="space-y-1 lg:col-span-2">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رفع الإيصال (إلزامي للدفع)</label>
-                            <div class="flex items-center gap-4">
-                                <input type="file" ref="receiptInput" accept="image/*" @change="handleReceiptUpload" class="flex-1 w-full p-2.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold text-sm">
-                                <div v-if="orderForm.receiptImage" class="w-12 h-12 rounded-xl overflow-hidden shadow-sm border border-gray-200 shrink-0">
-                                    <img :src="orderForm.receiptImage" class="w-full h-full object-cover">
+                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رفع إيصالات الدفع (يمكن اختيار أكثر من صورة)</label>
+                            <input type="file" ref="receiptInput" accept="image/*" multiple @change="handleReceiptUpload" class="w-full p-2.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold text-sm">
+                        </div>
+
+                        <div v-if="orderForm.receipts.length > 0" class="col-span-full mt-4 bg-white p-4 rounded-2xl border border-gray-100">
+                            <p class="text-xs font-black text-gray-400 mb-3 uppercase">صور إيصالات الدفع المرفقة بالطلب حالياً ({{ orderForm.receipts.length }}):</p>
+                            <div class="flex flex-wrap gap-4">
+                                <div v-for="(img, idx) in orderForm.receipts" :key="idx" class="relative w-20 h-20 rounded-xl overflow-hidden border shadow-sm group bg-gray-50">
+                                    <img :src="img" class="w-full h-full object-cover">
+                                    <button type="button" @click="removeReceipt(idx)" class="absolute inset-0 bg-red-600/80 text-white font-black text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                        <i data-lucide="trash-2" class="w-3 h-3"></i> حذف
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -175,18 +185,18 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 bg-gray-50 p-8 rounded-3xl">
                         <div class="col-span-full font-black text-[#142952] flex items-center gap-2 mb-2 text-lg">
-                            <i data-lucide="user"></i> بيانات العميل الأساسية
+                            <i data-lucide="user"></i> بيانات العميل الأساسية للشحن
                         </div>
                         <div class="space-y-1">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">اسم العميل</label>
+                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">اسم العميل بالكامل</label>
                             <input v-model="orderForm.client.name" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold">
                         </div>
                         <div class="space-y-1">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">المدينة</label>
+                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">المدينة / المنطقة</label>
                             <input v-model="orderForm.client.city" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold">
                         </div>
                         <div class="space-y-1">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">الجوال</label>
+                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رقم الجوال</label>
                             <input v-model="orderForm.client.phone" @input="orderForm.client.phone = orderForm.client.phone.replace(/\s+/g, '')" required class="w-full p-3.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold" dir="ltr">
                         </div>
                         <div class="space-y-1">
@@ -197,14 +207,14 @@
 
                     <div class="space-y-6">
                         <div class="flex justify-between items-center border-b pb-4">
-                            <h3 class="text-xl font-black text-[#142952]">قائمة المنتجات المطلوبة</h3>
-                            <button type="button" @click="addProductRow" class="bg-blue-50 text-blue-600 px-6 py-2 rounded-xl font-black text-sm transition-all hover:bg-blue-100">+ إضافة منتج</button>
+                            <h3 class="text-xl font-black text-[#142952]">تفاصيل اللوحات والمنتجات</h3>
+                            <button type="button" @click="addProductRow" class="bg-blue-50 text-blue-600 px-6 py-2 rounded-xl font-black text-sm transition-all hover:bg-blue-100">+ إضافة منتج آخر للطلب</button>
                         </div>
                         
                         <div v-for="(p, index) in orderForm.products" :key="p.id" class="p-8 border-2 border-gray-50 rounded-3xl relative bg-white hover:border-blue-100 transition-all shadow-sm">
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                                 <div class="space-y-1 lg:col-span-2">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">اختر المنتج</label>
+                                    <label class="text-[10px] font-black text-gray-400 uppercase">اختر المنتج أو الموديل</label>
                                     <div class="flex items-center gap-3">
                                         <div v-if="p.name" class="w-16 h-16 bg-white border border-gray-200 rounded-xl flex items-center justify-center p-1 shrink-0 shadow-sm">
                                             <img :src="`products/${p.name}.webp`" :data-name="p.name"
@@ -212,13 +222,13 @@
                                                  class="w-full h-full object-contain rounded-md">
                                         </div>
                                         <select v-model="p.productId" @change="syncProductData(p)" required class="flex-1 w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
-                                            <option value="">اختر من القائمة...</option>
+                                            <option value="">اختر الموديل من الكتالوج...</option>
                                             <option v-for="item in catalog" :key="item.id" :value="item.id">{{ item.name }} (SAR {{ item.price }})</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">اللون</label>
+                                    <label class="text-[10px] font-black text-gray-400 uppercase">اللون المطلوب</label>
                                     <select v-model="p.color" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
                                         <option value="silver">سيلفر (فضي)</option>
                                         <option value="gold">جولد (ذهبي) +19 SAR</option>
@@ -229,31 +239,32 @@
                                     <label class="text-[10px] font-black text-gray-400 uppercase">الكمية</label>
                                     <input v-model.number="p.count" type="number" min="1" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm text-center">
                                 </div>
+                                
                                 <div class="space-y-2 border-r-2 border-gray-100 pr-4">
                                     <label class="flex items-center gap-2 cursor-pointer mt-1">
                                         <input type="checkbox" v-model="p.hasLighting" class="custom-checkbox">
-                                        <span class="text-xs font-black text-gray-700">إضافة إضاءة (+129)</span>
+                                        <span class="text-xs font-black text-gray-700">إضافة إضاءة (+129 ريال)</span>
                                     </label>
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input type="checkbox" v-model="p.customDesign" class="custom-checkbox">
-                                        <span class="text-xs font-black text-gray-700">تصميم خاص (+50)</span>
+                                        <span class="text-xs font-black text-gray-700">طلب تصميم خاص (+50 ريال)</span>
                                     </label>
                                 </div>
 
                                 <div class="space-y-1 lg:col-span-2">
-                                    <label class="text-[10px] font-black text-blue-600 uppercase">العنوان الوطني</label>
+                                    <label class="text-[10px] font-black text-blue-600 uppercase">العنوان الوطني للبيت</label>
                                     <input v-model="p.nationalAddress" class="w-full p-3 border-2 border-blue-50 rounded-xl bg-blue-50/30 font-bold text-sm">
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">رقم الفيلا</label>
+                                    <label class="text-[10px] font-black text-gray-400 uppercase">رقم الفيلا / العمارة</label>
                                     <input v-model="p.villaNo" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
                                 </div>
                                 <div class="space-y-1 lg:col-span-2">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">الاسم المطلوب</label>
+                                    <label class="text-[10px] font-black text-gray-400 uppercase">الاسم المخصص على اللوحة</label>
                                     <input v-model="p.customName" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
                                 </div>
                                 <div class="lg:col-span-5 space-y-1 mt-2">
-                                    <label class="text-[10px] font-black text-gray-400 uppercase">ملاحظات إضافية</label>
+                                    <label class="text-[10px] font-black text-gray-400 uppercase">أي ملاحظات خاصة بالتصنيع</label>
                                     <input v-model="p.notes" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm">
                                 </div>
                             </div>
@@ -266,24 +277,23 @@
                     <div class="flex justify-between items-center border-t pt-10">
                         <div class="flex flex-col gap-1">
                             <div class="text-sm text-gray-400 font-bold">مجموع اللوحات والألوان (يخضع للخصم): <span class="text-black font-black">{{ calcDiscountableSubTotal }} SAR</span></div>
-                            <div v-if="calcNonDiscountableSubTotal > 0" class="text-sm text-gray-400 font-bold">مجموع إضافات (الإضاءة/التصميم): <span class="text-black font-black">{{ calcNonDiscountableSubTotal }} SAR</span></div>
+                            <div v-if="calcNonDiscountableSubTotal > 0" class="text-sm text-gray-400 font-bold">مجموع الإضافات (الإضاءة والتصميم): <span class="text-black font-black">{{ calcNonDiscountableSubTotal }} SAR</span></div>
                             
                             <div v-if="orderForm.discountRate > 0" class="text-sm font-bold text-red-500 mt-1">
-                                خصم {{ orderForm.discountRate }}% = - {{ calcDiscountValue }} SAR
+                                قيمة الخصم المطبق ({{ orderForm.discountRate }}%) = - {{ calcDiscountValue }} SAR
                             </div>
-                            <div v-if="orderForm.discountRate > 0" class="font-bold text-gray-400 text-sm line-through decoration-red-400">{{ calcDiscountableSubTotal + calcNonDiscountableSubTotal }} SAR</div>
                             
                             <div class="font-black text-4xl text-green-600 mt-2">{{ calcTotal }} SAR</div>
-                            <div v-if="orderForm.discountRate > 0" class="font-bold text-red-500 text-xs mt-1">تم تطبيق الخصم فقط على أسعار اللوحات والألوان دون الإضافات</div>
+                            <div v-if="orderForm.discountRate > 0" class="font-bold text-red-500 text-xs mt-1">تنبيه: يتم تطبيق الخصم على أسعار اللوحات الأساسية والألوان فقط دون الإضافات.</div>
                         </div>
                         <div class="flex gap-4">
-                            <button v-if="editingOrder" type="button" @click="cancelEdit" class="bg-gray-200 px-10 py-4 rounded-2xl font-black text-gray-600 shadow-sm transition-all hover:bg-gray-300">إلغاء</button>
+                            <button v-if="editingOrder" type="button" @click="cancelEdit" class="bg-gray-200 px-10 py-4 rounded-2xl font-black text-gray-600 shadow-sm transition-all hover:bg-gray-300">إلغاء التعديل</button>
                             <button type="submit" :disabled="isSaving"
                                     :class="isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-[#142952] hover:bg-blue-800'"
                                     class="text-white px-16 py-4 rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all flex justify-center items-center gap-3 min-w-[280px]">
                                 <i v-if="isSuccess" data-lucide="check-circle" class="w-6 h-6 text-white"></i>
                                 <i v-else-if="isSaving" data-lucide="loader" class="w-5 h-5 animate-spin"></i>
-                                <span>{{ isSuccess ? 'تم الحفظ بنجاح' : (editingOrder ? 'تحديث الطلب' : 'حفظ الطلب') }}</span>
+                                <span>{{ isSuccess ? 'تم حفظ طلبك بنجاح' : (editingOrder ? 'تأكيد تحديث الطلب' : 'إرسال وحفظ الطلب للجدول') }}</span>
                             </button>
                         </div>
                     </div>
@@ -294,10 +304,10 @@
 </div>
 
 <script type="module">
-    const { createApp, ref, computed, onMounted, nextTick } = Vue;
+    const { createApp, ref, computed, onMounted } = Vue;
 
-    // رابط الـ Deploy الخاص بك
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykZtIUWlvJCKSjNyTJq4l-UDFu_YqcPO8HP2-Nzmp_b2V0ivkU_d_GBgR_kX5lzHx3/exec";
+    // رابط الـ Deploy الجديد والمعدّل بالكامل 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
 
     const STATIC_PRICES = {
         1: 149, 2: 149, 3: 199, 4: 199, 5: 225, 6: 225, 7: 249, 8: 229, 9: 215, 10: 225,
@@ -312,7 +322,7 @@
     }));
 
     const EMPTY_ORDER_FORM = () => ({
-        managerCode: '', discountRate: 0, isPaid: false, receiptImage: null, orderStatus: false,
+        managerCode: '', discountRate: 0, isPaid: false, receipts: [], orderStatus: false, timestamp: null,
         client: { name: '', city: '', address: '', phone: '+966' },
         products: [{ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', basePrice: 0, hasLighting: false, customDesign: false }]
     });
@@ -334,7 +344,7 @@
             const isSuccess = ref(false);
             const notification = ref(null);
 
-            // حساب المجموع الخاضع للخصم (اللوحة + اللون)
+            // حسابات المجموع الخاضع للخصم (سعر اللوحة + لونها)
             const calcDiscountableSubTotal = computed(() => {
                 return orderForm.value.products.reduce((sum, p) => {
                     let unitPrice = p.basePrice || 0;
@@ -343,7 +353,7 @@
                 }, 0);
             });
 
-            // حساب المجموع غير الخاضع للخصم (الإضاءة + التصميم الخاص)
+            // حسابات المجموع غير الخاضع للخصم (الإضاءة 129 والتصميم 50)
             const calcNonDiscountableSubTotal = computed(() => {
                 return orderForm.value.products.reduce((sum, p) => {
                     let additions = 0;
@@ -368,7 +378,7 @@
             };
 
             const doLogin = async () => {
-                if (!loginForm.value.username || !loginForm.value.password) { loginError.value = 'يرجى إدخال البيانات'; return; }
+                if (!loginForm.value.username || !loginForm.value.password) { loginError.value = 'يرجى إدخال البيانات كاملة'; return; }
                 loginLoading.value = true; loginError.value = '';
                 try {
                     const res = await fetch(GOOGLE_SCRIPT_URL, {
@@ -383,10 +393,10 @@
                         cancelEdit(); 
                         syncCatalogFromSheet();
                     } else {
-                        loginError.value = 'البيانات غير صحيحة';
+                        loginError.value = 'البيانات المدخلة خاطئة!';
                     }
                 } catch (e) {
-                    loginError.value = 'خطأ في الاتصال';
+                    loginError.value = 'خطأ بالاتصال بالسحاب';
                 } finally { loginLoading.value = false; }
             };
 
@@ -401,26 +411,39 @@
             };
             
             const togglePayment = () => {
-                if (!orderForm.value.receiptImage) { showNotify('يرجى رفع الإيصال لتفعيل الدفع', 'error'); return; }
                 orderForm.value.isPaid = !orderForm.value.isPaid;
             };
 
+            // معالجة رفع صور إيصالات متعددة وضغطها تلقائياً
             const handleReceiptUpload = (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const scale = img.width > 400 ? 400 / img.width : 1;
-                        canvas.width = img.width * scale; canvas.height = img.height * scale;
-                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                        orderForm.value.receiptImage = canvas.toDataURL('image/jpeg', 0.5);
-                        orderForm.value.isPaid = true;
+                const files = Array.from(e.target.files);
+                if (!files.length) return;
+                
+                files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const scale = img.width > 400 ? 400 / img.width : 1;
+                            canvas.width = img.width * scale; 
+                            canvas.height = img.height * scale;
+                            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                            
+                            // إدراج الصورة المرفوعة في مصفوفة الإيصالات
+                            orderForm.value.receipts.push(canvas.toDataURL('image/jpeg', 0.6));
+                            orderForm.value.isPaid = true; // يتم وضع علامة مدفوع تلقائياً عند رفع وصل
+                        };
+                        img.src = event.target.result;
                     };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
+                    reader.readAsDataURL(file);
+                });
+
+                if (receiptInput.value) receiptInput.value.value = '';
+            };
+
+            const removeReceipt = (idx) => {
+                orderForm.value.receipts.splice(idx, 1);
             };
 
             const saveOrder = () => {
@@ -432,7 +455,8 @@
                     action: editingOrder.value ? 'update' : 'create', target: 'orders',
                     orderId, managerCode: mCode, discountRate: orderForm.value.discountRate || 0,
                     discountValue: calcDiscountValue.value, subTotal: calcSubTotal.value, totalAmount: calcTotal.value,
-                    isPaid: orderForm.value.isPaid, receiptImage: orderForm.value.receiptImage || '',
+                    isPaid: orderForm.value.isPaid, 
+                    receiptImage: orderForm.value.receipts, // مصفوفة الإيصالات بالكامل
                     orderStatus: orderForm.value.orderStatus,
                     client: JSON.parse(JSON.stringify(orderForm.value.client)),
                     products: JSON.parse(JSON.stringify(orderForm.value.products)).map(p => {
@@ -443,7 +467,8 @@
                         p.price = finalUnit;
                         return p;
                     }),
-                    timestamp: editingOrder.value ? editingOrder.value.timestamp : new Date().toISOString()
+                    // 🛡️ التثبيت التام للتاريخ الأصلي دون تغيير عند التعديل
+                    timestamp: editingOrder.value ? orderForm.value.timestamp : new Date().toISOString()
                 };
 
                 fetch(GOOGLE_SCRIPT_URL, {
@@ -451,20 +476,26 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 }).then(() => {
-                    let orders = JSON.parse(localStorage.getItem('hwayt_orders_v8') || '[]');
+                    let localOrders = JSON.parse(localStorage.getItem('hwayt_orders_v8') || '[]');
                     if (editingOrder.value) {
-                        const idx = orders.findIndex(o => o.orderId === editingOrder.value.orderId);
-                        if (idx !== -1) orders[idx] = payload;
+                        const idx = localOrders.findIndex(o => o.orderId === editingOrder.value.orderId);
+                        if (idx !== -1) localOrders[idx] = payload;
                     } else {
-                        orders.unshift(payload);
+                        localOrders.unshift(payload);
                     }
-                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders));
+                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(localOrders));
 
                     isSaving.value = false;
                     isSuccess.value = true;
-                    setTimeout(() => { isSuccess.value = false; cancelEdit(); window.scrollTo({ top: 0, behavior: 'smooth' }); }, 1500);
+                    setTimeout(() => { 
+                        isSuccess.value = false; 
+                        cancelEdit(); 
+                        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                        // تحويل تلقائي لصفحة طلباتي بعد الحفظ الناجح للتأكيد
+                        window.location.href = 'my_orders.html';
+                    }, 1200);
                 }).catch(e => {
-                    isSaving.value = false; showNotify('حدث خطأ في الاتصال بالخادم', 'error');
+                    isSaving.value = false; showNotify('خطأ فني في سحاب قاعدة البيانات', 'error');
                 });
             };
 
@@ -493,20 +524,36 @@
                         });
                     }
                     catalog.value = newCat;
-                    showNotify('تم تحديث قائمة المنتجات');
+                    showNotify('تم مزامنة الكتالوج بنجاح');
                 } catch(e) { } finally { syncLoading.value = false; }
             };
 
             onMounted(() => { 
                 setTimeout(() => lucide.createIcons(), 500); 
                 if (currentUser.value) {
+                    // ⚙️ استقبال بيانات الطلب القادم من الأرشيف/طلباتي للتعديل وحمايتها من المسح
                     const toEdit = localStorage.getItem('orderToEdit');
                     if (toEdit) {
                         const parsed = JSON.parse(toEdit);
                         editingOrder.value = parsed;
+                        
+                        // فك تشفير وتوزيع الإيصالات المتعددة المرفوعة مسبقاً
+                        let loadedReceipts = [];
+                        if (parsed.receiptImage) {
+                            if (Array.isArray(parsed.receiptImage)) {
+                                loadedReceipts = parsed.receiptImage;
+                            } else if (typeof parsed.receiptImage === 'string') {
+                                loadedReceipts = parsed.receiptImage.split('|||').filter(x => x.trim().length > 0);
+                            }
+                        }
+
                         orderForm.value = {
-                            managerCode: parsed.managerCode, discountRate: parsed.discountRate || 0, 
-                            isPaid: parsed.isPaid, receiptImage: parsed.receiptImage, orderStatus: parsed.orderStatus || false,
+                            managerCode: parsed.managerCode, 
+                            discountRate: parsed.discountRate || 0, 
+                            isPaid: parsed.isPaid, 
+                            receipts: loadedReceipts,
+                            orderStatus: parsed.orderStatus || false,
+                            timestamp: parsed.timestamp, // الحفاظ الثابت على طابع التاريخ والوقت القديم
                             client: JSON.parse(JSON.stringify(parsed.client)), 
                             products: JSON.parse(JSON.stringify(parsed.products)).map(p => {
                                 p.hasLighting = p.hasLighting === true || p.hasLighting === "نعم";
@@ -533,7 +580,7 @@
                 currentUser, loginForm, loginLoading, loginError, doLogin, doLogout,
                 catalog, orderForm, editingOrder, receiptInput, syncLoading, isSaving, isSuccess, notification,
                 calcDiscountableSubTotal, calcNonDiscountableSubTotal, calcSubTotal, calcDiscountValue, calcTotal,
-                addProductRow, removeProductRow, syncProductData, handleReceiptUpload, togglePayment,
+                addProductRow, removeProductRow, syncProductData, handleReceiptUpload, removeReceipt, togglePayment,
                 saveOrder, cancelEdit, syncCatalogFromSheet
             };
         }
