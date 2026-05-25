@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>هوية بيتك - طلباتي</title>
-    <link rel="icon" type="image/png" href="upload.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -20,11 +19,13 @@
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
         /* إعدادات الفاتورة والطباعة المخفية */
-        .invoice-a4 { width: 210mm; height: 296mm; max-height: 296mm; background: white; margin: 0 auto; padding: 8mm 12mm; box-sizing: border-box; color: #000; line-height: 1.3; position: relative; overflow: hidden; }
+        .invoice-a4 { width: 210mm; height: 296mm; max-height: 296mm; background: white; margin: 0 auto; padding: 8mm 12mm 25mm 12mm; box-sizing: border-box; color: #000; line-height: 1.3; position: relative; overflow: hidden; }
         .inv-info-box { background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9; }
         .inv-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
         .inv-table th { background: #142952; color: white; padding: 6px 8px; text-align: right; font-size: 12px; border: 1px solid #142952; }
         .inv-table td { border: 1px solid #e2e8f0; padding: 6px 8px; vertical-align: top; font-size: 11px; }
+
+        .invoice-footer { position: absolute; bottom: 8mm; left: 12mm; right: 12mm; border-top: 2px solid #142952; padding-top: 8px; text-align: center; }
 
         #capture-area { position: absolute; left: -9999px; top: 0; width: 210mm; }
         
@@ -32,7 +33,7 @@
             @page { size: A4; margin: 0; }
             .no-print { display: none !important; }
             body { background: white; margin: 0; padding: 0; }
-            .invoice-a4 { width: 210mm; height: 297mm; margin: 0; padding: 8mm 12mm; border: none; page-break-after: always; position: relative; overflow: hidden; }
+            .invoice-a4 { width: 210mm; height: 297mm; margin: 0; padding: 8mm 12mm 25mm 12mm; border: none; page-break-after: always; position: relative; overflow: hidden; }
             #capture-area { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; }
         }
     </style>
@@ -91,7 +92,7 @@
 
         <div v-if="syncLoading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm">
             <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
-            <p class="font-black text-[#142952]">جاري مزامنة البيانات...</p>
+            <p class="font-black text-[#142952]">جاري مزامنة بيانات طلباتك...</p>
         </div>
 
         <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -101,14 +102,14 @@
             <div class="flex gap-2">
                 <button @click="syncFromSheet" class="bg-[#142952] text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 shadow-lg hover:bg-blue-800 transition-all">
                     <i data-lucide="refresh-cw" :class="{'loader-spin': syncLoading}" class="w-4 h-4"></i>
-                    مزامنة السحاب
+                    تحديث القائمة
                 </button>
             </div>
         </header>
 
         <section class="bg-white rounded-3xl shadow-sm border overflow-hidden animate-in fade-in">
             <div class="p-8 bg-blue-50 flex justify-between items-center border-b flex-wrap gap-4">
-                <h3 class="text-xl font-black text-[#142952]">قائمة طلباتي والمبيعات الخاصة بي</h3>
+                <h3 class="text-xl font-black text-[#142952]">سجل الطلبات الخاصة بي</h3>
                 <div class="font-black text-blue-700 bg-white px-4 py-2 rounded-xl shadow-sm">الإجمالي: {{ myOrdersList.length }} طلب</div>
             </div>
             <div class="overflow-x-auto">
@@ -118,8 +119,8 @@
                             <th class="p-6">رقم الطلب وحالته</th>
                             <th class="p-6">التاريخ</th>
                             <th class="p-6">العميل</th>
-                            <th class="p-6">المبلغ الإجمالي</th>
-                            <th class="p-6 text-center">الإيصال</th>
+                            <th class="p-6">الإجمالي</th>
+                            <th class="p-6 text-center">الإيصالات</th>
                             <th class="p-6 text-center">إجراءات</th>
                         </tr>
                     </thead>
@@ -129,15 +130,16 @@
                                 {{ order.orderId }}
                                 <span v-if="order.isPaid" class="block mt-1 bg-green-100 text-green-700 text-[10px] px-2 py-0.5 rounded w-fit">مدفوع</span>
                                 <span v-else class="block mt-1 bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded w-fit">غير مدفوع</span>
-                                <span v-if="order.orderStatus" class="block mt-1 bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded w-fit font-bold">✓ تم التسجيل بالمتجر</span>
+                                <span v-if="order.orderStatus" class="block mt-1 bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded w-fit font-bold">✓ تم التسجيل</span>
                                 <span v-else class="block mt-1 bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded w-fit font-bold">✗ لم يتم التسجيل</span>
                             </td>
                             <td class="p-6 text-xs text-gray-500 font-bold" dir="ltr">{{ formatDate(order.timestamp) }}<br>{{ formatTime(order.timestamp) }}</td>
                             <td class="p-6 font-black text-gray-800">{{ order.client?.name || 'غير متوفر' }}</td>
                             <td class="p-6 font-black text-green-600">{{ order.totalAmount }} SAR</td>
                             <td class="p-6 text-center">
-                                <button v-if="order.receiptImage && order.receiptImage.length > 10" @click="showReceipt(order.receiptImage)" class="text-blue-500 hover:text-blue-700 transition-colors flex flex-col items-center justify-center gap-1 mx-auto">
-                                    <i data-lucide="image" class="w-5 h-5"></i>
+                                <button v-if="order.receipts && order.receipts.length > 0" @click="showReceipt(order.receipts)" class="relative text-blue-500 hover:text-blue-700 transition-colors flex flex-col items-center justify-center gap-1 mx-auto group">
+                                    <i data-lucide="images" class="w-5 h-5"></i>
+                                    <span class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">{{ order.receipts.length }}</span>
                                 </button>
                                 <span v-else class="text-gray-300">-</span>
                             </td>
@@ -160,132 +162,134 @@
 
     <div id="capture-area" dir="rtl">
         <div v-for="invoice in bulkList" :key="invoice.orderId" :id="'inv-' + invoice.orderId" class="invoice-a4">
+           
            <div class="flex justify-between items-center mb-4 border-b-2 border-gray-100 pb-3">
                 <div class="w-20 h-20 bg-white flex items-center justify-center p-2 rounded-xl">
                     <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
                 </div>
                 <div class="text-center">
-                    <h1 class="text-3xl font-black text-[#142952]">فاتورة</h1>
+                    <h1 class="text-3xl font-black text-[#142952]">فاتورة ضريبية مبسطة</h1>
                 </div>
                 <div class="text-left font-black text-[11px] space-y-0.5">
-                    <p class="text-2xl text-[#142952] pb-1">رقم الفاتورة : #{{ invoice.orderId }}</p>
-                    <p>تاريخ الطلب : {{ formatDateLong(invoice.timestamp) }}</p>
+                    <p class="text-2xl text-[#142952] pb-1">#{{ invoice.orderId }}</p>
+                    <p>التاريخ : {{ formatDateLong(invoice.timestamp) }}</p>
                     <p>الرقم الضريبي : 310236446600003</p>
                 </div>
             </div>
+            
             <div class="grid grid-cols-2 gap-4 mb-4 text-[11px]">
                 <div class="inv-info-box space-y-1">
-                    <span class="text-gray-400 font-bold">مصدرة إلى :</span>
+                    <span class="text-gray-400 font-bold">بيانات العميل :</span>
                     <p class="font-black text-base text-gray-900">{{ invoice.client?.name }}</p>
                     <p class="font-black text-[#142952] text-sm">{{ invoice.client?.address }}</p>
                     <p class="font-bold text-gray-600">المملكة العربية السعودية، {{ invoice.client?.city }}</p>
                     <p dir="ltr" class="font-black text-sm">{{ invoice.client?.phone }}</p>
                 </div>
                 <div class="inv-info-box text-left space-y-1 border-r-4 border-[#142952]">
-                    <span class="text-gray-400 font-bold">مصدرة من :</span>
-                    <p class="font-black text-sm text-[#142952]">المتجر الإلكتروني: هوية بيتك</p>
+                    <span class="text-gray-400 font-bold">المورد :</span>
+                    <p class="font-black text-sm text-[#142952]">مؤسسة هوية بيتك</p>
                     <p class="font-bold">المملكة العربية السعودية، الرياض</p>
                     <p class="font-bold">المعيقلية، الديرة، SA</p>
                     <p class="text-blue-600 font-bold">hwytbytk@gmail.com</p>
                     <p dir="ltr" class="font-black">+966 54 478 2301</p>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4 border-y py-3 mb-4 text-[11px]">
-                <div class="space-y-2">
-                    <span class="text-gray-400 font-bold">تفاصيل الدفع :</span>
-                    <div class="flex justify-between font-bold">
-                        <span>مجموع اللوحات والإضافات :</span>
-                        <span class="font-black">SAR {{ invoice.subTotal }}</span>
-                    </div>
-                    <div v-if="invoice.discountRate > 0" class="flex justify-between font-bold text-red-500">
-                        <span>الخصم ({{ invoice.discountRate }}%) :</span>
-                        <span class="font-black">- SAR {{ invoice.discountValue }}</span>
-                    </div>
-                    <div class="flex justify-between font-bold border-t pt-1">
-                        <span>الإجمالي بعد الخصم :</span>
-                        <span class="font-black text-[#142952]">SAR {{ invoice.totalAmount }}</span>
-                    </div>
-                    <div class="flex justify-between font-bold">
-                        <span>طريقة السداد :</span>
-                        <span class="font-black">مدى / أونلاين / كاش</span>
-                    </div>
-                </div>
-                <div class="text-left space-y-2">
-                    <span class="text-gray-400 font-bold">تفاصيل الشحن :</span>
-                    <div class="flex flex-row-reverse gap-4 font-bold">
-                        <div class="text-right space-y-1 text-gray-500">
-                            <p>بواسطة :</p>
-                            <p>أيام الشحن المتوقعة :</p>
-                        </div>
-                        <div class="text-left space-y-1 font-black text-[#142952]">
-                            <p>مندوبنا</p>
-                            <p>(7 - 12 يوم عمل)</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
             <table class="inv-table">
                 <thead>
                     <tr>
-                        <th class="rounded-tr-lg">وصف المنتج والخيارات المخصصة</th>
-                        <th class="text-center w-16">الكمية</th>
-                        <th class="text-center w-24">السعر</th>
-                        <th class="text-left rounded-tl-lg w-24">المجموع</th>
+                        <th class="rounded-tr-lg">تفاصيل المنتج والخيارات المختارة</th>
+                        <th class="text-center w-12">الكمية</th>
+                        <th class="text-center w-28">سعر الوحدة</th>
+                        <th class="text-left rounded-tl-lg w-28">الإجمالي</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="p in invoice.products" :key="p.id">
                         <td>
                             <div class="flex gap-3">
-                                <div class="w-12 h-12 bg-gray-50 border rounded-lg flex items-center justify-center p-1 shrink-0">
+                                <div class="w-16 h-16 bg-gray-50 border rounded-lg flex items-center justify-center p-1 shrink-0">
                                     <img :src="`products/${p.name}.webp`" :data-name="p.name" onerror="if(!this.getAttribute('data-j')){this.setAttribute('data-j','1'); this.src='products/'+this.getAttribute('data-name')+'.jpg';} else if(!this.getAttribute('data-p')){this.setAttribute('data-p','1'); this.src='products/'+this.getAttribute('data-name')+'.png';} else {this.onerror=null; this.src='logo1.png';}" class="w-full h-full object-contain rounded-md">
                                 </div>
                                 <div class="space-y-1 flex-1">
-                                    <p class="font-black text-sm text-gray-900">{{ p.name }} <span v-if="p.villaNo" class="text-[10px] text-gray-400 font-bold">(فيلا {{ p.villaNo }})</span></p>
-                                    <div class="text-[10px] bg-blue-50/50 p-2 rounded-lg border border-blue-100 space-y-0.5">
-                                        <p class="font-black text-[#142952]">الخيارات:
-                                            <span class="font-normal text-black ml-2">• اللون: <span class="font-black">{{ p.color === 'silver' ? 'فضي' : (p.color === 'gold' ? 'ذهبي' : 'أسود') }}</span></span>
-                                            <span v-if="p.hasLighting" class="font-normal text-black ml-2">• إضاءة: <span class="font-black">نعم</span></span>
-                                            <span v-if="p.customDesign" class="font-normal text-black ml-2">• تصميم خاص: <span class="font-black">نعم</span></span>
-                                            <span v-if="p.nationalAddress" class="font-normal text-black ml-2">• العنوان الوطني: <span class="font-black">{{ p.nationalAddress }}</span></span>
-                                            <span v-if="p.customName" class="font-normal text-black ml-2">• الاسم: <span class="font-black text-blue-700 italic">{{ p.customName }}</span></span>
-                                            <span v-if="p.notes" class="font-normal text-gray-500 ml-2 italic">• ملاحظة: {{ p.notes }}</span>
+                                    <p class="font-black text-sm text-[#142952]">{{ p.name }} <span v-if="p.villaNo" class="text-[10px] text-gray-500">(فيلا {{ p.villaNo }})</span></p>
+                                    <div class="text-[10px] space-y-1 mt-1.5">
+                                        <p class="font-bold text-gray-700 flex justify-between">
+                                            <span>• سعر اللوحة الأساسي:</span> <span class="font-black">{{ p.basePrice }} SAR</span>
                                         </p>
+                                        <p v-if="p.color === 'gold' || p.color === 'black'" class="font-bold text-gray-700 flex justify-between">
+                                            <span>• اللون ({{ p.color === 'gold' ? 'ذهبي' : 'أسود' }}):</span> <span class="font-black">+19 SAR</span>
+                                        </p>
+                                        <p v-else class="font-bold text-gray-500 flex justify-between">
+                                            <span>• اللون (فضي):</span> <span class="font-black">مجاناً</span>
+                                        </p>
+                                        <p v-if="p.hasLighting" class="font-bold text-gray-700 flex justify-between">
+                                            <span>• إضافة إضاءة:</span> <span class="font-black">+129 SAR</span>
+                                        </p>
+                                        <p v-if="p.customDesign" class="font-bold text-gray-700 flex justify-between">
+                                            <span>• تصميم خاص:</span> <span class="font-black">+50 SAR</span>
+                                        </p>
+                                        <div class="border-t border-dashed mt-1 pt-1 space-y-0.5">
+                                            <p v-if="p.nationalAddress" class="font-bold text-gray-600">العنوان الوطني: <span class="font-black text-black">{{ p.nationalAddress }}</span></p>
+                                            <p v-if="p.customName" class="font-bold text-gray-600">الاسم المطلوب: <span class="font-black text-blue-700 italic">{{ p.customName }}</span></p>
+                                            <p v-if="p.notes" class="font-bold text-gray-500 italic">ملاحظات: {{ p.notes }}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </td>
-                        <td class="text-center font-black text-sm bg-gray-50/30 align-middle">{{ p.count }}</td>
-                        <td class="text-center font-bold text-xs align-middle">SAR {{ p.price }}</td>
-                        <td class="text-left font-black text-sm text-[#142952] align-middle">SAR {{ p.price * p.count }}</td>
+                        <td class="text-center font-black text-base bg-gray-50/30 align-middle">{{ p.count }}</td>
+                        <td class="text-center font-black text-sm align-middle text-[#142952]">SAR {{ p.price }}</td>
+                        <td class="text-left font-black text-sm align-middle text-[#142952]">SAR {{ p.price * p.count }}</td>
                     </tr>
                 </tbody>
             </table>
-            <div class="mt-4 mr-auto w-80 space-y-1.5 border-t pt-3 text-xs">
-                <div class="flex justify-between font-bold text-gray-500">
-                    <span>مجموع المنتجات</span>
-                    <span class="font-black text-black">SAR {{ invoice.subTotal }}</span>
-                </div>
-                <div v-if="invoice.discountRate > 0" class="flex justify-between font-bold text-red-500">
-                    <span>الخصم ({{ invoice.discountRate }}%)</span>
-                    <span class="font-black text-red-600">- SAR {{ invoice.discountValue }}</span>
-                </div>
-                <div class="flex justify-between font-bold text-green-600">
-                    <span>تكلفة التوصيل و التركيب</span>
-                    <span class="font-black underline decoration-2">مجاناً</span>
-                </div>
-                <div class="flex justify-between items-center bg-[#142952] text-white p-3 rounded-xl font-black text-lg shadow-md mt-2 relative">
-                    <div class="flex items-center gap-3">
-                        <span>إجمالي الطلب</span>
-                        <div v-if="invoice.isPaid" class="flex items-center gap-1.5 bg-green-100 text-green-700 px-2 py-1 rounded-lg border border-green-300">
-                            <span class="text-[10px] font-black">✓ تم الدفع</span>
+            
+            <div class="mt-4 mr-auto w-[350px]">
+                <div class="space-y-2 border-t-2 border-[#142952] pt-3 text-xs mb-3">
+                    <div class="flex justify-between font-bold text-gray-700">
+                        <span>إجمالي المنتجات</span>
+                        <span class="font-black text-black text-sm">SAR {{ invoice.subTotal }}</span>
+                    </div>
+                    <div v-if="invoice.discountRate > 0" class="flex justify-between font-bold text-red-500">
+                        <span>الخصم ({{ invoice.discountRate }}%)</span>
+                        <span class="font-black text-red-600 text-sm">- SAR {{ invoice.discountValue }}</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-green-600 border-b border-gray-100 pb-3">
+                        <span>تكلفة التوصيل والتركيب</span>
+                        <span class="font-black underline decoration-2">مجاناً</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center bg-[#142952] text-white p-4 rounded-xl shadow-md mt-2 relative">
+                        <div class="flex flex-col gap-1">
+                            <span class="font-black text-base">الإجمالي النهائي</span>
+                            <div v-if="invoice.isPaid" class="flex items-center gap-1.5 bg-green-500/20 text-green-200 px-2 py-0.5 rounded-md border border-green-400/50 w-fit">
+                                <span class="text-[10px] font-black">✓ تم الدفع</span>
+                            </div>
+                            <div v-else class="flex items-center gap-1.5 bg-red-500/20 text-red-200 px-2 py-0.5 rounded-md border border-red-400/50 w-fit">
+                                <span class="text-[10px] font-black">✗ غير مدفوع</span>
+                            </div>
                         </div>
-                        <div v-else class="flex items-center gap-1.5 bg-red-100 text-red-700 px-2 py-1 rounded-lg border border-red-300">
-                            <span class="text-[10px] font-black">✗ غير مدفوع</span>
+                        <span class="font-black text-2xl">SAR {{ invoice.totalAmount }}</span>
+                    </div>
+                </div>
+
+                <div v-if="invoice.receipts && invoice.receipts.length > 0" class="border-2 border-dashed border-gray-200 p-3 rounded-xl bg-gray-50/50">
+                    <p class="text-[10px] font-black text-gray-500 mb-2 border-b border-gray-200 pb-1">إيصالات الدفع المرفقة للطلب:</p>
+                    <div class="flex flex-wrap gap-2">
+                        <div v-for="(img, idx) in invoice.receipts" :key="idx" class="w-[70px] h-[70px] border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
+                            <img :src="img" class="w-full h-full object-cover">
                         </div>
                     </div>
-                    <span>SAR {{ invoice.totalAmount }}</span>
                 </div>
+            </div>
+
+            <div class="invoice-footer mt-auto">
+                <p class="font-black text-[#142952] text-sm mb-1">شكراً لتسوقكم معنا في هوية بيتك</p>
+                <p class="text-[10px] text-gray-500 mb-1">البضاعة المباعة لا ترد ولا تستبدل إلا في حالة وجود عيب مصنعي خلال 3 أيام من تاريخ الاستلام.</p>
+                <p class="text-[10px] font-bold text-gray-600">
+                    للتواصل والدعم الفني: <span dir="ltr" class="text-blue-700">hwytbytk@gmail.com</span> | <span dir="ltr" class="text-[#142952]">+966 54 478 2301</span>
+                </p>
             </div>
         </div>
     </div>
@@ -294,7 +298,7 @@
 <script type="module">
     const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykZtIUWlvJCKSjNyTJq4l-UDFu_YqcPO8HP2-Nzmp_b2V0ivkU_d_GBgR_kX5lzHx3/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
 
     function parseSheetDate(dateStr) {
         if (!dateStr) return new Date().toISOString();
@@ -303,11 +307,9 @@
         if (typeof dateStr === 'string') {
             const s = dateStr.trim();
             const parts = s.split(/[\/\-]/);
-            if (parts.length === 3) {
-                if (parts[2].length === 4) {
-                    d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-                    if (!isNaN(d.getTime())) return d.toISOString();
-                }
+            if (parts.length === 3 && parts[2].length === 4) {
+                d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                if (!isNaN(d.getTime())) return d.toISOString();
             }
         }
         return new Date().toISOString();
@@ -341,21 +343,28 @@
 
             const doLogout = () => { sessionStorage.removeItem('hb_user'); window.location.href = 'index.html'; };
 
-            const showReceipt = (imgSrc) => {
+            // عرض نافذة صور الإيصالات المتعددة
+            const showReceipt = (receipts) => {
+                if (!receipts || receipts.length === 0) return;
                 const w = window.open("");
-                w.document.write(`<div style="display:flex; justify-content:center; align-items:center; height:100vh; background:#f0f0f0;"><img src="${imgSrc}" style="max-width:100%; max-height:100vh; box-shadow: 0 4px 8px rgba(0,0,0,0.2); border-radius: 8px;" /></div>`);
+                let imgsHtml = receipts.map(src => `<img src="${src}" style="max-width:100%; max-height:85vh; margin: 15px auto; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border-radius: 12px; display:block;" />`).join('');
+                w.document.write(`
+                    <html dir="rtl"><head><title>عرض الإيصالات</title></head>
+                    <body style="background:#1e293b; padding:20px; display:flex; flex-direction:column; align-items:center; margin:0;">
+                        <h2 style="color:white; font-family:sans-serif; margin-bottom:20px;">الإيصالات المرفقة للطلب</h2>
+                        ${imgsHtml}
+                    </body></html>
+                `);
             };
 
             const editOrder = (order) => {
-                // حفظ الطلب في الذاكرة لتستقبله صفحة index.html
                 localStorage.setItem('orderToEdit', JSON.stringify(order));
                 window.location.href = 'index.html';
             };
 
             const deleteOrder = async (order) => {
-                if (!confirm(`هل أنت متأكد من حذف الطلب ${order.orderId} نهائياً من النظام؟`)) return;
+                if (!confirm(`هل أنت متأكد من حذف الطلب ${order.orderId} نهائياً؟ (سيتم مسحه من السحاب)`)) return;
                 
-                // التحديث المحلي فوراً
                 orders.value = orders.value.filter(o => o.orderId !== order.orderId);
                 localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value)); 
                 
@@ -365,7 +374,7 @@
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
                         body: JSON.stringify({ action: 'delete', orderId: order.orderId, target: 'orders' }) 
                     });
-                    showNotify('تم الحذف بنجاح من الشيت');
+                    showNotify('تم الحذف بنجاح من قاعدة البيانات');
                 } catch { 
                     showNotify('تم الحذف محلياً، يرجى فحص الاتصال بالإنترنت', 'error'); 
                 }
@@ -391,17 +400,27 @@
                         if (!oid) return;
                         
                         if (!grouped[oid]) {
+                            // 📥 استقبال وفك تشفير الإيصالات المتعددة
+                            let rawReceipt = row['صورة الإيصال'] || '';
+                            let loadedReceipts = [];
+                            if (rawReceipt.includes('|||')) {
+                                loadedReceipts = rawReceipt.split('|||').filter(x => x.trim().length > 0);
+                            } else if (rawReceipt.trim().length > 0) {
+                                loadedReceipts = [rawReceipt.trim()];
+                            }
+
                             grouped[oid] = {
                                 orderId: oid, managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim(),
                                 discountRate: parseFloat(row['نسبة الخصم'] || 0), discountValue: parseFloat(row['قيمة الخصم'] || 0),
                                 isPaid: isPaidStatus(row['حالة الدفع']), 
-                                receiptImage: row['صورة الإيصال'] || null,
+                                receipts: loadedReceipts, // مصفوفة الإيصالات
                                 orderStatus: row['حالة الطلب'] === true || String(row['حالة الطلب']).toLowerCase() === 'true' || row['حالة الطلب'] === 'نعم' || row['حالة الطلب'] === 'تم تسجيل الطلب',
                                 client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: row['الجوال'] || '', address: row['العنوان بالتفصيل'] || '' },
                                 products: [], totalAmount: 0, subTotal: 0,
                                 timestamp: parseSheetDate(row['التاريخ'])
                             };
                         }
+
                         const p = {
                             productId: row['المنتج'] || '', name: row['المنتج'] || '', color: row['اللون'] || 'silver',
                             count: parseInt(row['العدد'] || 1), price: parseFloat(row['السعر الفردي'] || 0),
@@ -410,6 +429,14 @@
                             hasLighting: row['إضافة إضاءة'] === 'نعم' || row['إضافة إضاءة'] === true,
                             customDesign: row['تصميم خاص'] === 'نعم' || row['تصميم خاص'] === true
                         };
+                        
+                        // استنتاج السعر الأساسي لعرض الفاتورة
+                        let additions = 0;
+                        if (p.hasLighting) additions += 129;
+                        if (p.customDesign) additions += 50;
+                        if (p.color === 'gold' || p.color === 'black') additions += 19;
+                        p.basePrice = p.price - additions;
+
                         grouped[oid].products.push(p);
                     });
 
@@ -417,13 +444,13 @@
                         let discountable = 0;
                         let nonDiscountable = 0;
                         o.products.forEach(p => {
-                            let additions = 0;
-                            if (p.hasLighting) additions += 129;
-                            if (p.customDesign) additions += 50;
+                            let adds = 0;
+                            if (p.hasLighting) adds += 129;
+                            if (p.customDesign) adds += 50;
                             
-                            let baseAndColor = p.price - additions;
+                            let baseAndColor = p.price - adds;
                             discountable += (baseAndColor * p.count);
-                            nonDiscountable += (additions * p.count);
+                            nonDiscountable += (adds * p.count);
                         });
                         
                         o.subTotal = discountable + nonDiscountable;
@@ -438,7 +465,7 @@
 
                     orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
                     localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
-                    showNotify('تمت المزامنة بنجاح');
+                    showNotify('تمت مزامنة الطلبات بنجاح');
                 } catch(e) {
                     showNotify('خطأ في المزامنة. يرجى التأكد من الاتصال.', 'error');
                 } finally { syncLoading.value = false; }
@@ -456,12 +483,11 @@
                 }
                 currentUser.value = JSON.parse(storedUser);
                 
-                // جلب الطلبات من الذاكرة المحلية كبداية سريعة
                 const localOrders = localStorage.getItem('hwayt_orders_v8');
                 if (localOrders) orders.value = JSON.parse(localOrders);
 
                 setTimeout(() => lucide.createIcons(), 500); 
-                syncFromSheet(); // مزامنة تلقائية لجلب أحدث التعديلات وحالات الطلب من الشيت
+                syncFromSheet(); 
             });
 
             return {
