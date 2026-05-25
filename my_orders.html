@@ -92,7 +92,7 @@
 
         <div v-if="syncLoading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm">
             <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
-            <p class="font-black text-[#142952]">جاري مزامنة بيانات طلباتك...</p>
+            <p class="font-black text-[#142952]">جاري معالجة ومزامنة البيانات...</p>
         </div>
 
         <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -387,6 +387,7 @@
                 });
             };
 
+            // 🔴 التحديث الهام لعلاج المزامنة ومنع الـ Type Errors
             const syncFromSheet = async () => {
                 syncLoading.value = true;
                 try {
@@ -400,8 +401,8 @@
                         if (!oid) return;
                         
                         if (!grouped[oid]) {
-                            // 📥 استقبال وفك تشفير الإيصالات المتعددة
-                            let rawReceipt = row['صورة الإيصال'] || '';
+                            // 📥 تأمين تحويل قيمة الإيصال لنص مهما كان نوعها في الشيت
+                            let rawReceipt = String(row['صورة الإيصال'] || '');
                             let loadedReceipts = [];
                             if (rawReceipt.includes('|||')) {
                                 loadedReceipts = rawReceipt.split('|||').filter(x => x.trim().length > 0);
@@ -413,24 +414,31 @@
                                 orderId: oid, managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim(),
                                 discountRate: parseFloat(row['نسبة الخصم'] || 0), discountValue: parseFloat(row['قيمة الخصم'] || 0),
                                 isPaid: isPaidStatus(row['حالة الدفع']), 
-                                receipts: loadedReceipts, // مصفوفة الإيصالات
+                                receipts: loadedReceipts,
                                 orderStatus: row['حالة الطلب'] === true || String(row['حالة الطلب']).toLowerCase() === 'true' || row['حالة الطلب'] === 'نعم' || row['حالة الطلب'] === 'تم تسجيل الطلب',
-                                client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: row['الجوال'] || '', address: row['العنوان بالتفصيل'] || '' },
+                                client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: String(row['الجوال'] || ''), address: row['العنوان بالتفصيل'] || '' },
                                 products: [], totalAmount: 0, subTotal: 0,
                                 timestamp: parseSheetDate(row['التاريخ'])
                             };
                         }
 
+                        // 📥 تعيين ID لكل منتج وحل مشكلة جلب اسم المنتج عند التعديل
+                        const productNameOrId = String(row['المنتج'] || '').trim();
                         const p = {
-                            productId: row['المنتج'] || '', name: row['المنتج'] || '', color: row['اللون'] || 'silver',
-                            count: parseInt(row['العدد'] || 1), price: parseFloat(row['السعر الفردي'] || 0),
-                            nationalAddress: row['العنوان الوطني'] || '', villaNo: row['رقم الفيلا'] || '',
-                            customName: row['الاسم المخصص'] || '', notes: row['ملاحظات'] || '',
+                            id: Date.now() + Math.random(), // لحل مشكلة توقف رسم الفيو (Vue Key)
+                            productId: productNameOrId,     // لتعبئة حقل القائمة المنسدلة عند التعديل
+                            name: productNameOrId, 
+                            color: row['اللون'] || 'silver',
+                            count: parseInt(row['العدد'] || 1), 
+                            price: parseFloat(row['السعر الفردي'] || 0),
+                            nationalAddress: row['العنوان الوطني'] || '', 
+                            villaNo: row['رقم الفيلا'] || '',
+                            customName: row['الاسم المخصص'] || '', 
+                            notes: row['ملاحظات'] || '',
                             hasLighting: row['إضافة إضاءة'] === 'نعم' || row['إضافة إضاءة'] === true,
                             customDesign: row['تصميم خاص'] === 'نعم' || row['تصميم خاص'] === true
                         };
                         
-                        // استنتاج السعر الأساسي لعرض الفاتورة
                         let additions = 0;
                         if (p.hasLighting) additions += 129;
                         if (p.customDesign) additions += 50;
@@ -465,7 +473,7 @@
 
                     orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
                     localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
-                    showNotify('تمت مزامنة الطلبات بنجاح');
+                    showNotify('تمت المزامنة وحل التعارضات بنجاح');
                 } catch(e) {
                     showNotify('خطأ في المزامنة. يرجى التأكد من الاتصال.', 'error');
                 } finally { syncLoading.value = false; }
