@@ -27,7 +27,6 @@
         .inv-table th { background: #142952; color: white; padding: 6px 8px; text-align: right; font-size: 12px; border: 1px solid #142952; }
         .inv-table td { border: 1px solid #e2e8f0; padding: 6px 8px; vertical-align: top; font-size: 11px; }
 
-        /* تذييل الفاتورة (الفوتر) */
         .invoice-footer { position: absolute; bottom: 8mm; left: 12mm; right: 12mm; border-top: 2px solid #142952; padding-top: 8px; text-align: center; }
 
         #capture-area { position: absolute; left: -9999px; top: 0; width: 210mm; }
@@ -154,8 +153,11 @@
                     <p class="text-xs text-gray-400 line-clamp-1 mb-6">📍 {{ order.client?.address || 'غير محدد' }}</p>
                     <div class="flex justify-between items-center border-t border-dashed border-gray-100 pt-6">
                         <span class="font-black text-green-600 text-lg">{{ order.totalAmount }} SAR</span>
-                        <span v-if="order.isPaid" class="text-green-500 font-black text-xs flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> مدفوع</span>
-                        <span v-else class="text-red-400 font-black text-xs flex items-center gap-1"><i data-lucide="x-circle" class="w-3 h-3"></i> غير مدفوع</span>
+                        <div class="flex items-center gap-2">
+                            <span v-if="order.receipts && order.receipts.length > 0" class="bg-blue-100 text-blue-600 text-[10px] px-2 py-0.5 rounded font-black flex items-center gap-1"><i data-lucide="image" class="w-3 h-3"></i> {{ order.receipts.length }}</span>
+                            <span v-if="order.isPaid" class="text-green-500 font-black text-xs flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> مدفوع</span>
+                            <span v-else class="text-red-400 font-black text-xs flex items-center gap-1"><i data-lucide="x-circle" class="w-3 h-3"></i> غير مدفوع</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -248,39 +250,46 @@
                 </tbody>
             </table>
             
-            <div class="mt-4 mr-auto w-[350px] space-y-2 border-t-2 pt-3 text-xs">
-                <div class="flex justify-between font-bold text-gray-600">
-                    <span>مجموع اللوحات والألوان (خاضع للخصم)</span>
-                    <span class="font-black text-black">SAR {{ invoice.discountableTotal }}</span>
-                </div>
-                <div v-if="invoice.nonDiscountableTotal > 0" class="flex justify-between font-bold text-gray-600">
-                    <span>مجموع الإضافات (غير خاضع للخصم)</span>
-                    <span class="font-black text-black">SAR {{ invoice.nonDiscountableTotal }}</span>
-                </div>
-                <div v-if="invoice.discountRate > 0" class="flex justify-between font-bold text-red-500 bg-red-50 p-1.5 rounded">
-                    <span>خصم خاص ({{ invoice.discountRate }}%)</span>
-                    <span class="font-black text-red-600">- SAR {{ invoice.discountValue }}</span>
-                </div>
-                <div class="flex justify-between font-bold text-green-600">
-                    <span>تكلفة الشحن والتوصيل</span>
-                    <span class="font-black underline decoration-2">مجاناً</span>
-                </div>
-                
-                <div class="flex justify-between items-center bg-[#142952] text-white p-4 rounded-xl shadow-md mt-3 relative">
-                    <div class="flex flex-col gap-1">
-                        <span class="font-black text-base">الإجمالي النهائي</span>
-                        <div v-if="invoice.isPaid" class="flex items-center gap-1.5 bg-green-500/20 text-green-200 px-2 py-0.5 rounded-md border border-green-400/50 w-fit">
-                            <span class="text-[10px] font-black">✓ تم الدفع (مدى/تحويل)</span>
+            <div class="mt-4 mr-auto w-[350px]">
+                <div class="space-y-2 border-t-2 border-[#142952] pt-3 text-xs mb-3">
+                    <div class="flex justify-between font-bold text-gray-700">
+                        <span>إجمالي المنتجات</span>
+                        <span class="font-black text-black text-sm">SAR {{ invoice.subTotal }}</span>
+                    </div>
+                    <div v-if="invoice.discountRate > 0" class="flex justify-between font-bold text-red-500">
+                        <span>الخصم ({{ invoice.discountRate }}%)</span>
+                        <span class="font-black text-red-600 text-sm">- SAR {{ invoice.discountValue }}</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-green-600 border-b border-gray-100 pb-3">
+                        <span>تكلفة التوصيل والتركيب</span>
+                        <span class="font-black underline decoration-2">مجاناً</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center bg-[#142952] text-white p-4 rounded-xl shadow-md mt-2 relative">
+                        <div class="flex flex-col gap-1">
+                            <span class="font-black text-base">الإجمالي النهائي</span>
+                            <div v-if="invoice.isPaid" class="flex items-center gap-1.5 bg-green-500/20 text-green-200 px-2 py-0.5 rounded-md border border-green-400/50 w-fit">
+                                <span class="text-[10px] font-black">✓ تم الدفع</span>
+                            </div>
+                            <div v-else class="flex items-center gap-1.5 bg-red-500/20 text-red-200 px-2 py-0.5 rounded-md border border-red-400/50 w-fit">
+                                <span class="text-[10px] font-black">✗ غير مدفوع</span>
+                            </div>
                         </div>
-                        <div v-else class="flex items-center gap-1.5 bg-red-500/20 text-red-200 px-2 py-0.5 rounded-md border border-red-400/50 w-fit">
-                            <span class="text-[10px] font-black">✗ غير مدفوع</span>
+                        <span class="font-black text-2xl">SAR {{ invoice.totalAmount }}</span>
+                    </div>
+                </div>
+
+                <div v-if="invoice.receipts && invoice.receipts.length > 0" class="border-2 border-dashed border-gray-200 p-3 rounded-xl bg-gray-50/50">
+                    <p class="text-[10px] font-black text-gray-500 mb-2 border-b border-gray-200 pb-1">إيصالات الدفع المرفقة للطلب:</p>
+                    <div class="flex flex-wrap gap-2">
+                        <div v-for="(img, idx) in invoice.receipts" :key="idx" class="w-[70px] h-[70px] border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
+                            <img :src="img" class="w-full h-full object-cover">
                         </div>
                     </div>
-                    <span class="font-black text-2xl">SAR {{ invoice.totalAmount }}</span>
                 </div>
             </div>
 
-            <div class="invoice-footer">
+            <div class="invoice-footer mt-auto">
                 <p class="font-black text-[#142952] text-sm mb-1">شكراً لتسوقكم معنا في هوية بيتك</p>
                 <p class="text-[10px] text-gray-500 mb-1">البضاعة المباعة لا ترد ولا تستبدل إلا في حالة وجود عيب مصنعي خلال 3 أيام من تاريخ الاستلام.</p>
                 <p class="text-[10px] font-bold text-gray-600">
@@ -294,7 +303,7 @@
 <script type="module">
     const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykZtIUWlvJCKSjNyTJq4l-UDFu_YqcPO8HP2-Nzmp_b2V0ivkU_d_GBgR_kX5lzHx3/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
 
     function parseSheetDate(dateStr) {
         if (!dateStr) return new Date().toISOString();
@@ -332,7 +341,7 @@
 
             const filteredByDateOrders = computed(() => {
                 return orders.value.filter(o => {
-                    // إذا لم يكن مديراً، يرى فواتيره فقط
+                    // حماية للموظف العادي بحيث يرى فواتيره فقط
                     if (currentUser.value?.role !== 'admin') {
                         if ((o.managerCode || '').toUpperCase() !== (currentUser.value?.managerCode || '').toUpperCase()) return false;
                     }
@@ -376,7 +385,7 @@
                 for (let i = 0; i < filteredByDateOrders.value.length; i++) {
                     bulkList.value = [filteredByDateOrders.value[i]]; 
                     await nextTick(); 
-                    await new Promise(r => setTimeout(r, 400)); // انتظار لتحديث الواجهة بالكامل (الصور وغيرها)
+                    await new Promise(r => setTimeout(r, 400)); 
                     
                     const canvas = await html2canvas(document.getElementById('inv-' + filteredByDateOrders.value[i].orderId), { scale: 2 });
                     if (i > 0) finalPDF.addPage();
@@ -401,12 +410,22 @@
                         if (!oid) return;
                         
                         if (!grouped[oid]) {
+                            // 📥 فك تشفير الإيصالات
+                            let rawReceipt = row['صورة الإيصال'] || '';
+                            let loadedReceipts = [];
+                            if (rawReceipt.includes('|||')) {
+                                loadedReceipts = rawReceipt.split('|||').filter(x => x.trim().length > 0);
+                            } else if (rawReceipt.trim().length > 0) {
+                                loadedReceipts = [rawReceipt.trim()];
+                            }
+
                             grouped[oid] = {
                                 orderId: oid, managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim(),
                                 discountRate: parseFloat(row['نسبة الخصم'] || 0), discountValue: parseFloat(row['قيمة الخصم'] || 0),
                                 isPaid: isPaidStatus(row['حالة الدفع']), 
+                                receipts: loadedReceipts,
                                 client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: row['الجوال'] || '', address: row['العنوان بالتفصيل'] || '' },
-                                products: [], totalAmount: 0, subTotal: 0, discountableTotal: 0, nonDiscountableTotal: 0,
+                                products: [], totalAmount: 0, subTotal: 0,
                                 timestamp: parseSheetDate(row['التاريخ'])
                             };
                         }
@@ -416,7 +435,6 @@
                         const customDesign = row['تصميم خاص'] === 'نعم' || row['تصميم خاص'] === true;
                         const color = row['اللون'] || 'silver';
                         
-                        // استنتاج السعر الأساسي لعرضه في الفاتورة التفصيلية
                         let additions = 0;
                         if (hasLighting) additions += 129;
                         if (customDesign) additions += 50;
@@ -448,8 +466,6 @@
                             nonDiscountable += (adds * p.count);
                         });
                         
-                        o.discountableTotal = discountable;
-                        o.nonDiscountableTotal = nonDiscountable;
                         o.subTotal = discountable + nonDiscountable;
                         
                         if (o.discountRate > 0) {
