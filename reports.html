@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>هوية بيتك  - التقارير والإحصائيات</title>
+    <title>نظام هوية بيتك  - التقارير والإحصائيات</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -23,24 +23,11 @@
         .report-table td { border-bottom: 1px solid #e2e8f0; padding: 12px 16px; font-size: 13px; font-weight: 700; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
         .report-table tr:hover td { background-color: #f1f5f9; }
 
-        /* حماية الـ PDF من الانهيار والتحميل المخفي بأمان */
-        #pdf-export-container {
-            position: absolute;
-            left: -9999px;
-            top: 0;
-            opacity: 0.01;
-            pointer-events: none;
-            z-index: -9999;
-        }
+        #pdf-export-container { position: absolute; left: -9999px; top: 0; opacity: 0.01; pointer-events: none; z-index: -9999; }
 
         #capture-employee-report {
-            width: 297mm;
-            min-height: 210mm;
-            background: white;
-            padding: 15mm 20mm;
-            box-sizing: border-box;
-            color: #000;
-            direction: rtl;
+            width: 297mm; min-height: 210mm; background: white; padding: 15mm 20mm;
+            box-sizing: border-box; color: #000; direction: rtl;
         }
         .pdf-header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #142952; padding-bottom: 15px; margin-bottom: 20px; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -288,7 +275,7 @@
 
                 <div class="text-left text-sm font-bold text-gray-800 space-y-1.5 bg-gray-50 p-4 rounded-xl border border-gray-200">
                     <p>السجل التجاري : <span class="font-black text-black">310236446600003</span></p>
-                    <p>البريد الإلكتروني : <span dir="ltr" class="font-black text-blue-700">hwytbytk@gmail.com</span></p>
+                    <p>البريد الإلكتروني : <span dir="ltr" class="font-black text-blue-700">makani@gmail.com</span></p>
                     <p>جوال التواصل : <span dir="ltr" class="font-black">+966 54 478 2301</span></p>
                 </div>
             </div>
@@ -448,19 +435,21 @@
                     const timestamp = new Date().getTime();
                     const fetchUrl = `${GOOGLE_SCRIPT_URL}?t=${timestamp}&action=read&target=orders`;
 
-                    // تعديل دفاعي: فحص واصطياد أخطاء الشبكة والـ CORS والمتصفح
-                    const res = await fetch(fetchUrl, { redirect: 'follow', cache: 'no-store' })
+                    // تمت إزالة cache: 'no-store' لتجنب مشكلة الـ CORS Preflight Options Block
+                    const res = await fetch(fetchUrl, { redirect: 'follow' })
                         .catch(err => {
-                            // إعطاء تلميح مباشر للمستخدم إذا قام المتصفح أو الإضافة بحظر الرابط
-                            throw new Error("تم حظر الاتصال من قِبل المتصفح (CORS/Shields). يرجى تعطيل مانع الإعلانات أو مراجعة إعدادات صلاحيات النشر (Anyone) في الـ Script.");
+                            throw new Error("خطأ في الاتصال بالسيرفر. يرجى التأكد من أن الرابط متاح وأن النشر تم كـ (Anyone).");
                         });
 
+                    if (!res.ok) throw new Error("استجابة السيرفر غير ناجحة: " + res.status);
+                    
                     const text = await res.text();
                     let result;
                     try {
                         result = JSON.parse(text);
                     } catch(e) {
-                        throw new Error("استجابة غير صالحة من السيرفر. تأكدي من تحديث النشر كـ New Deployment في جوجل شيت.");
+                        console.error("البيانات الراجعة ليست JSON:", text.substring(0, 200));
+                        throw new Error("تنسيق البيانات المرتجعة غير صالح. تأكدي من إعدادات النشر في سكريبت جوجل.");
                     }
                     
                     const startStr = reportStartDate.value; 
@@ -482,7 +471,9 @@
 
                                 if (!tempOrders[oid]) {
                                     const payStatus = String(getVal(row, ['حالة الدفع', 'دفع', 'payment']) || '').trim();
-                                    const isOrderPaid = payStatus.includes('تم') || payStatus === 'paid' || payStatus === 'true';
+                                    
+                                    // 🟢 تصحيح المنطق هنا: كان includes('تم') يقرأ "لم يتم الدفع" كمدفوع!
+                                    const isOrderPaid = payStatus === 'تم الدفع' || payStatus === 'paid' || payStatus === 'true';
 
                                     let mCode = String(getVal(row, ['رمز المسؤول', 'مسؤول', 'manager']) || oid.split('-')[0] || 'XX').trim().toUpperCase();
                                     if(mCode === 'UNDEFINED' || mCode === '') mCode = 'غير محدد';
@@ -587,7 +578,7 @@
 
                 } catch (e) {
                     console.error('Sync Error:', e);
-                    showNotify(e.message, 'error'); // عرض رسالة الخطأ المفصلة والمعدلة
+                    showNotify(e.message, 'error'); 
                 } finally {
                     syncLoading.value = false;
                 }
@@ -745,7 +736,7 @@
                     const finalPDF = new jsPDF('l', 'mm', 'a4');
                     finalPDF.addImage(imgData, 'JPEG', 0, 0, 297, 210);
                     
-                    finalPDF.save(`تقرير_مكاني_أداء_الموظفين_${reportStartDate.value}.pdf`);
+                    finalPDF.save(`تقرير_هوية بيتك _أداء_الموظفين_${reportStartDate.value}.pdf`);
                     showNotify('تم تحميل التقرير بنجاح', 'success');
                 } catch(e) {
                     console.error('PDF Generation Error:', e);
