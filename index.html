@@ -306,8 +306,7 @@
 <script type="module">
     const { createApp, ref, computed, onMounted } = Vue;
 
-    // الرابط المحدث لـ App Script للمزامنة الصحيحة للبيانات مع باقي أقسام النظام
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRPBaxtUxauX1wA4ZbeuoT9WKwue6JCx2QCbFxH8zIkfPtT7w3WR-KMkFkbYlEucnT/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
 
     const STATIC_PRICES = {
         1: 149, 2: 149, 3: 199, 4: 199, 5: 225, 6: 225, 7: 249, 8: 229, 9: 215, 10: 225,
@@ -408,14 +407,7 @@
                 if (item) { p.name = item.name; p.basePrice = item.price; } 
             };
             
-            // قيد حماية خيار الدفع للموظفين ومنع تفعيله إلا بوجود وصل مرفوع
             const togglePayment = () => {
-                if (currentUser.value?.role !== 'admin') {
-                    if (!orderForm.value.isPaid && orderForm.value.receipts.length === 0) {
-                        showNotify('لا يمكن تفعيل حالة المدفوع للموظفين إلا بعد رفع إيصال/وصل الدفع أولاً!', 'error');
-                        return;
-                    }
-                }
                 orderForm.value.isPaid = !orderForm.value.isPaid;
             };
 
@@ -434,7 +426,7 @@
                             canvas.height = img.height * scale;
                             canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                             orderForm.value.receipts.push(canvas.toDataURL('image/jpeg', 0.6));
-                            orderForm.value.isPaid = true; // يتم تفعيل خيار المدفوع تلقائياً عند رفع إيصال صحيح
+                            orderForm.value.isPaid = true; 
                         };
                         img.src = event.target.result;
                     };
@@ -444,14 +436,7 @@
                 if (receiptInput.value) receiptInput.value.value = '';
             };
 
-            // عند حذف الإيصالات، إذا أصبح العدد 0 والمستخدم موظف، يتم إلغاء خيار مدفوع تلقائياً
-            const removeReceipt = (idx) => {
-                orderForm.value.receipts.splice(idx, 1);
-                if (currentUser.value?.role !== 'admin' && orderForm.value.receipts.length === 0) {
-                    orderForm.value.isPaid = false;
-                    showNotify('تم إلغاء تفعيل حالة المدفوع لعدم وجود أي إيصالات مرفقة حالياً', 'info');
-                }
-            };
+            const removeReceipt = (idx) => orderForm.value.receipts.splice(idx, 1);
 
             const saveOrder = () => {
                 isSaving.value = true;
@@ -482,6 +467,7 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 }).then(() => {
+                    // Sync fully through cloud locally (Wait for next tab load to fetch, or force sync here)
                     isSaving.value = false;
                     isSuccess.value = true;
                     setTimeout(() => { 
@@ -490,7 +476,7 @@
                         window.location.href = 'my_orders.html';
                     }, 1200);
                 }).catch(e => {
-                    isSaving.value = false; showNotify('خطأ فني في الاتصال بالسحاب', 'error');
+                    isSaving.value = false; showNotify('خطأ فني في الاتصال', 'error');
                 });
             };
 
