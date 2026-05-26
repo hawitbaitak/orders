@@ -33,10 +33,10 @@
             color: #000; direction: rtl; display: none; overflow: hidden;
         }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th { background: #142952; color: white; padding: 10px; font-size: 14px; font-weight: 900; border: 1px solid #142952; text-align: center; }
-        .pdf-table td { border: 1px solid #cbd5e1; padding: 8px 10px; font-size: 13px; font-weight: 700; text-align: center; color: #1e293b; }
+        .pdf-table th { background: #142952; color: white; padding: 12px; font-size: 15px; font-weight: 900; border: 1px solid #142952; text-align: center; }
+        .pdf-table td { border: 1px solid #cbd5e1; padding: 10px; font-size: 14px; font-weight: 700; text-align: center; color: #1e293b; }
         .pdf-table tr:nth-child(even) td { background-color: #f8fafc; }
-        .pdf-table tr.total-row td { background: #e2e8f0; font-weight: 900; color: #142952; font-size: 15px; border-top: 2px solid #142952; }
+        .pdf-table tr.total-row td { background: #e2e8f0; font-weight: 900; color: #142952; font-size: 16px; border-top: 2px solid #142952; }
     </style>
 </head>
 <body>
@@ -245,25 +245,25 @@
     </main>
 
     <div id="capture-employee-report">
-        <div class="flex justify-between items-center mb-6 border-b-4 border-[#142952] pb-4">
-            <div class="flex items-center gap-4">
-                <div class="w-20 h-20 bg-gray-50 p-2 rounded-xl border border-gray-200 flex items-center justify-center">
+        <div class="flex justify-between items-center mb-8 border-b-4 border-[#142952] pb-6">
+            <div class="flex items-center gap-6">
+                <div class="w-24 h-24 bg-gray-50 p-2 rounded-2xl border-2 border-gray-200 flex items-center justify-center">
                     <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
                 </div>
                 <div>
-                    <h1 class="text-2xl font-black text-[#142952] mb-1">مؤسسة هوية بيتك</h1>
-                    <p class="text-sm font-bold text-gray-600">نظام إدارة المبيعات والتقارير</p>
+                    <h1 class="text-3xl font-black text-[#142952] mb-2">مؤسسة هوية بيتك</h1>
+                    <p class="text-lg font-bold text-gray-600">نظام إدارة المبيعات والتقارير</p>
                 </div>
             </div>
             
             <div class="text-center">
-                <h2 class="text-2xl font-black text-black bg-gray-100 px-6 py-2 rounded-lg border border-gray-300">تقرير أداء ومبيعات الموظفين</h2>
-                <p class="text-sm font-bold text-gray-600 mt-2">عن الفترة: {{ reportStartDate }} — إلى: {{ reportEndDate }}</p>
+                <h2 class="text-3xl font-black text-black bg-gray-100 px-8 py-3 rounded-xl border-2 border-gray-300">تقرير أداء ومبيعات الموظفين</h2>
+                <p class="text-base font-bold text-gray-600 mt-3">الفترة: {{ reportStartDate }} — إلى: {{ reportEndDate }}</p>
             </div>
 
-            <div class="text-left text-sm font-bold text-gray-700 space-y-1">
+            <div class="text-left text-base font-bold text-gray-700 space-y-2 bg-gray-50 p-4 rounded-xl border border-gray-200">
                 <p>السجل التجاري : <span class="font-black text-black">310236446600003</span></p>
-                <p>البريد : <span dir="ltr">hwytbytk@gmail.com</span></p>
+                <p>البريد : <span dir="ltr" class="text-blue-700">hwytbytk@gmail.com</span></p>
                 <p>الجوال : <span dir="ltr">+966 54 478 2301</span></p>
             </div>
         </div>
@@ -271,12 +271,12 @@
         <table class="pdf-table">
             <thead>
                 <tr>
-                    <th style="text-align: right; width: 20%;">اسم الموظف</th>
-                    <th style="width: 12%;">إجمالي الطلبات</th>
-                    <th style="width: 12%;">الطلبات المدفوعة</th>
-                    <th style="width: 12%;">الأشكال المباعة</th>
-                    <th style="width: 25%;">إجمالي المبيعات المحققة (SAR)</th>
-                    <th style="width: 15%;">نسبة المساهمة %</th>
+                    <th style="text-align: right; width: 22%;">اسم الموظف</th>
+                    <th style="width: 13%;">إجمالي الطلبات</th>
+                    <th style="width: 13%;">الطلبات المدفوعة</th>
+                    <th style="width: 13%;">عدد الأشكال المباعة</th>
+                    <th style="width: 22%;">إجمالي المبيعات (SAR)</th>
+                    <th style="width: 17%;">نسبة المساهمة بالمبيعات</th>
                 </tr>
             </thead>
             <tbody>
@@ -287,9 +287,9 @@
                     <td>{{ emp.shapesCount }}</td>
                     <td style="color: #16a34a;">{{ emp.totalSales.toLocaleString() }}</td>
                     <td>
-                        <div class="flex items-center justify-center gap-2">
+                        <div class="flex items-center justify-center gap-3">
                             <span>{{ emp.contribution }}%</span>
-                            <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div class="w-20 h-3 bg-gray-200 rounded-full overflow-hidden">
                                 <div class="h-full bg-blue-600" :style="{ width: emp.contribution + '%' }"></div>
                             </div>
                         </div>
@@ -309,7 +309,7 @@
             </tbody>
         </table>
 
-        <div class="absolute bottom-4 left-0 right-0 px-[15mm] flex justify-between items-center text-xs font-bold text-gray-500 border-t border-gray-300 pt-3">
+        <div class="absolute bottom-6 left-0 right-0 px-[15mm] flex justify-between items-center text-sm font-bold text-gray-500 border-t-2 border-gray-300 pt-4">
             <p>تم استخراج هذا التقرير تلقائياً من نظام هوية بيتك.</p>
             <p>تاريخ استخراج التقرير: {{ new Date().toLocaleDateString('ar-SA') }}</p>
         </div>
@@ -321,7 +321,6 @@
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
 
-    // دالة موحدة لتحليل التاريخ بدقة
     function parseSheetDate(dateStr) {
         if (!dateStr) return new Date();
         let d = new Date(dateStr);
@@ -361,9 +360,8 @@
             const reportEndDate = ref(today);
             const reportGenerated = ref(false);
             
-            // البيانات المجمعة لحل مشكلة التكرار
             const groupedOrdersMap = ref({});
-            const allEmployeesStats = ref([]); // مصفوفة الإحصائيات الشاملة لكل الموظفين
+            const allEmployeesStats = ref([]); 
             
             const uniqueEmployees = ref([]);
             const selectedEmployee = ref('');
@@ -387,7 +385,7 @@
                 }
             };
 
-            // دالة الجلب الموحدة وحل مشكلة المزامنة
+            // تم تعديل المزامنة لتطابق منطق الحساب في الفواتير 100%
             const generateReport = async () => {
                 syncLoading.value = true;
                 reportGenerated.value = false;
@@ -401,12 +399,13 @@
                     const start = new Date(reportStartDate.value); start.setHours(0,0,0);
                     const end = new Date(reportEndDate.value); end.setHours(23, 59, 59);
 
-                    // 1. تجميع الطلبات (Orders)
                     const tempOrders = {};
+                    
                     (result.orders || []).forEach(row => {
                         const dStr = String(row['التاريخ'] || '');
                         if(!dStr) return;
                         const d = parseSheetDate(dStr);
+                        
                         if (d >= start && d <= end) {
                             const oid = String(row['رقم الطلب'] || '').trim();
                             if (!oid) return;
@@ -415,38 +414,63 @@
                                 tempOrders[oid] = {
                                     orderId: oid,
                                     date: d,
-                                    managerCode: String(row['رمز المسؤول'] || '').trim().toUpperCase(),
+                                    managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim().toUpperCase(),
                                     isPaid: isPaidStatus(row['حالة الدفع']),
-                                    totalAmount: 0, // سيتم جلبه من الحسابات
+                                    discountRate: Number(row['نسبة الخصم'] || 0),
+                                    totalAmount: 0,
+                                    subTotal: 0,
                                     shapesCount: 0,
                                     products: []
                                 };
                             }
                             
+                            const pName = String(row['المنتج'] || '').trim();
+                            const color = String(row['اللون'] || 'silver');
                             const count = Number(row['العدد'] || 1);
                             const price = Number(row['السعر الفردي'] || 0);
-                            tempOrders[oid].products.push({ shapeName: row['المنتج'], count, price });
+                            const hasLighting = row['إضافة إضاءة'] === 'نعم' || row['إضافة إضاءة'] === true;
+                            const customDesign = row['تصميم خاص'] === 'نعم' || row['تصميم خاص'] === true;
+
+                            let additions = 0;
+                            if (hasLighting) additions += 129;
+                            if (customDesign) additions += 50;
+                            if (color === 'gold' || color === 'black') additions += 19;
+                            
+                            const basePrice = price - additions;
+
+                            tempOrders[oid].products.push({ 
+                                shapeName: pName, 
+                                count: count, 
+                                price: price,
+                                basePrice: basePrice,
+                                additions: additions
+                            });
+                            
                             tempOrders[oid].shapesCount += count;
                         }
                     });
 
-                    // 2. مطابقة بيانات الحسابات (Accounts) للحصول على المبلغ الإجمالي وحالة الدفع النهائية
-                    (result.accounts || []).forEach(acc => {
-                        const dStr = String(acc['التاريخ'] || '');
-                        if(!dStr) return;
-                        const d = parseSheetDate(dStr);
-                        if (d >= start && d <= end) {
-                            const oid = String(acc['رقم الطلب'] || '').trim();
-                            if (tempOrders[oid]) {
-                                tempOrders[oid].totalAmount = Number(acc['المبلغ الإجمالي'] || 0);
-                                tempOrders[oid].isPaid = isPaidStatus(acc['حالة الدفع']);
-                            }
+                    // تطبيق نفس عملية حساب الإجمالي الموجودة في الفواتير
+                    Object.values(tempOrders).forEach(o => {
+                        let discountable = 0;
+                        let nonDiscountable = 0;
+                        
+                        o.products.forEach(p => {
+                            discountable += (p.basePrice * p.count);
+                            nonDiscountable += (p.additions * p.count);
+                        });
+                        
+                        o.subTotal = discountable + nonDiscountable;
+                        if (o.discountRate > 0) {
+                            let discountValue = Number(((discountable * o.discountRate) / 100).toFixed(2));
+                            o.totalAmount = Math.round(discountable - discountValue + nonDiscountable);
+                        } else {
+                            o.totalAmount = o.subTotal;
                         }
                     });
 
                     groupedOrdersMap.value = tempOrders;
                     
-                    // استخراج أسماء الموظفين للفلتر
                     const emps = new Set();
                     Object.values(tempOrders).forEach(o => {
                         if (o.managerCode && o.managerCode !== 'UNDEFINED' && o.managerCode !== 'NULL') {
@@ -459,11 +483,9 @@
                     if (selectedEmployee.value) processEmployeeDetailedData();
 
                     reportGenerated.value = true;
-                    
-                    // مسح اللوكال ستورج لتفادي أي امتلاء قد يؤثر على النظام
                     try { localStorage.removeItem('hwayt_orders_v8'); } catch(e) {}
 
-                    showNotify('تم تحديث التقرير وتجميع البيانات بنجاح');
+                    showNotify('تم تحديث التقرير وتجميع البيانات بنجاح المطابق للفواتير');
                     
                     if (reportType.value === 'general') {
                         nextTick(() => renderCharts());
@@ -492,7 +514,6 @@
                         unpaid++;
                     }
 
-                    // إحصائيات الموظفين الشاملة للجدول والرسم البياني
                     if (o.managerCode && o.managerCode !== 'UNDEFINED' && o.managerCode !== 'NULL') {
                         if (!empStats[o.managerCode]) {
                             empStats[o.managerCode] = { name: o.managerCode, orderCount: 0, paidOrderCount: 0, totalSales: 0, shapesCount: 0 };
@@ -513,7 +534,6 @@
                     unpaidOrders: unpaid
                 };
 
-                // حساب نسب المساهمة لكل موظف وترتيبهم
                 allEmployeesStats.value = Object.values(empStats).map(e => {
                     e.contribution = tRev > 0 ? ((e.totalSales / tRev) * 100).toFixed(1) : 0;
                     return e;
@@ -531,16 +551,15 @@
 
                 empOrders.forEach(o => {
                     if (o.isPaid) {
-                        // سنقوم بحساب مبيعات الأشكال بناءً على سعرها الفردي بالطلب
+                        // توزيع الخصم على الأشكال بالتناسب لو أردنا الدقة المطلقة، لكن لتسهيل العرض هنعرض الإجمالي
                         o.products.forEach(p => {
                             if (!shapesMap[p.shapeName]) shapesMap[p.shapeName] = { count: 0, revenue: 0 };
-                            const rowTotal = p.price * p.count;
+                            // لتجنب تعقيد عرض المنتجات، هنعرض سعر المنتج قبل الخصم، والإجمالي الخاص بالموظف هو النهائي
+                            const rowTotal = p.price * p.count; 
                             shapesMap[p.shapeName].count += p.count;
                             shapesMap[p.shapeName].revenue += rowTotal;
                             tBoards += p.count;
-                            // ملاحظة: قد يختلف إجمالي الأشكال قليلاً عن TotalAmount بسبب الإضافات (إضاءة/تصميم)، لذا سنعتمد إجمالي الأشكال هنا كقيمة تقريبية للمنتج الصافي
                         });
-                        // بالنسبة لـ Total Revenue للموظف نعتمد على الإجمالي الشامل للطلب (TotalAmount)
                         tRevenue += o.totalAmount; 
                     }
                 });
@@ -578,7 +597,6 @@
 
                 Chart.defaults.font.family = 'Tajawal';
 
-                // تجهيز بيانات الإيرادات اليومية
                 const datesMap = {};
                 Object.values(groupedOrdersMap.value).forEach(o => {
                     if (o.isPaid) {
@@ -618,7 +636,6 @@
                     options: { responsive: true, maintainAspectRatio: false, cutout: '75%' }
                 });
 
-                // المخطط الشريطي للموظفين
                 const empLabels = allEmployeesStats.value.map(e => e.name);
                 const empSalesData = allEmployeesStats.value.map(e => e.totalSales);
                 
@@ -640,7 +657,6 @@
                 });
             };
 
-            // دالة استخراج الـ PDF الشامل Landscape
             const downloadAllEmployeesPDF = async () => {
                 if (allEmployeesStats.value.length === 0) {
                     return showNotify('لا توجد بيانات موظفين لطباعتها في هذه الفترة', 'error');
@@ -651,22 +667,22 @@
                 
                 try {
                     const captureEl = document.getElementById('capture-employee-report');
-                    captureEl.style.display = 'block'; // نظهره مؤقتاً للالتقاط
+                    captureEl.style.display = 'block'; 
                     
                     await nextTick();
-                    await new Promise(r => setTimeout(r, 500)); // ننتظر لتطبيق الـ CSS والصور
+                    await new Promise(r => setTimeout(r, 600)); 
                     
                     const canvas = await html2canvas(captureEl, { scale: 2, useCORS: true });
                     const imgData = canvas.toDataURL('image/jpeg', 0.9);
                     
                     const { jsPDF } = window.jspdf;
-                    // إنتاج ملف بحجم A4 وبوضعية Landscape (أفقي)
+                    // إنتاج ملف بحجم A4 وبوضعية Landscape (أفقي) 
                     const finalPDF = new jsPDF('l', 'mm', 'a4');
                     finalPDF.addImage(imgData, 'JPEG', 0, 0, 297, 210);
                     
-                    finalPDF.save(`تقرير_الموظفين_الشامل_${reportStartDate.value}.pdf`);
+                    finalPDF.save(`تقرير_الموظفين_مكاني_${reportStartDate.value}.pdf`);
                     
-                    captureEl.style.display = 'none'; // نخفيه مجدداً
+                    captureEl.style.display = 'none'; 
                     showNotify('تم تحميل التقرير بنجاح', 'success');
                 } catch(e) {
                     console.error('PDF Error:', e);
@@ -682,7 +698,6 @@
                 if (!storedUser) { window.location.href = 'index.html'; return; }
                 currentUser.value = JSON.parse(storedUser);
                 
-                // حماية الصلاحيات: تأكيد أن المستخدم Admin
                 if (currentUser.value.role !== 'admin') { 
                     window.location.href = 'index.html'; 
                     return; 
