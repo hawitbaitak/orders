@@ -166,7 +166,7 @@
                         <div v-else class="space-y-1 lg:col-span-2 invisible"></div>
 
                         <div class="space-y-1 lg:col-span-2">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رفع إيصالات الدفع (يمكن اختيار أكثر من صورة)</label>
+                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رفع إيصالات الدفع (أكثر من صورة)</label>
                             <input type="file" ref="receiptInput" accept="image/*" multiple @change="handleReceiptUpload" class="w-full p-2.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold text-sm">
                         </div>
 
@@ -303,7 +303,302 @@
     </template>
 </div>
 
-<script type="module" src="order_app.js"></script>
+<script type="module">
+    const { createApp, ref, computed, onMounted } = Vue;
 
+    // الرابط الصحيح الذي أرسلته 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyo-it7TuKYWFRyYW59HwEIjjAlfl0uWjL5zTS0UrDjLAK1K0w7D64JOzlk9tiSRT7W/exec";
+    
+    // مفتاح التخزين الموحد الجديد
+    const STORAGE_KEY = 'hwayt_orders_v9_sync';
+
+    const STATIC_PRICES = {
+        1: 149, 2: 149, 3: 199, 4: 199, 5: 225, 6: 225, 7: 249, 8: 229, 9: 215, 10: 225,
+        11: 149, 12: 225, 13: 225, 14: 126, 15: 166, 16: 235, 17: 199, 18: 218, 19: 299, 20: 299,
+        21: 344, 22: 344, 23: 344, 24: 344, 25: 288, 26: 259, 27: 219, 28: 288, 29: 219, 30: 259,
+        31: 249, 33: 219, 34: 219, 35: 299, 36: 219, 37: 219, 38: 219, 39: 288, 40: 199, 41: 199, 
+        42: 199, 43: 199, 44: 249, 46: 299, 47: 288, 48: 288, 49: 288, 50: 288, 51: 288
+    };
+
+    const DEFAULT_CATALOG = Array.from({length:51}, (_,i) => ({ 
+        id: `design-${i+1}`, name: `design-${i+1}`, price: STATIC_PRICES[i+1] || 199 
+    }));
+
+    const EMPTY_ORDER_FORM = () => ({
+        managerCode: '', discountRate: 0, isPaid: false, receipts: [], orderStatus: false, timestamp: null,
+        client: { name: '', city: '', address: '', phone: '+966' },
+        products: [{ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', basePrice: 0, hasLighting: false, customDesign: false }]
+    });
+
+    createApp({
+        setup() {
+            const currentUser = ref(null);
+            const loginForm = ref({ username: '', password: '' });
+            const loginLoading = ref(false);
+            const loginError = ref('');
+
+            const catalog = ref([...DEFAULT_CATALOG]);
+            const orderForm = ref(EMPTY_ORDER_FORM());
+            const editingOrder = ref(null);
+            const receiptInput = ref(null);
+
+            const syncLoading = ref(false);
+            const isSaving = ref(false);
+            const isSuccess = ref(false);
+            const notification = ref(null);
+
+            // حسابات المجموع الخاضع للخصم (سعر اللوحة + لونها)
+            const calcDiscountableSubTotal = computed(() => {
+                return orderForm.value.products.reduce((sum, p) => {
+                    let unitPrice = p.basePrice || 0;
+                    if (p.color === 'gold' || p.color === 'black') unitPrice += 19;
+                    return sum + (unitPrice * p.count);
+                }, 0);
+            });
+
+            // حسابات المجموع غير الخاضع للخصم (الإضاءة 129 والتصميم 50)
+            const calcNonDiscountableSubTotal = computed(() => {
+                return orderForm.value.products.reduce((sum, p) => {
+                    let additions = 0;
+                    if (p.hasLighting) additions += 129;
+                    if (p.customDesign) additions += 50;
+                    return sum + (additions * p.count);
+                }, 0);
+            });
+
+            const calcSubTotal = computed(() => calcDiscountableSubTotal.value + calcNonDiscountableSubTotal.value);
+            
+            const calcDiscountValue = computed(() => {
+                return parseFloat(((calcDiscountableSubTotal.value * (orderForm.value.discountRate || 0)) / 100).toFixed(2));
+            });
+
+            const calcTotal = computed(() => Math.round(calcDiscountableSubTotal.value - calcDiscountValue.value + calcNonDiscountableSubTotal.value));
+
+            const showNotify = (msg, type = 'success') => {
+                notification.value = { msg, type };
+                setTimeout(() => notification.value = null, 4000);
+                setTimeout(() => lucide.createIcons(), 50);
+            };
+
+            const doLogin = async () => {
+                if (!loginForm.value.username || !loginForm.value.password) { loginError.value = 'يرجى إدخال البيانات كاملة'; return; }
+                loginLoading.value = true; loginError.value = '';
+                try {
+                    // كسر الكاش في تسجيل الدخول
+                    const urlWithCacheBust = GOOGLE_SCRIPT_URL + "?t=" + new Date().getTime();
+                    const res = await fetch(urlWithCacheBust, {
+                        method: 'POST', redirect: 'follow',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'login', username: loginForm.value.username, password: loginForm.value.password })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.user) {
+                        currentUser.value = data.user;
+                        sessionStorage.setItem('hb_user', JSON.stringify(data.user));
+                        cancelEdit(); 
+                        syncCatalogFromSheet();
+                    } else {
+                        loginError.value = 'البيانات المدخلة خاطئة!';
+                    }
+                } catch (e) {
+                    loginError.value = 'خطأ بالاتصال بالسحاب';
+                } finally { loginLoading.value = false; }
+            };
+
+            const doLogout = () => { currentUser.value = null; sessionStorage.removeItem('hb_user'); };
+
+            const addProductRow = () => orderForm.value.products.push({ id: Date.now(), productId: '', name: '', nationalAddress: '', villaNo: '', customName: '', notes: '', count: 1, color: 'silver', basePrice: 0, hasLighting: false, customDesign: false });
+            const removeProductRow = (idx) => orderForm.value.products.splice(idx, 1);
+            
+            const syncProductData = (p) => { 
+                const item = catalog.value.find(c => String(c.id) === String(p.productId)); 
+                if (item) { p.name = item.name; p.basePrice = item.price; } 
+            };
+            
+            const togglePayment = () => {
+                orderForm.value.isPaid = !orderForm.value.isPaid;
+            };
+
+            // معالجة رفع صور إيصالات متعددة وضغطها تلقائياً
+            const handleReceiptUpload = (e) => {
+                const files = Array.from(e.target.files);
+                if (!files.length) return;
+                
+                files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const scale = img.width > 400 ? 400 / img.width : 1;
+                            canvas.width = img.width * scale; 
+                            canvas.height = img.height * scale;
+                            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                            
+                            // إدراج الصورة المرفوعة في مصفوفة الإيصالات
+                            orderForm.value.receipts.push(canvas.toDataURL('image/jpeg', 0.6));
+                            orderForm.value.isPaid = true; // يتم وضع علامة مدفوع تلقائياً عند رفع وصل
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                if (receiptInput.value) receiptInput.value.value = '';
+            };
+
+            const removeReceipt = (idx) => {
+                orderForm.value.receipts.splice(idx, 1);
+            };
+
+            const saveOrder = () => {
+                isSaving.value = true;
+                const mCode = editingOrder.value ? orderForm.value.managerCode : (currentUser.value?.managerCode || 'XX');
+                const orderId = editingOrder.value ? editingOrder.value.orderId : `${mCode}-${Math.floor(100000 + Math.random() * 900000)}`;
+
+                const payload = {
+                    action: editingOrder.value ? 'update' : 'create', target: 'orders',
+                    orderId, managerCode: mCode, discountRate: orderForm.value.discountRate || 0,
+                    discountValue: calcDiscountValue.value, subTotal: calcSubTotal.value, totalAmount: calcTotal.value,
+                    isPaid: orderForm.value.isPaid, 
+                    receiptImage: orderForm.value.receipts, // مصفوفة الإيصالات بالكامل تُرسل
+                    orderStatus: orderForm.value.orderStatus,
+                    client: JSON.parse(JSON.stringify(orderForm.value.client)),
+                    products: JSON.parse(JSON.stringify(orderForm.value.products)).map(p => {
+                        let finalUnit = p.basePrice || 0;
+                        if(p.color === 'gold' || p.color === 'black') finalUnit += 19;
+                        if(p.hasLighting) finalUnit += 129;
+                        if(p.customDesign) finalUnit += 50;
+                        p.price = finalUnit;
+                        return p;
+                    }),
+                    // 🛡️ التثبيت التام للتاريخ الأصلي دون تغيير عند التعديل
+                    timestamp: editingOrder.value && orderForm.value.timestamp ? orderForm.value.timestamp : new Date().toISOString()
+                };
+
+                // كسر الكاش لضمان وصول الطلب
+                const urlWithCacheBust = GOOGLE_SCRIPT_URL + "?t=" + new Date().getTime();
+
+                fetch(urlWithCacheBust, {
+                    method: 'POST', mode: 'no-cors', 
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                }).then(() => {
+                    let localOrders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                    if (editingOrder.value) {
+                        const idx = localOrders.findIndex(o => o.orderId === editingOrder.value.orderId);
+                        if (idx !== -1) localOrders[idx] = payload;
+                    } else {
+                        localOrders.unshift(payload);
+                    }
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(localOrders));
+
+                    isSaving.value = false;
+                    isSuccess.value = true;
+                    setTimeout(() => { 
+                        isSuccess.value = false; 
+                        cancelEdit(); 
+                        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                        // تحويل تلقائي لصفحة طلباتي بعد الحفظ الناجح للتأكيد
+                        window.location.href = 'my_orders.html';
+                    }, 1200);
+                }).catch(e => {
+                    isSaving.value = false; showNotify('خطأ فني في سحاب قاعدة البيانات', 'error');
+                });
+            };
+
+            const cancelEdit = () => { 
+                editingOrder.value = null; 
+                if (receiptInput.value) receiptInput.value.value = ''; 
+                orderForm.value = EMPTY_ORDER_FORM(); 
+                if (currentUser.value && currentUser.value.managerCode) {
+                    orderForm.value.managerCode = currentUser.value.managerCode;
+                }
+            };
+
+            const syncCatalogFromSheet = async () => {
+                syncLoading.value = true;
+                try {
+                    const urlWithCacheBust = GOOGLE_SCRIPT_URL + "?t=" + new Date().getTime();
+                    const res = await fetch(urlWithCacheBust, { redirect: 'follow' });
+                    const text = await res.text();
+                    const result = JSON.parse(text);
+                    let newCat = [...DEFAULT_CATALOG];
+                    if (result.catalog?.length > 0) {
+                        result.catalog.forEach(r => {
+                            let id = String(r['id'] || r['اسم المنتج'] || '');
+                            let name = String(r['name'] || r['اسم المنتج'] || '');
+                            let price = parseFloat(r['price'] || r['السعر'] || 0);
+                            if (id && !newCat.some(c => c.id === id)) newCat.push({ id, name, price });
+                        });
+                    }
+                    catalog.value = newCat;
+                    showNotify('تم مزامنة الكتالوج بنجاح');
+                } catch(e) { } finally { syncLoading.value = false; }
+            };
+
+            onMounted(() => { 
+                const storedUser = sessionStorage.getItem('hb_user');
+                if (storedUser) {
+                    currentUser.value = JSON.parse(storedUser);
+                }
+
+                setTimeout(() => lucide.createIcons(), 500); 
+                if (currentUser.value) {
+                    // ⚙️ استقبال بيانات الطلب القادم من الأرشيف/طلباتي للتعديل وحمايتها من المسح
+                    const toEdit = localStorage.getItem('orderToEdit');
+                    if (toEdit) {
+                        const parsed = JSON.parse(toEdit);
+                        editingOrder.value = parsed;
+                        
+                        // فك تشفير وتوزيع الإيصالات المتعددة المرفوعة مسبقاً
+                        let loadedReceipts = [];
+                        if (parsed.receiptImage) {
+                            if (Array.isArray(parsed.receiptImage)) {
+                                loadedReceipts = parsed.receiptImage;
+                            } else if (typeof parsed.receiptImage === 'string') {
+                                loadedReceipts = parsed.receiptImage.split('|||').filter(x => x.trim().length > 0);
+                            }
+                        }
+
+                        orderForm.value = {
+                            managerCode: parsed.managerCode, 
+                            discountRate: parsed.discountRate || 0, 
+                            isPaid: parsed.isPaid, 
+                            receipts: loadedReceipts,
+                            orderStatus: parsed.orderStatus || false,
+                            timestamp: parsed.timestamp, // الحفاظ الثابت على طابع التاريخ والوقت القديم
+                            client: JSON.parse(JSON.stringify(parsed.client)), 
+                            products: JSON.parse(JSON.stringify(parsed.products)).map(p => {
+                                p.hasLighting = p.hasLighting === true || p.hasLighting === "نعم";
+                                p.customDesign = p.customDesign === true || p.customDesign === "نعم";
+                                if (!p.basePrice) {
+                                    let deducted = p.price;
+                                    if(p.hasLighting) deducted -= 129;
+                                    if(p.customDesign) deducted -= 50;
+                                    if(p.color === 'gold' || p.color === 'black') deducted -= 19;
+                                    p.basePrice = deducted;
+                                }
+                                return p;
+                            })
+                        };
+                        localStorage.removeItem('orderToEdit');
+                    } else {
+                        cancelEdit(); 
+                    }
+                    syncCatalogFromSheet(); 
+                }
+            });
+
+            return {
+                currentUser, loginForm, loginLoading, loginError, doLogin, doLogout,
+                catalog, orderForm, editingOrder, receiptInput, syncLoading, isSaving, isSuccess, notification,
+                calcDiscountableSubTotal, calcNonDiscountableSubTotal, calcSubTotal, calcDiscountValue, calcTotal,
+                addProductRow, removeProductRow, syncProductData, handleReceiptUpload, removeReceipt, togglePayment,
+                saveOrder, cancelEdit, syncCatalogFromSheet
+            };
+        }
+    }).mount('#app');
+</script>
 </body>
 </html>
