@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>هوية بيتك - التقارير والإحصائيات</title>
+    <title>هوية بيتك  - التقارير والإحصائيات</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
     
@@ -47,7 +48,7 @@
             <div class="w-24 h-24 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center p-2 shadow-xl overflow-hidden">
                 <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
             </div>
-            <h1 class="text-xl font-black">هوية بيتك</h1>
+            <h1 class="text-xl font-black">هوية بيتك </h1>
             <p class="text-blue-300 text-[10px] mt-1 tracking-widest font-bold uppercase">نظام إدارة المبيعات</p>
             <div class="mt-3 flex items-center justify-center gap-2">
                 <span class="text-[10px] font-black px-3 py-1 rounded-full" :class="currentUser?.role === 'admin' ? 'bg-yellow-400 text-yellow-900' : 'bg-blue-700 text-blue-100'">
@@ -91,7 +92,7 @@
 
         <div v-if="syncLoading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm no-print">
             <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
-            <p class="font-black text-[#142952]">جاري مزامنة ومعالجة البيانات...</p>
+            <p class="font-black text-[#142952]">جاري معالجة البيانات...</p>
         </div>
 
         <section class="space-y-8 animate-in fade-in">
@@ -100,7 +101,7 @@
                     
                     <div class="flex flex-wrap gap-2 p-1 bg-gray-100 rounded-2xl w-full xl:w-auto">
                         <button @click="setReportType('general')" :class="reportType === 'general' ? 'bg-[#142952] text-white shadow-md' : 'text-gray-600 hover:bg-gray-200'" class="px-5 py-2.5 rounded-xl font-black transition-all text-sm">التقرير المالي العام</button>
-                        <button @click="setReportType('all_employees')" :class="reportType === 'all_employees' ? 'bg-[#142952] text-white shadow-md' : 'text-gray-600 hover:bg-gray-200'" class="px-5 py-2.5 rounded-xl font-black transition-all text-sm">ملخص جميع الموظفين</button>
+                        <button @click="setReportType('all_employees')" :class="reportType === 'all_employees' ? 'bg-[#142952] text-white shadow-md' : 'text-gray-600 hover:bg-gray-200'" class="px-5 py-2.5 rounded-xl font-black transition-all text-sm">ملخص الموظفين</button>
                         <button @click="setReportType('employee')" :class="reportType === 'employee' ? 'bg-[#142952] text-white shadow-md' : 'text-gray-600 hover:bg-gray-200'" class="px-5 py-2.5 rounded-xl font-black transition-all text-sm">أداء موظف محدد</button>
                     </div>
 
@@ -124,12 +125,15 @@
                     </div>
                 </div>
 
-                <div class="flex gap-2 w-full xl:w-auto justify-end">
-                    <button @click="generateReport" :disabled="syncLoading" class="bg-[#142952] text-white px-6 py-3 rounded-xl font-black shadow-lg hover:bg-blue-900 transition-all flex items-center gap-2">
-                        <i data-lucide="refresh-cw" :class="{'loader-spin': syncLoading}" class="w-4 h-4"></i> تحديث الإحصائيات
+                <div class="flex gap-2 w-full xl:w-auto justify-end flex-wrap">
+                    <button @click="generateReport" :disabled="syncLoading" class="bg-[#142952] text-white px-5 py-3 rounded-xl font-black shadow-lg hover:bg-blue-900 transition-all flex items-center gap-2">
+                        <i data-lucide="refresh-cw" :class="{'loader-spin': syncLoading}" class="w-4 h-4"></i> جلب البيانات
                     </button>
-                    <button v-if="reportGenerated" @click="downloadReportPDF" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-black shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2">
-                        <i data-lucide="file-down" class="w-4 h-4"></i> استخراج PDF
+                    <button v-if="reportGenerated" @click="downloadReportPDF" class="bg-red-600 text-white px-5 py-3 rounded-xl font-black shadow-lg hover:bg-red-700 transition-all flex items-center gap-2">
+                        <i data-lucide="file-down" class="w-4 h-4"></i> تصدير PDF
+                    </button>
+                    <button v-if="reportGenerated" @click="downloadExcel" class="bg-green-600 text-white px-5 py-3 rounded-xl font-black shadow-lg hover:bg-green-700 transition-all flex items-center gap-2">
+                        <i data-lucide="sheet" class="w-4 h-4"></i> تصدير Excel
                     </button>
                 </div>
             </div>
@@ -137,10 +141,10 @@
             <div v-if="!reportGenerated" class="py-20 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 shadow-none no-print">
                 <i data-lucide="bar-chart-2" class="w-16 h-16 text-gray-200 mx-auto mb-4"></i>
                 <p class="text-gray-400 font-black text-xl">التقارير جاهزة للاستخراج والتحديث التفاعلي</p>
-                <p class="text-sm text-gray-400 mt-2 font-bold">اضغط على زر "تحديث الإحصائيات" لجلب البيانات من السحاب.</p>
+                <p class="text-sm text-gray-400 mt-2 font-bold">اضغط على زر "جلب البيانات" لجلب الإحصائيات من السحاب.</p>
             </div>
 
-            <div v-show="reportGenerated" id="pdf-export-area" class="document-container p-10 rounded-2xl shadow-sm border border-gray-200">
+            <div v-show="reportGenerated" id="pdf-export-area" class="document-container p-10 rounded-2xl shadow-sm border border-gray-200 bg-white">
                 
                 <div class="flex justify-between items-center mb-8 border-b-4 border-[#142952] pb-6">
                     <div class="w-24 h-24 bg-white flex items-center justify-center p-2 rounded-xl border border-gray-200 shadow-sm">
@@ -153,7 +157,7 @@
                         </p>
                     </div>
                     <div class="text-left font-black text-[12px] space-y-1 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <p class="text-base text-[#142952] border-b border-gray-200 pb-1 mb-1">مؤسسة هوية بيتك</p>
+                        <p class="text-base text-[#142952] border-b border-gray-200 pb-1 mb-1">مؤسسة هوية بيتك </p>
                         <p class="text-gray-700">الرقم الضريبي : 310236446600003</p>
                         <p class="text-gray-500">تاريخ الاستخراج : {{ getToday() }}</p>
                     </div>
@@ -187,6 +191,13 @@
                         <div class="p-5 rounded-xl border border-gray-200 bg-white">
                             <h3 class="font-black text-[#142952] mb-4 text-sm border-b pb-2">حالة التحصيل المالي</h3>
                             <div style="height: 250px; width: 100%; display: flex; justify-content: center;"><canvas id="paymentChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 mt-6">
+                        <div class="p-5 rounded-xl border border-gray-200 bg-white">
+                            <h3 class="font-black text-[#142952] mb-4 text-sm border-b pb-2">أكثر المنتجات مبيعاً (بالكمية)</h3>
+                            <div style="height: 280px; width: 100%;"><canvas id="topProductsChart"></canvas></div>
                         </div>
                     </div>
                 </div>
@@ -266,7 +277,7 @@
                 </div>
 
                 <div class="mt-12 text-center text-[10px] text-gray-400 font-bold border-t border-gray-100 pt-4">
-                    نظام هوية بيتك لإدارة المبيعات - وثيقة تقرير داخلية مصدقة ومستخرجة آلياً.
+                    نظام هوية بيتك  لإدارة المبيعات - وثيقة تقرير داخلية مصدقة ومستخرجة آلياً.
                 </div>
             </div>
             
@@ -312,6 +323,7 @@
                 allEmployeesStats: [],
                 employeeSummary: { totalBoards: 0, totalRevenue: 0 },
                 employeeDetails: [],
+                topProducts: [],
                 
                 charts: {} 
             }
@@ -329,7 +341,6 @@
             if (storedUser) {
                 this.currentUser = JSON.parse(storedUser);
             } else {
-                // افتراضي في حال عدم تسجيل الدخول للمعاينة السريعة
                 this.currentUser = { role: 'admin', managerCode: 'ADMIN' };
             }
             setTimeout(() => lucide.createIcons(), 300);
@@ -425,7 +436,6 @@
 
                         this.allOrders = Object.values(grouped);
                         
-                        // تحديث المعالجة
                         this.processGeneralData();
                         this.extractEmployees();
                         this.processAllEmployeesData();
@@ -449,13 +459,27 @@
             processGeneralData() {
                 let filtered = this.allOrders.filter(o => o.timestamp >= this.reportStartDate && o.timestamp <= this.reportEndDate);
                 let revenue = 0, paid = 0, unpaid = 0;
+                let productsCountMap = {};
 
                 filtered.forEach(o => {
                     if (o.isPaid) { paid++; revenue += o.totalAmount; } 
                     else { unpaid++; }
+
+                    // تجميع أكثر المنتجات مبيعاً
+                    o.products.forEach(p => {
+                        if(p.name) {
+                            productsCountMap[p.name] = (productsCountMap[p.name] || 0) + p.count;
+                        }
+                    });
                 });
 
                 this.reportSummary = { totalOrders: filtered.length, totalRevenue: revenue, paidOrders: paid, unpaidOrders: unpaid };
+                
+                // ترتيب المنتجات لعمل الشارت
+                this.topProducts = Object.keys(productsCountMap)
+                    .map(name => ({ name, count: productsCountMap[name] }))
+                    .sort((a,b) => b.count - a.count)
+                    .slice(0, 10); // أعلى 10 منتجات
             },
 
             extractEmployees() {
@@ -480,7 +504,6 @@
                     }
                 });
 
-                // ترتيب حسب الأعلى إيراداً
                 this.allEmployeesStats = Object.values(empMap).sort((a, b) => b.revenue - a.revenue);
             },
 
@@ -499,9 +522,8 @@
                         totalBoards += p.count;
                         if (!productsMap[p.name]) { productsMap[p.name] = { count: 0, revenue: 0 }; }
                         productsMap[p.name].count += p.count;
-                        // حساب العائد إذا كان الطلب مدفوعاً فقط لتجنب أرقام وهمية
                         if(o.isPaid){
-                            let priceRatio = (o.totalAmount / o.subTotal) || 1; // لتوزيع الخصم بالتساوي
+                            let priceRatio = (o.totalAmount / o.subTotal) || 1; 
                             productsMap[p.name].revenue += (p.price * p.count * priceRatio);
                         }
                     });
@@ -519,8 +541,7 @@
             },
 
             drawCharts() {
-                // تدمير أي شارتات قديمة
-                ['revenue', 'payment', 'allEmp'].forEach(k => {
+                ['revenue', 'payment', 'allEmp', 'topProducts'].forEach(k => {
                     if (this.charts[k]) { this.charts[k].destroy(); }
                 });
 
@@ -558,9 +579,27 @@
                             options: { responsive: true, maintainAspectRatio: false, cutout: '65%' }
                         });
                     }
+
+                    // 3. شارت أكثر المنتجات مبيعاً (الجديد)
+                    const ctxTop = document.getElementById('topProductsChart');
+                    if(ctxTop && this.topProducts.length > 0) {
+                        this.charts.topProducts = new Chart(ctxTop.getContext('2d'), {
+                            type: 'bar',
+                            data: {
+                                labels: this.topProducts.map(p => p.name),
+                                datasets: [{ 
+                                    label: 'الكمية المباعة', 
+                                    data: this.topProducts.map(p => p.count), 
+                                    backgroundColor: '#3b82f6', 
+                                    borderRadius: 4 
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false }
+                        });
+                    }
                 } 
                 else if (this.reportType === 'all_employees') {
-                    // 3. شارت أداء جميع الموظفين
+                    // 4. شارت أداء جميع الموظفين
                     const ctxAllEmp = document.getElementById('allEmpChart');
                     if(ctxAllEmp) {
                         this.charts.allEmp = new Chart(ctxAllEmp.getContext('2d'), {
@@ -580,64 +619,70 @@
                 }
             },
 
+            // دالة التصدير باستخدام html2pdf.js لضمان جودة فيكتور فائقة
             async downloadReportPDF() {
                 this.syncLoading = true;
-                this.showNotify('جاري إنشاء وتحميل مستند التقرير PDF...', 'info');
+                this.showNotify('جاري بناء ملف PDF بجودة فائقة...', 'info');
                 
                 try {
                     const element = document.getElementById('pdf-export-area');
-                    
-                    // حفظ الأبعاد الأصلية
-                    const originalWidth = element.style.width;
-                    const originalMaxWidth = element.style.maxWidth;
-                    
-                    // توسيع الحاوية بشكل مؤقت لتأخذ شكل مناسب للطباعة العرضية (Landscape)
-                    element.style.width = '1400px'; 
-                    element.style.maxWidth = '1400px';
-                    
-                    // التقاط الصورة بدقة عالية مع عرض نافذة مطابق للعرض الجديد
-                    const canvas = await html2canvas(element, { 
-                        scale: 2, 
-                        useCORS: true, 
-                        backgroundColor: '#ffffff',
-                        windowWidth: 1450
-                    });
-                    
-                    // إرجاع الأبعاد الأصلية مباشرة لتجنب تشوه الصفحة عند المستخدم
-                    element.style.width = originalWidth;
-                    element.style.maxWidth = originalMaxWidth;
-                    
-                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                    
-                    const { jsPDF } = window.jspdf;
-                    // تفعيل العرض الأفقي l = landscape
-                    const pdf = new jsPDF('l', 'mm', 'a4');
-                    
-                    const imgWidth = 297; // عرض الـ A4 في الـ Landscape
-                    const pageHeight = 210; // ارتفاع الـ A4 في الـ Landscape
-                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                    
-                    let heightLeft = imgHeight;
-                    let position = 0;
-                    
-                    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
-                    
-                    while (heightLeft > 0) {
-                        position = heightLeft - imgHeight;
-                        pdf.addPage();
-                        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-                        heightLeft -= pageHeight;
-                    }
-                    
-                    pdf.save(`تقرير_${this.reportType}_${this.getToday()}.pdf`);
-                    this.showNotify('تم تحميل التقرير بنجاح بتنسيق عرضي (Landscape)');
+                    // إعدادات الـ html2pdf بجودة عالية جداً لعدم البكسلة
+                    const opt = {
+                        margin:       10,
+                        filename:     `تقرير_هوية بيتك _${this.reportType}_${this.getToday()}.pdf`,
+                        image:        { type: 'jpeg', quality: 1 },
+                        html2canvas:  { scale: 4, useCORS: true, logging: false }, // Scale 4 تعطي دقة رائعة
+                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                    };
+
+                    await html2pdf().set(opt).from(element).save();
+                    this.showNotify('تم تحميل التقرير بصيغة PDF بنجاح وبدون بكسلة', 'success');
                 } catch (err) {
                     console.error(err);
                     this.showNotify('حدث خطأ أثناء تصدير الملف', 'error');
                 } finally {
                     this.syncLoading = false;
                 }
+            },
+
+            // دالة تصدير بيانات الإكسيل باستخدام SheetJS
+            downloadExcel() {
+                this.showNotify('جاري تجهيز وتصدير ملف الإكسيل...', 'info');
+                
+                let excelData = [];
+                let filtered = this.allOrders.filter(o => o.timestamp >= this.reportStartDate && o.timestamp <= this.reportEndDate);
+
+                // تجهيز المصفوفة بما يتطابق مع أعمدة النظام
+                filtered.forEach(order => {
+                    order.products.forEach(product => {
+                        excelData.push({
+                            "رقم الطلب": order.orderId,
+                            "التاريخ": order.timestamp,
+                            "رمز المسؤول": order.managerCode,
+                            "حالة الدفع": order.isPaid ? 'تم الدفع' : 'معلق / لم يتم الدفع',
+                            "المنتج": product.name,
+                            "العدد": product.count,
+                            "السعر الفردي": product.price,
+                            "إضافة إضاءة": product.hasLighting ? 'نعم' : 'لا',
+                            "تصميم خاص": product.customDesign ? 'نعم' : 'لا',
+                            "نسبة الخصم %": order.discountRate,
+                            "إجمالي العائد من الطلب": order.totalAmount
+                        });
+                    });
+                });
+
+                if(excelData.length === 0) {
+                    this.showNotify('لا توجد بيانات متاحة في هذه الفترة لتصديرها', 'error');
+                    return;
+                }
+
+                // إنشاء وتحميل الملف
+                const worksheet = XLSX.utils.json_to_sheet(excelData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "التقرير المالي - هوية بيتك ");
+                
+                XLSX.writeFile(workbook, `تقرير_هوية بيتك _المالي_${this.getToday()}.xlsx`);
+                this.showNotify('تم تصدير ملف الإكسيل بنجاح', 'success');
             }
         }
     }).mount('#app');
