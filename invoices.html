@@ -127,253 +127,304 @@
                     <button @click="printBulk" class="bg-[#142952] text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-blue-800 transition-all">
                         <i data-lucide="printer" class="w-5 h-5 text-yellow-400"></i> طباعة مجمعة
                     </button>
-                    <button @click="downloadBulkPDF" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-blue-700 transition-all">
-                        <i data-lucide="file-down" class="w-5 h-5 text-white"></i> تحميل PDF مجمع
+                    <button @click="downloadBulkPDF" class="bg-green-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-green-700 transition-all">
+                        <i data-lucide="download" class="w-5 h-5"></i> تحميل PDF
                     </button>
                 </div>
             </div>
 
-            <div v-if="filteredByDateOrders.length === 0" class="py-32 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 shadow-none">
-                <i data-lucide="inbox" class="w-20 h-20 text-gray-200 mx-auto mb-6"></i>
-                <p class="text-gray-400 font-black text-xl">لا توجد فواتير مطابقة لخياراتك في هذا اليوم</p>
-            </div>
-
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div v-for="order in filteredByDateOrders" :key="order.orderId" class="bg-white p-8 rounded-3xl border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer relative group" @click="viewInvoice(order)">
-                    <div class="absolute inset-0 bg-blue-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span class="bg-blue-600 text-white px-6 py-2 rounded-xl font-black shadow-lg">معاينة وطباعة الفاتورة</span>
-                    </div>
-                    <div class="flex justify-between items-start mb-6">
-                        <span class="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase">{{ order.orderId }}</span>
-                        <span class="text-[10px] font-bold text-gray-400">{{ formatTime(order.timestamp) }}</span>
-                    </div>
-                    <h4 class="font-black text-[#142952] text-xl mb-1 truncate">{{ order.client?.name || 'بدون اسم' }}</h4>
-                    <p class="text-xs text-gray-400 line-clamp-1 mb-6">📍 {{ order.client?.address || 'غير محدد' }}</p>
-                    <div class="flex justify-between items-center border-t border-dashed border-gray-100 pt-6">
-                        <span class="font-black text-green-600 text-lg">{{ order.totalAmount }} SAR</span>
-                        <div class="flex items-center gap-2">
-                            <span v-if="order.receipts && order.receipts.length > 0" class="bg-blue-100 text-blue-600 text-[10px] px-2 py-0.5 rounded font-black flex items-center gap-1"><i data-lucide="image" class="w-3 h-3"></i> {{ order.receipts.length }}</span>
-                            <span v-if="order.isPaid" class="text-green-500 font-black text-xs flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> مدفوع</span>
-                            <span v-else class="text-red-400 font-black text-xs flex items-center gap-1"><i data-lucide="x-circle" class="w-3 h-3"></i> غير مدفوع</span>
+            <div class="grid gap-6 auto-rows-max">
+                <div v-for="order in filteredByDateOrders" :key="order.orderId" class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all border border-gray-100">
+                    <div class="bg-gradient-to-r from-[#142952] to-blue-700 p-5 text-white flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-black">{{ order.orderId }}</h3>
+                            <p class="text-blue-200 text-sm">{{ order.client?.name }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold">{{ formatDate(order.timestamp) }}</p>
+                            <span :class="{'bg-green-500': order.isPaid, 'bg-red-500': !order.isPaid}" class="px-4 py-1 rounded-full text-xs font-black">
+                                {{ order.isPaid ? '✓ مدفوع' : '✗ لم يتم الدفع' }}
+                            </span>
                         </div>
                     </div>
+
+                    <div class="p-6">
+                        <button @click="viewInvoice(order.orderId)" class="w-full bg-blue-50 text-[#142952] px-4 py-3 rounded-xl font-black hover:bg-blue-100 transition-all flex items-center justify-center gap-2 mb-4">
+                            <i data-lucide="eye" class="w-4 h-4"></i> عرض الفاتورة
+                        </button>
+
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="inv-info-box">
+                                <p class="text-gray-600 text-xs">الإجمالي قبل الخصم</p>
+                                <p class="text-xl font-black text-[#142952]">{{ order.subTotal }} ر.س</p>
+                            </div>
+                            <div class="inv-info-box">
+                                <p class="text-gray-600 text-xs">الخصم ({{ order.discountRate }}%)</p>
+                                <p class="text-xl font-black text-orange-600">-{{ order.discountValue }} ر.س</p>
+                            </div>
+                            <div class="inv-info-box col-span-2">
+                                <p class="text-gray-600 text-xs">الإجمالي النهائي</p>
+                                <p class="text-2xl font-black text-green-600">{{ order.totalAmount }} ر.س</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t space-y-2 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">المسؤول:</span>
+                                <span class="font-bold">{{ order.managerCode }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">المنتجات:</span>
+                                <span class="font-bold">{{ order.products?.length }} منتج</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">المدينة:</span>
+                                <span class="font-bold">{{ order.client?.city }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="filteredByDateOrders.length === 0" class="bg-blue-50 p-12 rounded-2xl text-center border-2 border-dashed border-blue-200">
+                    <i data-lucide="inbox" class="w-16 h-16 text-blue-300 mx-auto mb-4"></i>
+                    <p class="text-[#142952] font-black text-lg">لا توجد فواتير بهذه المعايير</p>
                 </div>
             </div>
         </section>
     </main>
 
-    <div id="capture-area" dir="rtl">
-        <div v-for="invoice in bulkList" :key="invoice.orderId" :id="'inv-' + invoice.orderId" class="invoice-a4">
-           <div class="flex justify-between items-center mb-4 border-b-2 border-gray-100 pb-3">
-                <div class="w-20 h-20 bg-white flex items-center justify-center p-2 rounded-xl">
-                    <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
+    <div id="capture-area">
+        <div v-for="order in filteredByDateOrders" :id="'inv-' + order.orderId" :key="'capture-' + order.orderId" class="invoice-a4">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 3px solid #142952; padding-bottom: 10px;">
+                <div style="flex: 1;">
+                    <h2 style="font-size: 24px; font-weight: 900; color: #142952; margin: 0;">فاتورة طلب</h2>
+                    <p style="font-size: 11px; color: #666; margin: 2px 0;">هوية بيتك</p>
                 </div>
-                <div class="text-center">
-                    <h1 class="text-3xl font-black text-[#142952]">فاتورة ضريبية مبسطة</h1>
-                </div>
-                <div class="text-left font-black text-[11px] space-y-0.5">
-                    <p class="text-2xl text-[#142952] pb-1">#{{ invoice.orderId }}</p>
-                    <p>التاريخ : {{ formatDateLong(invoice.timestamp) }}</p>
-                    <p>الرقم الضريبي : 310236446600003</p>
+                <div style="text-align: right; flex: 1;">
+                    <img src="https://i.ibb.co/68vD84D/logo1.png" alt="Logo" style="width: 50px; height: 50px; object-fit: contain;">
                 </div>
             </div>
-            
-            <div class="grid grid-cols-2 gap-4 mb-4 text-[11px]">
-                <div class="inv-info-box space-y-1">
-                    <span class="text-gray-400 font-bold">بيانات العميل :</span>
-                    <p class="font-black text-base text-gray-900">{{ invoice.client?.name }}</p>
-                    <p class="font-black text-[#142952] text-sm">{{ invoice.client?.address }}</p>
-                    <p class="font-bold text-gray-600">المملكة العربية السعودية، {{ invoice.client?.city }}</p>
-                    <p dir="ltr" class="font-black text-sm">{{ invoice.client?.phone }}</p>
+
+            <!-- Order Info -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div class="inv-info-box">
+                    <p style="font-size: 11px; color: #666; margin: 0 0 4px 0;"><strong>رقم الفاتورة:</strong></p>
+                    <p style="font-size: 13px; font-weight: 900; margin: 0;">{{ order.orderId }}</p>
                 </div>
-                <div class="inv-info-box text-left space-y-1 border-r-4 border-[#142952]">
-                    <span class="text-gray-400 font-bold">المورد :</span>
-                    <p class="font-black text-sm text-[#142952]">مؤسسة هوية بيتك</p>
-                    <p class="font-bold">المملكة العربية السعودية، الرياض</p>
-                    <p class="font-bold">المعيقلية، الديرة، SA</p>
-                    <p class="text-blue-600 font-bold">hwytbytk@gmail.com</p>
-                    <p dir="ltr" class="font-black">+966 54 478 2301</p>
+                <div class="inv-info-box">
+                    <p style="font-size: 11px; color: #666; margin: 0 0 4px 0;"><strong>التاريخ:</strong></p>
+                    <p style="font-size: 13px; font-weight: 900; margin: 0;">{{ formatDateLong(order.timestamp) }}</p>
+                </div>
+                <div class="inv-info-box">
+                    <p style="font-size: 11px; color: #666; margin: 0 0 4px 0;"><strong>الوقت:</strong></p>
+                    <p style="font-size: 13px; font-weight: 900; margin: 0;">{{ formatTime(order.timestamp) }}</p>
+                </div>
+                <div class="inv-info-box">
+                    <p style="font-size: 11px; color: #666; margin: 0 0 4px 0;"><strong>المسؤول:</strong></p>
+                    <p style="font-size: 13px; font-weight: 900; margin: 0;">{{ order.managerCode }}</p>
                 </div>
             </div>
-            
-            <table class="inv-table">
+
+            <!-- Customer Info -->
+            <div style="margin-bottom: 15px;">
+                <h3 style="font-size: 12px; font-weight: 900; color: #142952; margin: 0 0 8px 0; border-bottom: 2px solid #142952; padding-bottom: 4px;">بيانات العميل</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <p style="font-size: 10px; color: #666; margin: 0;">الاسم</p>
+                        <p style="font-size: 12px; font-weight: bold; margin: 0;">{{ order.client?.name }}</p>
+                    </div>
+                    <div>
+                        <p style="font-size: 10px; color: #666; margin: 0;">الجوال</p>
+                        <p style="font-size: 12px; font-weight: bold; margin: 0;">{{ order.client?.phone }}</p>
+                    </div>
+                    <div>
+                        <p style="font-size: 10px; color: #666; margin: 0;">المدينة</p>
+                        <p style="font-size: 12px; font-weight: bold; margin: 0;">{{ order.client?.city }}</p>
+                    </div>
+                    <div>
+                        <p style="font-size: 10px; color: #666; margin: 0;">العنوان</p>
+                        <p style="font-size: 12px; font-weight: bold; margin: 0;">{{ order.client?.address }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Table -->
+            <table class="inv-table" style="margin: 15px 0;">
                 <thead>
                     <tr>
-                        <th class="rounded-tr-lg">تفاصيل المنتج والخيارات المختارة</th>
-                        <th class="text-center w-12">الكمية</th>
-                        <th class="text-center w-28">سعر الوحدة</th>
-                        <th class="text-left rounded-tl-lg w-28">الإجمالي</th>
+                        <th>المنتج</th>
+                        <th>اللون</th>
+                        <th>العدد</th>
+                        <th>السعر</th>
+                        <th>المجموع</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="p in invoice.products" :key="p.id">
+                    <tr v-for="(product, idx) in order.products" :key="idx">
                         <td>
-                            <div class="flex gap-3">
-                                <div class="w-16 h-16 bg-gray-50 border rounded-lg flex items-center justify-center p-1 shrink-0">
-                                    <img :src="`products/${p.name}.webp`" :data-name="p.name" onerror="if(!this.getAttribute('data-j')){this.setAttribute('data-j','1'); this.src='products/'+this.getAttribute('data-name')+'.jpg';} else if(!this.getAttribute('data-p')){this.setAttribute('data-p','1'); this.src='products/'+this.getAttribute('data-name')+'.png';} else {this.onerror=null; this.src='logo1.png';}" class="w-full h-full object-contain rounded-md">
-                                </div>
-                                <div class="space-y-1 flex-1">
-                                    <p class="font-black text-sm text-[#142952]">{{ p.name }} <span v-if="p.villaNo" class="text-[10px] text-gray-500">(فيلا {{ p.villaNo }})</span></p>
-                                    <div class="text-[10px] space-y-1 mt-1.5">
-                                        <p class="font-bold text-gray-700 flex justify-between">
-                                            <span>• سعر اللوحة الأساسي:</span> <span class="font-black">{{ p.basePrice }} SAR</span>
-                                        </p>
-                                        <p v-if="p.color === 'gold' || p.color === 'black'" class="font-bold text-gray-700 flex justify-between">
-                                            <span>• اللون ({{ p.color === 'gold' ? 'ذهبي' : 'أسود' }}):</span> <span class="font-black">+19 SAR</span>
-                                        </p>
-                                        <p v-else class="font-bold text-gray-500 flex justify-between">
-                                            <span>• اللون (فضي):</span> <span class="font-black">مجاناً</span>
-                                        </p>
-                                        <p v-if="p.hasLighting" class="font-bold text-gray-700 flex justify-between">
-                                            <span>• إضافة إضاءة:</span> <span class="font-black">+129 SAR</span>
-                                        </p>
-                                        <p v-if="p.customDesign" class="font-bold text-gray-700 flex justify-between">
-                                            <span>• تصميم خاص:</span> <span class="font-black">+50 SAR</span>
-                                        </p>
-                                        <div class="border-t border-dashed mt-1 pt-1 space-y-0.5">
-                                            <p v-if="p.nationalAddress" class="font-bold text-gray-600">العنوان الوطني: <span class="font-black text-black">{{ p.nationalAddress }}</span></p>
-                                            <p v-if="p.customName" class="font-bold text-gray-600">الاسم المطلوب: <span class="font-black text-blue-700 italic">{{ p.customName }}</span></p>
-                                            <p v-if="p.notes" class="font-bold text-gray-500 italic">ملاحظات: {{ p.notes }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div>{{ product.name }}</div>
+                            <div v-if="product.customName" style="font-size: 10px; color: #666;">({{ product.customName }})</div>
+                            <div v-if="product.notes" style="font-size: 10px; color: #999;">ملاحظات: {{ product.notes }}</div>
                         </td>
-                        <td class="text-center font-black text-base bg-gray-50/30 align-middle">{{ p.count }}</td>
-                        <td class="text-center font-black text-sm align-middle text-[#142952]">SAR {{ p.price }}</td>
-                        <td class="text-left font-black text-sm align-middle text-[#142952]">SAR {{ p.price * p.count }}</td>
+                        <td>{{ product.color }}</td>
+                        <td>{{ product.count }}</td>
+                        <td>{{ product.price }}</td>
+                        <td style="font-weight: bold;">{{ product.price * product.count }}</td>
                     </tr>
                 </tbody>
             </table>
-            
-            <div class="mt-4 mr-auto w-[350px]">
-                <div class="space-y-2 border-t-2 border-[#142952] pt-3 text-xs mb-3">
-                    <div class="flex justify-between font-bold text-gray-700">
-                        <span>إجمالي المنتجات</span>
-                        <span class="font-black text-black text-sm">SAR {{ invoice.subTotal }}</span>
-                    </div>
-                    <div v-if="invoice.discountRate > 0" class="flex justify-between font-bold text-red-500">
-                        <span>الخصم ({{ invoice.discountRate }}%)</span>
-                        <span class="font-black text-red-600 text-sm">- SAR {{ invoice.discountValue }}</span>
-                    </div>
-                    <div class="flex justify-between font-bold text-green-600 border-b border-gray-100 pb-3">
-                        <span>تكلفة التوصيل والتركيب</span>
-                        <span class="font-black underline decoration-2">مجاناً</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center bg-[#142952] text-white p-4 rounded-xl shadow-md mt-2 relative">
-                        <div class="flex flex-col gap-1">
-                            <span class="font-black text-base">الإجمالي النهائي</span>
-                            <div v-if="invoice.isPaid" class="flex items-center gap-1.5 bg-green-500/20 text-green-200 px-2 py-0.5 rounded-md border border-green-400/50 w-fit">
-                                <span class="text-[10px] font-black">✓ تم الدفع</span>
-                            </div>
-                            <div v-else class="flex items-center gap-1.5 bg-red-500/20 text-red-200 px-2 py-0.5 rounded-md border border-red-400/50 w-fit">
-                                <span class="text-[10px] font-black">✗ غير مدفوع</span>
-                            </div>
-                        </div>
-                        <span class="font-black text-2xl">SAR {{ invoice.totalAmount }}</span>
-                    </div>
-                </div>
 
-                <div v-if="invoice.receipts && invoice.receipts.length > 0" class="border-2 border-dashed border-gray-200 p-3 rounded-xl bg-gray-50/50">
-                    <p class="text-[10px] font-black text-gray-500 mb-2 border-b border-gray-200 pb-1">إيصالات الدفع المرفقة للطلب:</p>
-                    <div class="flex flex-wrap gap-2">
-                        <div v-for="(img, idx) in invoice.receipts" :key="idx" class="w-[70px] h-[70px] border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
-                            <img :src="img" class="w-full h-full object-cover">
-                        </div>
-                    </div>
+            <!-- Totals -->
+            <div style="margin: 15px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div style="grid-column: 1;"></div>
+                <div style="grid-column: 2;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr style="border-top: 2px solid #142952;">
+                            <td style="padding: 6px 8px; text-align: left; font-size: 11px;">الإجمالي قبل الخصم</td>
+                            <td style="padding: 6px 8px; text-align: left; font-weight: bold; font-size: 12px;">{{ order.subTotal }}</td>
+                        </tr>
+                        <tr v-if="order.discountRate > 0">
+                            <td style="padding: 6px 8px; text-align: left; font-size: 11px;">الخصم ({{ order.discountRate }}%)</td>
+                            <td style="padding: 6px 8px; text-align: left; font-weight: bold; color: red; font-size: 12px;">-{{ order.discountValue }}</td>
+                        </tr>
+                        <tr style="background: #142952; color: white;">
+                            <td style="padding: 8px; text-align: left; font-size: 12px; font-weight: 900;">الإجمالي النهائي</td>
+                            <td style="padding: 8px; text-align: left; font-weight: 900; font-size: 13px;">{{ order.totalAmount }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="padding: 6px 8px; text-align: center; background: #f0f0f0; font-size: 11px; font-weight: bold;">
+                                حالة الدفع: {{ order.isPaid ? '✓ مدفوع' : '✗ قيد الانتظار' }}
+                            </td>
+                        </tr>
+                    </table>
                 </div>
             </div>
 
-            <div class="invoice-footer mt-auto">
-                <p class="font-black text-[#142952] text-sm mb-1">شكراً لتسوقكم معنا في هوية بيتك</p>
-                <p class="text-[10px] text-gray-500 mb-1">البضاعة المباعة لا ترد ولا تستبدل إلا في حالة وجود عيب مصنعي خلال 3 أيام من تاريخ الاستلام.</p>
-                <p class="text-[10px] font-bold text-gray-600">
-                    للتواصل والدعم الفني: <span dir="ltr" class="text-blue-700">hwytbytk@gmail.com</span> | <span dir="ltr" class="text-[#142952]">+966 54 478 2301</span>
-                </p>
+            <!-- Footer -->
+            <div class="invoice-footer">
+                <p style="margin: 0; font-size: 10px; color: #666;">شكراً لك على تعاملك معنا | هوية بيتك © {{ new Date().getFullYear() }}</p>
             </div>
         </div>
     </div>
+
 </div>
 
-<script type="module">
-    const { createApp, ref, computed, onMounted, nextTick } = Vue;
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
+<script>
+const { createApp, ref, computed, onMounted, nextTick } = Vue;
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbycA4wPKpmdhkoTaZhAOZoWZxeaNuzrxkw4GtHmK8j8F-5LPpSubkMju76wzLIaEMSd/exec';
 
-    function parseSheetDate(dateStr) {
-        if (!dateStr) return new Date().toISOString();
-        let d = new Date(dateStr);
-        if (!isNaN(d.getTime())) return d.toISOString();
-        if (typeof dateStr === 'string') {
-            const s = dateStr.trim();
-            const parts = s.split(/[\/\-]/);
-            if (parts.length === 3 && parts[2].length === 4) {
-                d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-                if (!isNaN(d.getTime())) return d.toISOString();
-            }
-        }
-        return new Date().toISOString();
-    }
+createApp({
+    setup() {
+        const currentUser = ref(null);
+        const orders = ref([]);
+        const bulkList = ref([]);
+        const syncLoading = ref(false);
+        const notification = ref(null);
+        const filterDate = ref(new Date().toISOString().split('T')[0]);
+        const filterPaymentStatus = ref('all');
 
-    const isPaidStatus = (statusStr) => {
-        const s = String(statusStr || '').trim();
-        return s === 'تم الدفع' || (s.includes('تم الدفع') && !s.includes('لم'));
-    };
-
-    createApp({
-        setup() {
-            const currentUser = ref(null);
-            const orders = ref([]);
-            const bulkList = ref([]);
-            
-            const filterDate = ref(new Date().toISOString().split('T')[0]);
-            const filterPaymentStatus = ref('all');
-            
-            const syncLoading = ref(false);
-            const notification = ref(null);
-
-            const filteredByDateOrders = computed(() => {
-                return orders.value.filter(o => {
-                    if (currentUser.value?.role !== 'admin') {
-                        if (String(o.managerCode || '').toUpperCase() !== String(currentUser.value?.managerCode || '').toUpperCase()) return false;
-                    }
-                    const dateMatch = (o.timestamp || '').split('T')[0] === filterDate.value;
-                    let statusMatch = true;
-                    if (filterPaymentStatus.value === 'paid')   statusMatch = o.isPaid === true;
-                    if (filterPaymentStatus.value === 'unpaid') statusMatch = o.isPaid !== true;
-                    return dateMatch && statusMatch;
-                });
-            });
-
-            const showNotify = (msg, type = 'success') => {
-                notification.value = { msg, type };
-                setTimeout(() => notification.value = null, 4000);
-                setTimeout(() => lucide.createIcons(), 50);
-            };
-
-            const doLogout = () => { sessionStorage.removeItem('hb_user'); window.location.href = 'index.html'; };
-
-            const viewInvoice = (order) => {
-                bulkList.value = [order];
-                nextTick(() => { setTimeout(() => window.print(), 500); });
-            };
-
-            const printBulk = () => { 
-                if (!filteredByDateOrders.value.length) return showNotify('لا يوجد فواتير مطابقة لخياراتك', 'error'); 
-                bulkList.value = filteredByDateOrders.value; 
-                nextTick(() => setTimeout(() => window.print(), 800)); 
-            };
-            
-            const downloadBulkPDF = async () => {
-                if (!filteredByDateOrders.value.length) return showNotify('لا يوجد فواتير لتحميلها', 'error');
-                syncLoading.value = true; 
-                showNotify('جاري بناء الملف المجمع (يرجى الانتظار)...', 'info');
+        const filteredByDateOrders = computed(() => {
+            return orders.value.filter(o => {
+                const orderDate = new Date(o.timestamp).toISOString().split('T')[0];
+                const dateMatch = !filterDate.value || orderDate === filterDate.value;
                 
-                const { jsPDF } = window.jspdf; 
+                let statusMatch = true;
+                if (filterPaymentStatus.value === 'paid') statusMatch = o.isPaid === true;
+                else if (filterPaymentStatus.value === 'unpaid') statusMatch = o.isPaid !== true;
+                
+                return dateMatch && statusMatch;
+            });
+        });
+
+        const showNotify = (msg, type = 'success') => {
+            notification.value = { msg, type };
+            setTimeout(() => { notification.value = null; }, 4000);
+        };
+
+        // ✅ دوال Helper المهمة
+        const isPaidStatus = (status) => {
+            const paid = String(status || '').trim().toLowerCase();
+            return paid === 'تم الدفع' || paid === 'paid' || paid === true || paid === 'yes' || paid === 'نعم';
+        };
+
+        const parseSheetDate = (dateVal) => {
+            if (!dateVal) return new Date();
+            if (typeof dateVal === 'object') return new Date(dateVal);
+            
+            const str = String(dateVal).trim();
+            
+            // صيغة YYYY-MM-DD
+            if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+                return new Date(str);
+            }
+            
+            // صيغة DD/MM/YYYY
+            if (/^\d{2}\/\d{2}\/\d{4}/.test(str)) {
+                const parts = str.split('/');
+                return new Date(parts[2], parseInt(parts[1]) - 1, parts[0]);
+            }
+            
+            // محاولة الصيغة الافتراضية
+            const parsed = new Date(str);
+            return isNaN(parsed.getTime()) ? new Date() : parsed;
+        };
+
+        const doLogout = () => {
+            sessionStorage.removeItem('hb_user');
+            window.location.href = 'index.html';
+        };
+
+        const viewInvoice = (orderId) => {
+            const elem = document.getElementById('inv-' + orderId);
+            if (!elem) return;
+            
+            const printWindow = window.open('', '', 'height=800,width=900');
+            printWindow.document.write(elem.outerHTML);
+            printWindow.document.close();
+            setTimeout(() => printWindow.print(), 500);
+        };
+
+        const printBulk = async () => {
+            if (filteredByDateOrders.value.length === 0) {
+                showNotify('لا توجد فواتير لطباعتها', 'error');
+                return;
+            }
+
+            syncLoading.value = true;
+            try {
+                const printWindow = window.open('', '', 'height=800,width=900');
+                let html = '<html><head><meta charset="UTF-8"><style>body { font-family: Tajawal; } @media print { @page { size: A4; } }</style></head><body>';
+                
+                for (const order of filteredByDateOrders.value) {
+                    const elem = document.getElementById('inv-' + order.orderId);
+                    if (elem) html += elem.outerHTML;
+                }
+                
+                html += '</body></html>';
+                printWindow.document.write(html);
+                printWindow.document.close();
+                setTimeout(() => printWindow.print(), 800);
+                showNotify('تم فتح الطباعة بنجاح');
+            } catch (e) {
+                showNotify('خطأ في الطباعة: ' + e.message, 'error');
+            } finally {
+                syncLoading.value = false;
+            }
+        };
+
+        const downloadBulkPDF = async () => {
+            if (filteredByDateOrders.value.length === 0) {
+                showNotify('لا توجد فواتير لتحميلها', 'error');
+                return;
+            }
+
+            syncLoading.value = true;
+            try {
+                const { jsPDF } = window.jspdf;
                 const finalPDF = new jsPDF('p', 'mm', 'a4');
                 
                 for (let i = 0; i < filteredByDateOrders.value.length; i++) {
-                    bulkList.value = [filteredByDateOrders.value[i]]; 
                     await nextTick(); 
                     await new Promise(r => setTimeout(r, 400)); 
                     
@@ -385,19 +436,44 @@
                 finalPDF.save(`فواتير_${filterDate.value}.pdf`); 
                 syncLoading.value = false;
                 showNotify('تم تحميل الملف بنجاح');
-            };
+            } catch (e) {
+                showNotify('خطأ في التحميل: ' + e.message, 'error');
+                syncLoading.value = false;
+            }
+        };
 
-            const syncFromSheet = async () => {
-                syncLoading.value = true;
+        const syncFromSheet = async () => {
+            syncLoading.value = true;
+            try {
+                console.log('🔄 جاري الاتصال بـ Google Sheets...');
+                const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP Error: ${res.status}`);
+                }
+                
+                const text = await res.text();
+                console.log('📥 تم استقبال البيانات:', text.substring(0, 100) + '...');
+                
+                let result;
                 try {
-                    const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
-                    const text = await res.text();
-                    let result = JSON.parse(text);
+                    result = JSON.parse(text);
+                } catch (e) {
+                    console.error('❌ خطأ في JSON Parse:', e);
+                    throw new Error('البيانات المستقبلة غير صحيحة: ' + text.substring(0, 50));
+                }
 
-                    const grouped = {};
-                    (result.orders || []).forEach(row => {
+                const grouped = {};
+                const ordersData = result.orders || [];
+                console.log('📊 عدد السجلات المستقبلة:', ordersData.length);
+
+                ordersData.forEach((row, idx) => {
+                    try {
                         const oid = String(row['رقم الطلب'] || '').trim();
-                        if (!oid) return;
+                        if (!oid) {
+                            console.warn(`⚠️ سجل ${idx + 1}: رقم طلب فارغ`);
+                            return;
+                        }
                         
                         if (!grouped[oid]) {
                             let rawReceipt = String(row['صورة الإيصال'] || '');
@@ -410,13 +486,20 @@
 
                             grouped[oid] = {
                                 orderId: oid, 
-                                managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim(),
+                                managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim().substring(0, 2).toUpperCase(),
                                 discountRate: Number(row['نسبة الخصم'] || 0), 
                                 discountValue: Number(row['قيمة الخصم'] || 0),
                                 isPaid: isPaidStatus(row['حالة الدفع']), 
                                 receipts: loadedReceipts,
-                                client: { name: String(row['العميل'] || ''), city: String(row['المدينة'] || ''), phone: String(row['الجوال'] || ''), address: String(row['العنوان بالتفصيل'] || '') },
-                                products: [], totalAmount: 0, subTotal: 0,
+                                client: { 
+                                    name: String(row['العميل'] || '').trim(), 
+                                    city: String(row['المدينة'] || '').trim(), 
+                                    phone: String(row['الجوال'] || '').trim(), 
+                                    address: String(row['العنوان بالتفصيل'] || '').trim() 
+                                },
+                                products: [], 
+                                totalAmount: 0, 
+                                subTotal: 0,
                                 timestamp: parseSheetDate(row['التاريخ'])
                             };
                         }
@@ -426,13 +509,13 @@
                             id: Date.now() + Math.random(),
                             productId: productNameOrId,
                             name: productNameOrId, 
-                            color: String(row['اللون'] || 'silver'),
+                            color: String(row['اللون'] || 'فضي').trim(),
                             count: Number(row['العدد'] || 1), 
                             price: Number(row['السعر الفردي'] || 0),
-                            nationalAddress: String(row['العنوان الوطني'] || ''), 
-                            villaNo: String(row['رقم الفيلا'] || ''),
-                            customName: String(row['الاسم المخصص'] || ''), 
-                            notes: String(row['ملاحظات'] || ''),
+                            nationalAddress: String(row['العنوان الوطني'] || '').trim(), 
+                            villaNo: String(row['رقم الفيلا'] || '').trim(),
+                            customName: String(row['الاسم المخصص'] || '').trim(), 
+                            notes: String(row['ملاحظات'] || '').trim(),
                             hasLighting: row['إضافة إضاءة'] === 'نعم' || row['إضافة إضاءة'] === true,
                             customDesign: row['تصميم خاص'] === 'نعم' || row['تصميم خاص'] === true
                         };
@@ -440,66 +523,85 @@
                         let additions = 0;
                         if (p.hasLighting) additions += 129;
                         if (p.customDesign) additions += 50;
-                        if (p.color === 'gold' || p.color === 'black') additions += 19;
+                        if (p.color === 'ذهبي' || p.color === 'gold' || p.color === 'أسود' || p.color === 'black') additions += 19;
                         p.basePrice = p.price - additions;
 
                         grouped[oid].products.push(p);
-                    });
+                    } catch (e) {
+                        console.error(`❌ خطأ في معالجة السجل ${idx + 1}:`, e);
+                    }
+                });
 
-                    Object.values(grouped).forEach(o => {
-                        let discountable = 0;
-                        let nonDiscountable = 0;
+                // حساب الإجماليات
+                Object.values(grouped).forEach(o => {
+                    let discountable = 0;
+                    let nonDiscountable = 0;
+                    
+                    o.products.forEach(p => {
+                        let adds = 0;
+                        if (p.hasLighting) adds += 129;
+                        if (p.customDesign) adds += 50;
+                        if (p.color === 'ذهبي' || p.color === 'gold' || p.color === 'أسود' || p.color === 'black') adds += 19;
                         
-                        o.products.forEach(p => {
-                            let adds = 0;
-                            if (p.hasLighting) adds += 129;
-                            if (p.customDesign) adds += 50;
-                            let baseAndColor = p.price - adds;
-                            discountable += (baseAndColor * p.count);
-                            nonDiscountable += (adds * p.count);
-                        });
-                        
-                        o.subTotal = discountable + nonDiscountable;
-                        if (o.discountRate > 0) {
-                            o.discountValue = Number(((discountable * o.discountRate) / 100).toFixed(2));
-                            o.totalAmount = Math.round(discountable - o.discountValue + nonDiscountable);
-                        } else {
-                            o.totalAmount = o.subTotal;
-                        }
+                        let baseAndColor = p.price - adds;
+                        discountable += (baseAndColor * p.count);
+                        nonDiscountable += (adds * p.count);
                     });
+                    
+                    o.subTotal = discountable + nonDiscountable;
+                    if (o.discountRate > 0) {
+                        o.discountValue = Number(((discountable * o.discountRate) / 100).toFixed(2));
+                        o.totalAmount = Math.round(discountable - o.discountValue + nonDiscountable);
+                    } else {
+                        o.totalAmount = o.subTotal;
+                    }
+                });
 
-                    orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
-                    showNotify('تم تحديث الفواتير من السحاب بنجاح');
-                } catch(e) {
-                    showNotify('خطأ في المزامنة.', 'error');
-                } finally { syncLoading.value = false; }
-            };
+                orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
+                console.log('✅ تم تحديث الفواتير:', orders.value.length + ' فاتورة');
+                showNotify('تم تحديث الفواتير من السحاب بنجاح (' + orders.value.length + ' فاتورة)');
+            } catch(e) {
+                console.error('❌ خطأ في المزامنة:', e);
+                showNotify('خطأ في المزامنة: ' + e.message, 'error');
+            } finally { 
+                syncLoading.value = false; 
+            }
+        };
 
-            const formatDate = (ts) => ts ? new Date(ts).toLocaleDateString('ar-SA') : '-';
-            const formatDateLong = (ts) => ts ? new Date(ts).toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) : '-';
-            const formatTime = (ts) => ts ? new Date(ts).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }) : '-';
+        const formatDate = (ts) => ts ? new Date(ts).toLocaleDateString('ar-SA') : '-';
+        const formatDateLong = (ts) => ts ? new Date(ts).toLocaleDateString('ar-SA', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) : '-';
+        const formatTime = (ts) => ts ? new Date(ts).toLocaleTimeString('ar-SA', { hour:'2-digit', minute:'2-digit' }) : '-';
 
-            onMounted(() => { 
-                const storedUser = sessionStorage.getItem('hb_user');
-                if (!storedUser) { window.location.href = 'index.html'; return; }
-                currentUser.value = JSON.parse(storedUser);
-                
-                const localOrders = localStorage.getItem('hwayt_orders_v8');
-                if (localOrders) orders.value = JSON.parse(localOrders);
+        onMounted(() => { 
+            const storedUser = sessionStorage.getItem('hb_user');
+            if (!storedUser) { 
+                window.location.href = 'index.html'; 
+                return; 
+            }
+            currentUser.value = JSON.parse(storedUser);
+            
+            const localOrders = localStorage.getItem('hwayt_orders_v8');
+            if (localOrders) {
+                try {
+                    orders.value = JSON.parse(localOrders);
+                } catch (e) {
+                    console.warn('⚠️ خطأ في قراءة البيانات المحفوظة');
+                }
+            }
 
-                setTimeout(() => lucide.createIcons(), 500); 
-                syncFromSheet();
-            });
+            setTimeout(() => lucide.createIcons(), 500); 
+            syncFromSheet();
+        });
 
-            return {
-                currentUser, orders, bulkList, syncLoading, notification, 
-                filterDate, filterPaymentStatus, filteredByDateOrders,
-                doLogout, viewInvoice, printBulk, downloadBulkPDF, syncFromSheet,
-                formatDate, formatDateLong, formatTime
-            };
-        }
-    }).mount('#app');
+        return {
+            currentUser, orders, bulkList, syncLoading, notification, 
+            filterDate, filterPaymentStatus, filteredByDateOrders,
+            doLogout, viewInvoice, printBulk, downloadBulkPDF, syncFromSheet,
+            formatDate, formatDateLong, formatTime
+        };
+    }
+}).mount('#app');
 </script>
 </body>
 </html>
