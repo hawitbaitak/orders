@@ -1,295 +1,364 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>التقارير ولوحة التحكم</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Cairo', sans-serif; background-color: #f4f7f6; }
-    .active-tab { background-color: #1e293b !important; color: white !important; }
-    .inactive-tab { background-color: #f1f5f9; color: #475569; }
-    @media print { .no-print { display: none !important; } }
-  </style>
-</head>
-<body class="p-6">
-
-  <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" id="report-content">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام هوية بيتك  - التقارير والإحصائيات</title>
     
-    <div class="p-6 border-b border-gray-100 flex justify-between items-center no-print">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-800">التقارير ولوحة التحكم</h1>
-        <p class="text-xs text-gray-400 mt-1">متابعة الأداء المالي وأداء فريق العمل (خاص بالإدارة)</p>
-      </div>
-      <button onclick="exportToPDF()" class="bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-colors">
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-        استخراج التقرير PDF
-      </button>
-    </div>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .sidebar { background: #142952; }
+        .active-tab { background: rgba(255,255,255,0.1); border-right: 4px solid #fbbf24; }
+        .report-table th { background: #142952; color: white; padding: 12px 16px; text-align: right; font-size: 13px; border: 1px solid #142952; }
+        .report-table td { border-bottom: 1px solid #e2e8f0; padding: 12px 16px; font-size: 13px; font-weight: 700; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
+        .report-table tr:hover td { background-color: #f1f5f9; }
+    </style>
+</head>
+<body>
+<div id="app" class="min-h-screen flex">
 
-    <div class="p-6 bg-white no-print">
-      <div class="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-gray-100 pb-6">
+    <aside class="sidebar w-64 text-white flex flex-col fixed h-full z-50 shadow-2xl no-print">
+        <div class="p-8 text-center border-b border-white/5">
+            <h1 class="text-xl font-black">هوية بيتك </h1>
+            <p class="text-blue-300 text-[10px] mt-1 tracking-widest font-bold uppercase">نظام إدارة المبيعات</p>
+        </div>
+        <nav class="flex-1 py-10 px-4 space-y-2">
+            <a href="reports.html" class="active-tab w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold">
+                <i data-lucide="pie-chart" class="w-5 h-5 text-yellow-400"></i> التقارير والإحصائيات
+            </a>
+            </nav>
+    </aside>
+
+    <main class="flex-1 mr-64 p-8 relative min-h-screen">
         
-        <div class="flex gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
-          <button id="btn-financial" onclick="switchTab('financial')" class="active-tab px-6 py-2 rounded-md text-sm font-bold transition-colors">
-            التقرير المالي العام
-          </button>
-          <button id="btn-employee" onclick="switchTab('employee')" class="inactive-tab hover:bg-gray-200 px-6 py-2 rounded-md text-sm font-bold transition-colors">
-            تقرير أداء الموظفين التفصيلي
-          </button>
+        <div v-if="notification" class="fixed top-10 left-10 z-[100] p-5 rounded-2xl shadow-2xl bg-white border-l-8 flex items-center gap-4 transition-all"
+             :class="{'border-red-500 text-red-600': notification.type === 'error', 'border-green-500 text-green-600': notification.type === 'success', 'border-blue-500 text-blue-700': notification.type === 'info'}">
+            <span class="font-black">{{ notification.msg }}</span>
         </div>
 
-        <div class="flex items-center gap-3">
-          <div class="flex flex-col text-right">
-            <label class="text-[10px] text-gray-400 font-bold mb-1">من تاريخ</label>
-            <input type="date" id="date-from" class="border border-gray-300 rounded-md p-1.5 text-sm outline-none focus:border-blue-900">
-          </div>
-          <div class="flex flex-col text-right">
-            <label class="text-[10px] text-gray-400 font-bold mb-1">إلى تاريخ</label>
-            <input type="date" id="date-to" class="border border-gray-300 rounded-md p-1.5 text-sm outline-none focus:border-blue-900">
-          </div>
-          <div class="flex flex-col justify-end h-full mt-4">
-            <button onclick="fetchAndProcessData()" id="process-btn" class="bg-[#111827] hover:bg-black text-white px-6 py-1.5 rounded-md text-sm font-bold flex items-center gap-2">
-              <svg class="w-4 h-4 animate-spin hidden" id="loading-icon" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-              جاري المعالجة...
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="p-6 bg-gray-50 min-h-[400px]">
-      
-      <div id="financial-section" class="space-y-6 block">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm text-center">
-            <p class="text-sm text-gray-500 font-bold">إجمالي الإيرادات (تم الدفع)</p>
-            <h3 class="text-2xl font-black text-[#111827] mt-2" id="total-revenue">0.00</h3>
-          </div>
-          <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm text-center">
-            <p class="text-sm text-gray-500 font-bold">عدد الطلبات الناجحة</p>
-            <h3 class="text-2xl font-black text-emerald-600 mt-2" id="total-orders">0</h3>
-          </div>
-          <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm text-center">
-            <p class="text-sm text-gray-500 font-bold">متوسط قيمة الطلب</p>
-            <h3 class="text-2xl font-black text-blue-600 mt-2" id="avg-order">0.00</h3>
-          </div>
+        <div v-if="syncLoading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
+            <p class="font-black text-[#142952]">جاري مزامنة ومعالجة البيانات...</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-            <h4 class="text-sm font-bold text-gray-700 mb-4">📈 الإيرادات اليومية (تم الدفع فقط)</h4>
-            <div class="h-64"><canvas id="dailyChart"></canvas></div>
-          </div>
-          <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-            <h4 class="text-sm font-bold text-gray-700 mb-4">📊 توزيع حالات الطلب</h4>
-            <div class="h-64 flex justify-center"><canvas id="statusChart"></canvas></div>
-          </div>
-        </div>
-      </div>
-
-      <div id="employee-section" class="space-y-6 hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="bg-white p-0 rounded-lg border border-gray-200 shadow-sm lg:col-span-2 overflow-hidden">
-            <div class="p-4 border-b border-gray-100 bg-gray-50">
-              <h4 class="text-sm font-bold text-gray-700">👥 أداء وإيرادات الموظفين</h4>
+        <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div>
+                <h2 class="text-3xl font-black text-[#142952]">التقارير ولوحة التحكم</h2>
             </div>
-            <table class="w-full text-right">
-              <thead>
-                <tr class="bg-white text-gray-400 text-xs border-b border-gray-100">
-                  <th class="p-4 font-bold">رمز المسؤول</th>
-                  <th class="p-4 font-bold text-center">عدد الطلبات (الإجمالي)</th>
-                  <th class="p-4 font-bold text-center">الإيرادات (تم الدفع فقط)</th>
-                </tr>
-              </thead>
-              <tbody id="emp-table-body" class="text-sm text-gray-700 divide-y divide-gray-50">
-                </tbody>
-            </table>
-          </div>
-          
-          <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-            <h4 class="text-sm font-bold text-gray-700 mb-4">🍩 نسبة الإيرادات لكل مسؤول</h4>
-            <div class="h-64 flex justify-center"><canvas id="empChart"></canvas></div>
-          </div>
-        </div>
-      </div>
+        </header>
 
-    </div>
-  </div>
+        <section class="space-y-8 animate-in fade-in">
+            <div class="bg-white p-8 rounded-3xl shadow-sm border">
+                <div class="flex gap-4 mb-8 pb-6 border-b border-gray-100">
+                    <button @click="setReportType('general')" :class="reportType === 'general' ? 'bg-[#142952] text-white shadow-lg' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-8 py-3 rounded-2xl font-black transition-all">التقرير المالي العام</button>
+                    <button @click="setReportType('employee')" :class="reportType === 'employee' ? 'bg-[#142952] text-white shadow-lg' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-8 py-3 rounded-2xl font-black transition-all">تقرير أداء الموظفين التفصيلي</button>
+                </div>
 
-  <script>
-    let globalData = [];
-    let chartsInstance = {};
+                <div class="flex flex-wrap gap-6 items-end">
+                    <div>
+                        <label class="block text-xs font-black text-gray-400 mb-2 uppercase">من تاريخ</label>
+                        <input type="date" v-model="reportStartDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-gray-400 mb-2 uppercase">إلى تاريخ</label>
+                        <input type="date" v-model="reportEndDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none font-bold">
+                    </div>
+                    
+                    <div v-if="reportType === 'employee'" class="w-64">
+                        <label class="block text-xs font-black text-gray-400 mb-2 uppercase">تصفية بموظف محدد</label>
+                        <select v-model="selectedEmployee" @change="processEmployeeDetailedData" class="w-full border-2 border-blue-50 p-3 rounded-2xl outline-none font-bold">
+                            <option value="">-- يرجى اختيار الموظف --</option>
+                            <option v-for="emp in uniqueEmployees" :key="emp" :value="emp">الموظف: {{ emp }}</option>
+                        </select>
+                    </div>
 
-    // استدعاء البيانات تلقائياً عند فتح الصفحة
-    window.onload = () => fetchAndProcessData();
+                    <button @click="generateReport" :disabled="syncLoading" class="bg-[#142952] text-white px-8 py-3.5 rounded-2xl font-black shadow-lg hover:bg-blue-900 transition-all flex items-center gap-2">
+                        {{ syncLoading ? 'جاري المعالجة...' : 'تحديث واستخراج التقرير' }}
+                    </button>
+                </div>
+            </div>
 
-    function switchTab(tab) {
-      document.getElementById('financial-section').style.display = tab === 'financial' ? 'block' : 'none';
-      document.getElementById('employee-section').style.display = tab === 'employee' ? 'block' : 'none';
-      
-      let btnFin = document.getElementById('btn-financial');
-      let btnEmp = document.getElementById('btn-employee');
-      
-      if(tab === 'financial') {
-        btnFin.className = "active-tab px-6 py-2 rounded-md text-sm font-bold transition-colors";
-        btnEmp.className = "inactive-tab hover:bg-gray-200 px-6 py-2 rounded-md text-sm font-bold transition-colors";
-      } else {
-        btnEmp.className = "active-tab px-6 py-2 rounded-md text-sm font-bold transition-colors";
-        btnFin.className = "inactive-tab hover:bg-gray-200 px-6 py-2 rounded-md text-sm font-bold transition-colors";
-      }
-    }
+            <div v-if="!reportGenerated" class="py-20 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 shadow-sm">
+                <p class="text-gray-400 font-black text-2xl">التقارير جاهزة للاستخراج</p>
+                <p class="text-base text-gray-400 mt-3 font-bold">اضغط على "تحديث واستخراج التقرير" لجلب ومزامنة البيانات.</p>
+            </div>
 
-    function fetchAndProcessData() {
-      let btn = document.getElementById('process-btn');
-      let icon = document.getElementById('loading-icon');
-      btn.classList.add('opacity-75', 'cursor-not-allowed');
-      icon.classList.remove('hidden');
+            <div v-else-if="reportType === 'general' && reportGenerated" class="space-y-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border text-center">
+                        <div class="text-3xl font-black text-[#142952]">{{ reportSummary.totalOrders }}</div>
+                        <div class="text-xs font-black text-gray-400 mt-2">إجمالي الطلبات</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border text-center">
+                        <div class="text-3xl font-black text-green-600">{{ reportSummary.totalRevenue.toLocaleString() }} SAR</div>
+                        <div class="text-xs font-black text-gray-400 mt-2">المبيعات المحصلة</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border text-center">
+                        <div class="text-3xl font-black text-blue-600">{{ reportSummary.paidOrders }}</div>
+                        <div class="text-xs font-black text-gray-400 mt-2">الطلبات المدفوعة</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border text-center">
+                        <div class="text-3xl font-black text-red-500">{{ reportSummary.unpaidOrders }}</div>
+                        <div class="text-xs font-black text-gray-400 mt-2">الطلبات غير المدفوعة</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border lg:col-span-2">
+                        <h3 class="font-black text-[#142952] mb-4">الإيرادات اليومية للطلبات المدفوعة</h3>
+                        <canvas id="revenueChart" height="250"></canvas>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border">
+                        <h3 class="font-black text-[#142952] mb-4">حالة التحصيل</h3>
+                        <canvas id="paymentChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
 
-      // نداء الكود الخلفي المعتاد الخاص بك (استبدل getAccountsData باسم الدالة الموجودة في Code.gs إذا اختلفت)
-      // الدالة دي بتجيب كل بيانات شيت "الحسابات"
-      google.script.run
-        .withSuccessHandler(data => {
-          globalData = data;
-          processReports();
-          btn.classList.remove('opacity-75', 'cursor-not-allowed');
-          icon.classList.add('hidden');
-        })
-        .withFailureHandler(err => {
-          alert('حدث خطأ أثناء جلب البيانات: ' + err.message);
-          btn.classList.remove('opacity-75', 'cursor-not-allowed');
-          icon.classList.add('hidden');
-        })
-        .getAccountsData(); // <== تأكد إن دا اسم الدالة في ملف Code.gs اللي بترجع الشيت كـ 2D Array
-    }
+            <div v-else-if="reportType === 'employee' && reportGenerated" class="space-y-6">
+                <div v-if="!selectedEmployee" class="py-20 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100">
+                    <p class="text-gray-400 font-black text-lg">يرجى اختيار الموظف من القائمة المنسدلة أعلاه لعرض تفاصيله</p>
+                </div>
+                <template v-else>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gradient-to-l from-[#142952] to-[#1e3a6e] p-8 rounded-3xl shadow-lg text-white">
+                            <p class="text-blue-200 font-bold mb-1">إجمالي الأشكال المباعة</p>
+                            <h3 class="text-4xl font-black">{{ employeeSummary.totalBoards }} منتج</h3>
+                        </div>
+                        <div class="bg-gradient-to-l from-green-600 to-green-500 p-8 rounded-3xl shadow-lg text-white">
+                            <p class="text-green-100 font-bold mb-1">إجمالي المبيعات المحققة</p>
+                            <h3 class="text-4xl font-black">{{ employeeSummary.totalRevenue.toLocaleString() }} SAR</h3>
+                        </div>
+                    </div>
 
-    function processReports() {
-      if (!globalData || globalData.length < 2) return;
-      
-      let headers = globalData[0];
-      let rows = globalData.slice(1);
-      
-      // استخراج الأعمدة بناءً على العناوين في شيت "الحسابات"
-      let colAmount = headers.indexOf("المبلغ الإجمالي");
-      let colStatus = headers.indexOf("حالة الدفع");
-      let colDate   = headers.indexOf("التاريخ");
-      let colEmp    = headers.indexOf("رمز المسؤول");
+                    <div class="bg-white rounded-3xl shadow-sm border overflow-hidden">
+                        <div class="p-6 bg-gray-50 border-b">
+                            <h3 class="font-black text-[#142952] text-lg">تفصيل الأشكال المباعة للموظف: {{ selectedEmployee }}</h3>
+                        </div>
+                        <table class="w-full text-right border-collapse report-table">
+                            <thead>
+                                <tr>
+                                    <th>اسم المنتج</th>
+                                    <th>العدد المباع</th>
+                                    <th>متوسط السعر</th>
+                                    <th>إجمالي المبيعات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item in employeeDetails" :key="item.shapeName">
+                                    <td>{{ item.shapeName }}</td>
+                                    <td>{{ item.count }}</td>
+                                    <td>SAR {{ item.avgPrice }}</td>
+                                    <td class="text-green-600">SAR {{ item.totalRevenue.toLocaleString() }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </div>
 
-      // قراءة الفلاتر
-      let dateFrom = document.getElementById('date-from').value;
-      let dateTo = document.getElementById('date-to').value;
+        </section>
+    </main>
+</div>
 
-      // تهيئة المتغيرات
-      let paidOrders = [];
-      let statusCounts = {};
-      let employeeStats = {};
+<script>
+    const { createApp } = Vue;
 
-      rows.forEach(row => {
-        let rawDate = row[colDate];
-        // محاولة تحويل التاريخ لصيغة قابلة للمقارنة
-        let dateObj = new Date(rawDate);
-        let dateStr = !isNaN(dateObj) ? dateObj.toISOString().split('T')[0] : rawDate;
+    // 🔴🔴🔴 ضع رابط السكربت الخاص بك هنا 🔴🔴🔴
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_XXXXXXXXXXXX/exec"; 
 
-        // تطبيق فلتر التاريخ إن وجد
-        if (dateFrom && dateStr < dateFrom) return;
-        if (dateTo && dateStr > dateTo) return;
+    createApp({
+        data() {
+            return {
+                syncLoading: false,
+                notification: null,
+                reportGenerated: false,
+                reportType: 'general',
+                reportStartDate: this.getFirstDayOfMonth(),
+                reportEndDate: this.getToday(),
+                selectedEmployee: '',
+                uniqueEmployees: [],
+                allOrders: [], // لتخزين البيانات الخام
+                
+                // متغيرات الإحصائيات
+                reportSummary: { totalOrders: 0, totalRevenue: 0, paidOrders: 0, unpaidOrders: 0 },
+                employeeSummary: { totalBoards: 0, totalRevenue: 0 },
+                employeeDetails: [],
+                
+                // مخططات
+                charts: {}
+            }
+        },
+        mounted() {
+            lucide.createIcons();
+        },
+        methods: {
+            getFirstDayOfMonth() {
+                const date = new Date();
+                return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+            },
+            getToday() {
+                return new Date().toISOString().split('T')[0];
+            },
+            showNotify(msg, type = 'info') {
+                this.notification = { msg, type };
+                setTimeout(() => { this.notification = null; }, 4000);
+            },
+            setReportType(type) {
+                this.reportType = type;
+                if (this.reportGenerated && type === 'general') {
+                    this.$nextTick(() => this.drawCharts());
+                }
+            },
+            
+            // 🟢 الوظيفة الرئيسية التي كان بها المشكلة (تم وضع finally لفك التعليق)
+            async generateReport() {
+                if (!this.reportStartDate || !this.reportEndDate) {
+                    this.showNotify('يرجى تحديد التواريخ', 'error');
+                    return;
+                }
 
-        let status = row[colStatus] ? row[colStatus].toString().trim() : "غير معروف";
-        let amount = parseFloat(row[colAmount]) || 0;
-        let emp    = row[colEmp] ? row[colEmp].toString().trim() : "غير محدد";
+                this.syncLoading = true;
+                this.reportGenerated = false;
 
-        // إحصائيات الحالات
-        statusCounts[status] = (statusCounts[status] || 0) + 1;
+                try {
+                    // جلب البيانات من السكربت باستخدام GET
+                    const response = await fetch(`${SCRIPT_URL}?action=read`, {
+                        method: 'GET',
+                        redirect: 'follow'
+                    });
 
-        // إحصائيات الموظفين (العدد الكلي بغض النظر عن الدفع)
-        if (!employeeStats[emp]) employeeStats[emp] = { count: 0, revenue: 0 };
-        employeeStats[emp].count += 1;
+                    if (!response.ok) throw new Error("فشل الاتصال بالخادم");
+                    const data = await response.json();
 
-        // فحص "تم الدفع"
-        if (status === "تم الدفع") {
-          paidOrders.push({ date: dateStr, amount: amount });
-          employeeStats[emp].revenue += amount; // إيرادات الموظف من الطلبات المدفوعة فقط
+                    if (data.success) {
+                        this.allOrders = data.orders || [];
+                        this.processGeneralData(); // حساب البيانات
+                        this.extractEmployees(); // استخراج أسماء الموظفين
+                        
+                        this.reportGenerated = true;
+                        this.showNotify('تم استخراج التقارير ومعالجة البيانات بنجاح', 'success');
+
+                        // رسم الشارتات إذا كان التقرير عام
+                        if (this.reportType === 'general') {
+                            this.$nextTick(() => this.drawCharts());
+                        }
+                    } else {
+                        throw new Error(data.message || "حدث خطأ غير معروف");
+                    }
+                } catch (error) {
+                    console.error("Fetch Error:", error);
+                    this.showNotify('خطأ في جلب البيانات: ' + error.message, 'error');
+                } finally {
+                    // 🟢 هذا السطر هو الذي يمنع الشاشة من التعليق للأبد
+                    this.syncLoading = false; 
+                }
+            },
+
+            // فلترة وحساب بيانات التقرير العام بناء على التاريخ
+            processGeneralData() {
+                let filtered = this.allOrders.filter(order => {
+                    const orderDate = new Date(order["التاريخ"] || order.timestamp).toISOString().split('T')[0];
+                    return orderDate >= this.reportStartDate && orderDate <= this.reportEndDate;
+                });
+
+                let revenue = 0;
+                let paid = 0;
+                let unpaid = 0;
+
+                filtered.forEach(order => {
+                    if (order["حالة الدفع"] === "تم الدفع") {
+                        paid++;
+                        revenue += Number(order["المبلغ الإجمالي"] || order["السعر الفردي"] || 0);
+                    } else {
+                        unpaid++;
+                    }
+                });
+
+                this.reportSummary = {
+                    totalOrders: filtered.length,
+                    totalRevenue: revenue,
+                    paidOrders: paid,
+                    unpaidOrders: unpaid
+                };
+            },
+
+            // استخراج قائمة الموظفين (رموز المسؤولين) بدون تكرار
+            extractEmployees() {
+                const emps = new Set();
+                this.allOrders.forEach(order => {
+                    if (order["رمز المسؤول"]) emps.add(order["رمز المسؤول"]);
+                });
+                this.uniqueEmployees = Array.from(emps);
+            },
+
+            // حساب بيانات الموظف المحدد
+            processEmployeeDetailedData() {
+                if (!this.selectedEmployee) return;
+
+                let filtered = this.allOrders.filter(order => {
+                    const orderDate = new Date(order["التاريخ"] || order.timestamp).toISOString().split('T')[0];
+                    return orderDate >= this.reportStartDate && orderDate <= this.reportEndDate && order["رمز المسؤول"] === this.selectedEmployee;
+                });
+
+                let totalBoards = 0;
+                let totalRev = 0;
+                let productsMap = {};
+
+                filtered.forEach(order => {
+                    if (order["حالة الدفع"] === "تم الدفع") {
+                        let prodName = order["المنتج"] || "منتج غير محدد";
+                        let count = Number(order["العدد"] || 1);
+                        let price = Number(order["السعر الفردي"] || 0) * count;
+
+                        totalBoards += count;
+                        totalRev += price;
+
+                        if (!productsMap[prodName]) {
+                            productsMap[prodName] = { count: 0, revenue: 0 };
+                        }
+                        productsMap[prodName].count += count;
+                        productsMap[prodName].revenue += price;
+                    }
+                });
+
+                this.employeeSummary.totalBoards = totalBoards;
+                this.employeeSummary.totalRevenue = totalRev;
+
+                this.employeeDetails = Object.keys(productsMap).map(key => ({
+                    shapeName: key,
+                    count: productsMap[key].count,
+                    totalRevenue: productsMap[key].revenue,
+                    avgPrice: productsMap[key].count > 0 ? (productsMap[key].revenue / productsMap[key].count).toFixed(2) : 0
+                }));
+            },
+
+            drawCharts() {
+                if(this.charts.payment) this.charts.payment.destroy();
+                
+                const ctxPay = document.getElementById('paymentChart').getContext('2d');
+                this.charts.payment = new Chart(ctxPay, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['مدفوع', 'غير مدفوع'],
+                        datasets: [{
+                            data: [this.reportSummary.paidOrders, this.reportSummary.unpaidOrders],
+                            backgroundColor: ['#16a34a', '#ef4444']
+                        }]
+                    }
+                });
+            }
         }
-      });
-
-      // 1. تحديث الكروت العلوية (للمدفوع فقط)
-      let totalRev = paidOrders.reduce((sum, item) => sum + item.amount, 0);
-      document.getElementById('total-revenue').innerText = totalRev.toLocaleString('en-US', {minimumFractionDigits: 2});
-      document.getElementById('total-orders').innerText = paidOrders.length;
-      document.getElementById('avg-order').innerText = paidOrders.length > 0 ? (totalRev / paidOrders.length).toLocaleString('en-US', {minimumFractionDigits: 2}) : "0.00";
-
-      // 2. معالجة الإيرادات اليومية وتجهيز الشارت
-      let dailyMap = {};
-      paidOrders.forEach(item => dailyMap[item.date] = (dailyMap[item.date] || 0) + item.amount);
-      let sortedDates = Object.keys(dailyMap).sort();
-      let dailyAmounts = sortedDates.map(d => dailyMap[d]);
-
-      renderChart('dailyChart', 'line', sortedDates, [{
-        label: 'الإيرادات (تم الدفع)',
-        data: dailyAmounts,
-        borderColor: '#1e293b',
-        backgroundColor: 'rgba(30, 41, 59, 0.1)',
-        fill: true, tension: 0.3
-      }]);
-
-      // 3. شارت حالات الطلبات
-      renderChart('statusChart', 'doughnut', Object.keys(statusCounts), [{
-        data: Object.values(statusCounts),
-        backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#3b82f6']
-      }]);
-
-      // 4. بناء جدول الموظفين
-      let tbody = document.getElementById('emp-table-body');
-      tbody.innerHTML = '';
-      let empNames = Object.keys(employeeStats);
-      let empRevs = [];
-
-      empNames.forEach(name => {
-        let stats = employeeStats[name];
-        empRevs.push(stats.revenue);
-        tbody.innerHTML += `
-          <tr class="hover:bg-gray-50">
-            <td class="p-4 font-bold text-gray-800">${name}</td>
-            <td class="p-4 text-center text-gray-600">${stats.count}</td>
-            <td class="p-4 text-center font-bold text-emerald-600">${stats.revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-          </tr>
-        `;
-      });
-
-      // 5. شارت الموظفين
-      renderChart('empChart', 'pie', empNames, [{
-        data: empRevs,
-        backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#64748b']
-      }]);
-    }
-
-    function renderChart(canvasId, type, labels, datasets) {
-      if (chartsInstance[canvasId]) chartsInstance[canvasId].destroy();
-      let ctx = document.getElementById(canvasId).getContext('2d');
-      chartsInstance[canvasId] = new Chart(ctx, {
-        type: type,
-        data: { labels: labels, datasets: datasets },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { font: { family: 'Cairo' } } } }
-        }
-      });
-    }
-
-    // تصدير PDF للمنطقة بأكملها
-    function exportToPDF() {
-      let element = document.getElementById('report-content');
-      let opt = {
-        margin:       5,
-        filename:     'التقرير_المالي_والأداء.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-      };
-      html2pdf().set(opt).from(element).save();
-    }
-  </script>
+    }).mount('#app');
+</script>
 </body>
 </html>
