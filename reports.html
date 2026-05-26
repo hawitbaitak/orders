@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>هوية بيتك  - التقارير والإحصائيات</title>
+    <title>هوية بيتك - التقارير والإحصائيات</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -29,9 +29,25 @@
         .report-table tr:nth-child(even) td { background-color: #f8fafc; }
         .report-table tr:hover td { background-color: #f1f5f9; }
 
-        /* حاوية التقرير ليكون شكلها مثل ورقة A4 */
+        /* حاوية التقرير الرئيسية */
         .document-container { background: white; margin: 0 auto; box-sizing: border-box; color: #000; position: relative; overflow: hidden; }
         
+        /* إطار محدد ومحكم للرسومات البيانية لمنع الخروج عن الصفحة وتنظيمها */
+        .chart-pdf-box { 
+            page-break-before: always; 
+            break-before: page;
+            border: 2px solid #e2e8f0; 
+            border-radius: 16px; 
+            padding: 24px; 
+            background-color: #ffffff;
+            box-sizing: border-box;
+            width: 100%;
+            min-height: 520px;
+            display: flex;
+            flex-col: column;
+            justify-content: space-between;
+        }
+
         @media print {
             .no-print { display: none !important; }
             body { background: white; padding: 0; margin: 0; }
@@ -48,7 +64,7 @@
             <div class="w-24 h-24 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center p-2 shadow-xl overflow-hidden">
                 <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
             </div>
-            <h1 class="text-xl font-black">هوية بيتك </h1>
+            <h1 class="text-xl font-black">هوية بيتك</h1>
             <p class="text-blue-300 text-[10px] mt-1 tracking-widest font-bold uppercase">نظام إدارة المبيعات</p>
             <div class="mt-3 flex items-center justify-center gap-2">
                 <span class="text-[10px] font-black px-3 py-1 rounded-full" :class="currentUser?.role === 'admin' ? 'bg-yellow-400 text-yellow-900' : 'bg-blue-700 text-blue-100'">
@@ -92,7 +108,7 @@
 
         <div v-if="syncLoading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm no-print">
             <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
-            <p class="font-black text-[#142952]">جاري معالجة البيانات...</p>
+            <p class="font-black text-[#142952]">جاري معالجة البيانات وبناء التقارير الهندسية...</p>
         </div>
 
         <section class="space-y-8 animate-in fade-in">
@@ -141,7 +157,7 @@
             <div v-if="!reportGenerated" class="py-20 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 shadow-none no-print">
                 <i data-lucide="bar-chart-2" class="w-16 h-16 text-gray-200 mx-auto mb-4"></i>
                 <p class="text-gray-400 font-black text-xl">التقارير جاهزة للاستخراج والتحديث التفاعلي</p>
-                <p class="text-sm text-gray-400 mt-2 font-bold">اضغط على زر "جلب البيانات" لجلب الإحصائيات من السحاب.</p>
+                <p class="text-sm text-gray-400 mt-2 font-bold">اضغط على زر "جلب البيانات" لجلب الإحصائيات الحية.</p>
             </div>
 
             <div v-show="reportGenerated" id="pdf-export-area" class="document-container p-10 rounded-2xl shadow-sm border border-gray-200 bg-white">
@@ -157,7 +173,7 @@
                         </p>
                     </div>
                     <div class="text-left font-black text-[12px] space-y-1 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <p class="text-base text-[#142952] border-b border-gray-200 pb-1 mb-1">مؤسسة هوية بيتك </p>
+                        <p class="text-base text-[#142952] border-b border-gray-200 pb-1 mb-1">مؤسسة هوية بيتك</p>
                         <p class="text-gray-700">الرقم الضريبي : 310236446600003</p>
                         <p class="text-gray-500">تاريخ الاستخراج : {{ getToday() }}</p>
                     </div>
@@ -183,22 +199,25 @@
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-6">
-                        <div class="p-5 rounded-xl border border-gray-200 col-span-2 bg-white">
-                            <h3 class="font-black text-[#142952] mb-4 text-sm border-b pb-2">حركة المبيعات والإيرادات اليومية</h3>
-                            <div style="height: 250px; width: 100%;"><canvas id="revenueChart"></canvas></div>
-                        </div>
-                        <div class="p-5 rounded-xl border border-gray-200 bg-white">
-                            <h3 class="font-black text-[#142952] mb-4 text-sm border-b pb-2">حالة التحصيل المالي</h3>
-                            <div style="height: 250px; width: 100%; display: flex; justify-content: center;"><canvas id="paymentChart"></canvas></div>
-                        </div>
+                    <div class="chart-pdf-box">
+                        <h3 class="font-black text-[#142952] mb-4 text-base border-b pb-2 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i> حركة المبيعات والإيرادات اليومية تفصيلياً
+                        </h3>
+                        <div class="w-full" style="height: 420px;"><canvas id="revenueChart"></canvas></div>
+                    </div>
+                    
+                    <div class="chart-pdf-box">
+                        <h3 class="font-black text-[#142952] mb-4 text-base border-b pb-2 flex items-center gap-2">
+                            <i data-lucide="pie-chart" class="w-5 h-5 text-blue-600"></i> حالة التحصيل المالي ونسب السداد
+                        </h3>
+                        <div class="w-full flex justify-center items-center" style="height: 420px;"><canvas id="paymentChart"></canvas></div>
                     </div>
 
-                    <div class="grid grid-cols-1 mt-6">
-                        <div class="p-5 rounded-xl border border-gray-200 bg-white">
-                            <h3 class="font-black text-[#142952] mb-4 text-sm border-b pb-2">أكثر المنتجات مبيعاً (بالكمية)</h3>
-                            <div style="height: 280px; width: 100%;"><canvas id="topProductsChart"></canvas></div>
-                        </div>
+                    <div class="chart-pdf-box">
+                        <h3 class="font-black text-[#142952] mb-4 text-base border-b pb-2 flex items-center gap-2">
+                            <i data-lucide="package" class="w-5 h-5 text-yellow-500"></i> أكثر المنتجات طلباً ومبيعاً (بالكمية)
+                        </h3>
+                        <div class="w-full" style="height: 420px;"><canvas id="topProductsChart"></canvas></div>
                     </div>
                 </div>
 
@@ -228,9 +247,11 @@
                         </table>
                     </div>
 
-                    <div class="p-5 rounded-xl border border-gray-200 bg-white">
-                        <h3 class="font-black text-[#142952] mb-4 text-sm border-b pb-2">رسم بياني: إيرادات الموظفين</h3>
-                        <div style="height: 300px; width: 100%;"><canvas id="allEmpChart"></canvas></div>
+                    <div class="chart-pdf-box">
+                        <h3 class="font-black text-[#142952] mb-4 text-base border-b pb-2 flex items-center gap-2">
+                            <i data-lucide="bar-chart-3" class="w-5 h-5 text-blue-900"></i> المقارنة التحليلية لإيرادات الموظفين المحصلة
+                        </h3>
+                        <div class="w-full" style="height: 430px;"><canvas id="allEmpChart"></canvas></div>
                     </div>
                 </div>
 
@@ -250,7 +271,7 @@
                             </div>
                         </div>
 
-                        <div class="border border-gray-200 rounded-xl overflow-hidden">
+                        <div class="border border-gray-200 rounded-xl overflow-hidden bg-white">
                             <table class="report-table !mt-0 border-0">
                                 <thead>
                                     <tr>
@@ -277,7 +298,7 @@
                 </div>
 
                 <div class="mt-12 text-center text-[10px] text-gray-400 font-bold border-t border-gray-100 pt-4">
-                    نظام هوية بيتك  لإدارة المبيعات - وثيقة تقرير داخلية مصدقة ومستخرجة آلياً.
+                    نظام هوية بيتك لإدارة المبيعات - وثيقة تقرير داخلية مصدقة ومستخرجة آلياً.
                 </div>
             </div>
             
@@ -288,7 +309,7 @@
 <script>
     const { createApp } = Vue;
 
-    // الرابط المباشر للسكربت
+    // رابط السكربت السحابي الثابت والمستقر
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRPBaxtUxauX1wA4ZbeuoT9WKwue6JCx2QCbFxH8zIkfPtT7w3WR-KMkFkbYlEucnT/exec"; 
 
     function parseSheetDate(dateStr) {
@@ -312,7 +333,7 @@
                 syncLoading: false,
                 notification: null,
                 reportGenerated: false,
-                reportType: 'general', // general, all_employees, employee
+                reportType: 'general', 
                 reportStartDate: this.getFirstDayOfMonth(),
                 reportEndDate: this.getToday(),
                 selectedEmployee: '',
@@ -465,7 +486,6 @@
                     if (o.isPaid) { paid++; revenue += o.totalAmount; } 
                     else { unpaid++; }
 
-                    // تجميع أكثر المنتجات مبيعاً
                     o.products.forEach(p => {
                         if(p.name) {
                             productsCountMap[p.name] = (productsCountMap[p.name] || 0) + p.count;
@@ -475,11 +495,10 @@
 
                 this.reportSummary = { totalOrders: filtered.length, totalRevenue: revenue, paidOrders: paid, unpaidOrders: unpaid };
                 
-                // ترتيب المنتجات لعمل الشارت
                 this.topProducts = Object.keys(productsCountMap)
                     .map(name => ({ name, count: productsCountMap[name] }))
                     .sort((a,b) => b.count - a.count)
-                    .slice(0, 10); // أعلى 10 منتجات
+                    .slice(0, 8); 
             },
 
             extractEmployees() {
@@ -548,7 +567,7 @@
                 let filtered = this.allOrders.filter(o => o.timestamp >= this.reportStartDate && o.timestamp <= this.reportEndDate);
 
                 if (this.reportType === 'general') {
-                    // 1. شارت الإيرادات اليومية
+                    // 1. شارت المبيعات اليومية
                     let dailyData = {};
                     filtered.forEach(o => {
                         if (o.isPaid) { dailyData[o.timestamp] = (dailyData[o.timestamp] || 0) + o.totalAmount; }
@@ -561,13 +580,13 @@
                             type: 'line',
                             data: {
                                 labels: sortedDates,
-                                datasets: [{ label: 'الإيرادات (SAR)', data: sortedDates.map(d => dailyData[d]), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, fill: true, tension: 0.3 }]
+                                datasets: [{ label: 'الإيرادات (SAR)', data: sortedDates.map(d => dailyData[d]), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 3, fill: true, tension: 0.2 }]
                             },
                             options: { responsive: true, maintainAspectRatio: false }
                         });
                     }
 
-                    // 2. شارت الدفع
+                    // 2. شارت الدفع والتحصيل
                     const ctxPay = document.getElementById('paymentChart');
                     if(ctxPay) {
                         this.charts.payment = new Chart(ctxPay.getContext('2d'), {
@@ -576,30 +595,25 @@
                                 labels: ['مدفوع ومحصل', 'غير مدفوع (معلق)'],
                                 datasets: [{ data: [this.reportSummary.paidOrders, this.reportSummary.unpaidOrders], backgroundColor: ['#16a34a', '#ef4444'], borderWidth: 0 }]
                             },
-                            options: { responsive: true, maintainAspectRatio: false, cutout: '65%' }
+                            options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
                         });
                     }
 
-                    // 3. شارت أكثر المنتجات مبيعاً (الجديد)
+                    // 3. شارت المنتجات الأكثر مبيعاً
                     const ctxTop = document.getElementById('topProductsChart');
                     if(ctxTop && this.topProducts.length > 0) {
                         this.charts.topProducts = new Chart(ctxTop.getContext('2d'), {
                             type: 'bar',
                             data: {
                                 labels: this.topProducts.map(p => p.name),
-                                datasets: [{ 
-                                    label: 'الكمية المباعة', 
-                                    data: this.topProducts.map(p => p.count), 
-                                    backgroundColor: '#3b82f6', 
-                                    borderRadius: 4 
-                                }]
+                                datasets: [{ label: 'الكمية المباعة', data: this.topProducts.map(p => p.count), backgroundColor: '#fbbf24', borderRadius: 6 }]
                             },
                             options: { responsive: true, maintainAspectRatio: false }
                         });
                     }
                 } 
                 else if (this.reportType === 'all_employees') {
-                    // 4. شارت أداء جميع الموظفين
+                    // 4. شارت أداء الموظفين المحسن (مؤطر ومحكم الأبعاد)
                     const ctxAllEmp = document.getElementById('allEmpChart');
                     if(ctxAllEmp) {
                         this.charts.allEmp = new Chart(ctxAllEmp.getContext('2d'), {
@@ -610,7 +624,7 @@
                                     label: 'إجمالي الإيرادات (SAR)',
                                     data: this.allEmployeesStats.map(e => e.revenue),
                                     backgroundColor: '#142952',
-                                    borderRadius: 4
+                                    borderRadius: 6
                                 }]
                             },
                             options: { responsive: true, maintainAspectRatio: false }
@@ -619,43 +633,43 @@
                 }
             },
 
-            // دالة التصدير باستخدام html2pdf.js لضمان جودة فيكتور فائقة
+            // دالة تصدير الـ PDF بجودة فائقة وضبط دقيق للمربعات على صفحات مستقلة
             async downloadReportPDF() {
                 this.syncLoading = true;
-                this.showNotify('جاري بناء ملف PDF بجودة فائقة...', 'info');
+                this.showNotify('جاري توليد ملف الـ PDF الاحترافي...', 'info');
                 
                 try {
                     const element = document.getElementById('pdf-export-area');
-                    // إعدادات الـ html2pdf بجودة عالية جداً لعدم البكسلة
+                    
                     const opt = {
-                        margin:       10,
-                        filename:     `تقرير_هوية بيتك _${this.reportType}_${this.getToday()}.pdf`,
+                        margin:       [12, 12, 12, 12],
+                        filename:     `تقرير_هوية_بيتك_${this.reportType}_${this.getToday()}.pdf`,
                         image:        { type: 'jpeg', quality: 1 },
-                        html2canvas:  { scale: 4, useCORS: true, logging: false }, // Scale 4 تعطي دقة رائعة
-                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                        html2canvas:  { scale: 3, useCORS: true, logging: false }, 
+                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
+                        pagebreak:    { mode: ['css', 'legacy'] } // تفعيل التزام الفواصل الهندسية للدايجيرامات
                     };
 
                     await html2pdf().set(opt).from(element).save();
-                    this.showNotify('تم تحميل التقرير بصيغة PDF بنجاح وبدون بكسلة', 'success');
+                    this.showNotify('تم تحميل المستند بنجاح كصفحات مستقلة ومنظمة', 'success');
                 } catch (err) {
                     console.error(err);
-                    this.showNotify('حدث خطأ أثناء تصدير الملف', 'error');
+                    this.showNotify('حدث خطأ أثناء تصدير ملف الـ PDF', 'error');
                 } finally {
                     this.syncLoading = false;
                 }
             },
 
-            // دالة تصدير بيانات الإكسيل باستخدام SheetJS
+            // تصدير شيت إكسيل محاسبي متكامل مبني على نفس هيكلة قاعدة بيانات السكريبت
             downloadExcel() {
-                this.showNotify('جاري تجهيز وتصدير ملف الإكسيل...', 'info');
+                this.showNotify('جاري استخراج شيت الحسابات المالي Excel...', 'info');
                 
-                let excelData = [];
+                let excelRows = [];
                 let filtered = this.allOrders.filter(o => o.timestamp >= this.reportStartDate && o.timestamp <= this.reportEndDate);
 
-                // تجهيز المصفوفة بما يتطابق مع أعمدة النظام
                 filtered.forEach(order => {
                     order.products.forEach(product => {
-                        excelData.push({
+                        excelRows.push({
                             "رقم الطلب": order.orderId,
                             "التاريخ": order.timestamp,
                             "رمز المسؤول": order.managerCode,
@@ -666,23 +680,22 @@
                             "إضافة إضاءة": product.hasLighting ? 'نعم' : 'لا',
                             "تصميم خاص": product.customDesign ? 'نعم' : 'لا',
                             "نسبة الخصم %": order.discountRate,
-                            "إجمالي العائد من الطلب": order.totalAmount
+                            "صافي عائد الطلب المحصل": order.isPaid ? order.totalAmount : 0
                         });
                     });
                 });
 
-                if(excelData.length === 0) {
-                    this.showNotify('لا توجد بيانات متاحة في هذه الفترة لتصديرها', 'error');
+                if(excelRows.length === 0) {
+                    this.showNotify('لا تتوفر أي بيانات مبيعات في هذه الفترة لتصديرها', 'error');
                     return;
                 }
 
-                // إنشاء وتحميل الملف
-                const worksheet = XLSX.utils.json_to_sheet(excelData);
+                const worksheet = XLSX.utils.json_to_sheet(excelRows);
                 const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "التقرير المالي - هوية بيتك ");
+                XLSX.utils.book_append_sheet(workbook, worksheet, "الحسابات والمبيعات");
                 
-                XLSX.writeFile(workbook, `تقرير_هوية بيتك _المالي_${this.getToday()}.xlsx`);
-                this.showNotify('تم تصدير ملف الإكسيل بنجاح', 'success');
+                XLSX.writeFile(workbook, `تقرير_مبيعات_هوية_بيتك_${this.getToday()}.xlsx`);
+                this.showNotify('تم تحميل ملف الإكسيل المحاسبي بنجاح', 'success');
             }
         }
     }).mount('#app');
