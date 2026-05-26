@@ -23,13 +23,24 @@
         .report-table td { border-bottom: 1px solid #e2e8f0; padding: 12px 16px; font-size: 13px; font-weight: 700; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
         .report-table tr:hover td { background-color: #f1f5f9; }
 
-        /* قالب الـ PDF المخفي - تم التعديل لتفادي أخطاء الـ html2canvas */
+        /* حاوية الـ PDF مخفية بطريقة لا تمنع التصوير */
+        #pdf-export-container {
+            position: absolute;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+            z-index: -9999;
+        }
+
+        /* قالب الـ PDF بحجم A4 لاندسكيب (أفقي) */
         #capture-employee-report {
-            position: fixed; left: 0; top: 0;
-            width: 297mm; height: 210mm;
-            background: white; padding: 15mm 20mm; box-sizing: border-box;
-            color: #000; direction: rtl;
-            z-index: -9999; opacity: 0; pointer-events: none;
+            width: 297mm;
+            min-height: 210mm;
+            background: white;
+            padding: 15mm 20mm;
+            box-sizing: border-box;
+            color: #000;
+            direction: rtl;
         }
         .pdf-header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #142952; padding-bottom: 15px; margin-bottom: 20px; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -50,7 +61,9 @@
             <h1 class="text-xl font-black">مكاني</h1>
             <p class="text-blue-300 text-[10px] mt-1 tracking-widest font-bold uppercase">نظام إدارة المبيعات</p>
             <div class="mt-3 flex items-center justify-center gap-2">
-                <span class="text-[10px] font-black px-3 py-1 rounded-full bg-yellow-400 text-yellow-900">👑 مدير</span>
+                <span class="text-[10px] font-black px-3 py-1 rounded-full bg-yellow-400 text-yellow-900">
+                    👑 مدير
+                </span>
             </div>
         </div>
         <nav class="flex-1 py-10 px-4 space-y-2">
@@ -143,10 +156,16 @@
                 </div>
             </div>
 
-            <div v-if="reportGenerated && reportSummary.totalOrders === 0" class="py-20 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 mt-6 shadow-sm">
+            <div v-if="!reportGenerated" class="py-20 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 shadow-sm">
+                <i data-lucide="bar-chart-2" class="w-20 h-20 text-gray-200 mx-auto mb-4"></i>
+                <p class="text-gray-400 font-black text-2xl">التقارير جاهزة للاستخراج</p>
+                <p class="text-base text-gray-400 mt-3 font-bold">اضغط على "تحديث واستخراج التقرير" لجلب ومزامنة البيانات.</p>
+            </div>
+
+            <div v-else-if="reportGenerated && reportSummary.totalOrders === 0" class="py-20 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 mt-6 shadow-sm">
                 <i data-lucide="calendar-x" class="w-20 h-20 text-gray-200 mx-auto mb-4"></i>
                 <p class="text-gray-400 font-black text-2xl">لا توجد طلبات مسجلة في هذا النطاق الزمني</p>
-                <p class="text-base text-gray-400 mt-3 font-bold">تأكد من اختيار التواريخ بشكل صحيح أو تأكد من وجود طلبات مدخلة في شيت "الطلبات".</p>
+                <p class="text-base text-gray-400 mt-3 font-bold">تأكد من اختيار التواريخ بشكل صحيح أو من وجود طلبات مدخلة.</p>
             </div>
 
             <div v-else-if="reportType === 'general' && reportGenerated" class="space-y-6">
@@ -248,77 +267,79 @@
         </section>
     </main>
 
-    <div id="capture-employee-report">
-        <div class="pdf-header-container">
-            <div class="flex items-center gap-4">
-                <div class="w-24 h-24 bg-white p-2 rounded-2xl border border-gray-200 flex flex-col items-center justify-center shadow-sm text-[#142952]">
-                    <span class="font-black text-xl">مكاني</span>
-                    <span class="font-bold text-[10px]">للمبيعات</span>
+    <div id="pdf-export-container">
+        <div id="capture-employee-report">
+            <div class="pdf-header-container">
+                <div class="flex items-center gap-4">
+                    <div class="w-24 h-24 bg-white border-2 border-[#142952] rounded-2xl flex flex-col items-center justify-center text-[#142952]">
+                        <span class="font-black text-2xl">مكاني</span>
+                        <span class="font-bold text-[10px]">للمبيعات</span>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-black text-[#142952] mb-1">مؤسسة مكاني</h1>
+                        <p class="text-lg font-bold text-gray-600">نظام إدارة المبيعات - قسم التقارير</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-3xl font-black text-[#142952] mb-1">مؤسسة مكاني</h1>
-                    <p class="text-lg font-bold text-gray-600">نظام إدارة المبيعات - قسم التقارير</p>
+                
+                <div class="text-center px-8">
+                    <h2 class="text-2xl font-black text-black bg-gray-100 px-8 py-3 rounded-xl border-2 border-gray-300">التقرير الشامل لأداء الموظفين</h2>
+                    <p class="text-base font-bold text-gray-700 mt-2">من: {{ reportStartDate }} — إلى: {{ reportEndDate }}</p>
                 </div>
-            </div>
-            
-            <div class="text-center px-8">
-                <h2 class="text-2xl font-black text-black bg-gray-100 px-8 py-3 rounded-xl border-2 border-gray-300">التقرير الشامل لأداء الموظفين</h2>
-                <p class="text-base font-bold text-gray-700 mt-2">من: {{ reportStartDate }} — إلى: {{ reportEndDate }}</p>
+
+                <div class="text-left text-sm font-bold text-gray-800 space-y-1.5 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <p>السجل التجاري : <span class="font-black text-black">310236446600003</span></p>
+                    <p>البريد الإلكتروني : <span dir="ltr" class="font-black text-blue-700">hwytbytk@gmail.com</span></p>
+                    <p>جوال التواصل : <span dir="ltr" class="font-black">+966 54 478 2301</span></p>
+                </div>
             </div>
 
-            <div class="text-left text-sm font-bold text-gray-800 space-y-1.5 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <p>السجل التجاري : <span class="font-black text-black">310236446600003</span></p>
-                <p>البريد الإلكتروني : <span dir="ltr" class="font-black text-blue-700">hwytbytk@gmail.com</span></p>
-                <p>جوال التواصل : <span dir="ltr" class="font-black">+966 54 478 2301</span></p>
-            </div>
-        </div>
-
-        <table class="pdf-table">
-            <thead>
-                <tr>
-                    <th style="text-align: right; width: 18%;">اسم الموظف</th>
-                    <th style="width: 12%;">الطلبات</th>
-                    <th style="width: 12%;">مدفوعة</th>
-                    <th style="width: 12%;">الأشكال المباعة</th>
-                    <th style="width: 13%;">متوسط الشكل</th>
-                    <th style="width: 18%;">إجمالي الإيرادات (SAR)</th>
-                    <th style="width: 15%;">نسبة المساهمة</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="emp in allEmployeesStats" :key="emp.name">
-                    <td style="text-align: right; color: #142952;">{{ emp.name }}</td>
-                    <td class="text-gray-600">{{ emp.orderCount }}</td>
-                    <td style="color: #16a34a;">{{ emp.paidOrderCount }}</td>
-                    <td class="font-black">{{ emp.shapesCount }}</td>
-                    <td class="text-gray-500">{{ emp.shapesCount > 0 ? (emp.totalSales / emp.shapesCount).toFixed(0) : 0 }}</td>
-                    <td style="color: #16a34a; font-size: 15px;">{{ emp.totalSales.toLocaleString() }}</td>
-                    <td>
-                        <div class="flex items-center justify-center gap-2">
-                            <span class="w-10 text-left text-xs">{{ emp.contribution }}%</span>
-                            <div class="w-20 h-3 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
-                                <div class="h-full bg-[#142952]" :style="{ width: emp.contribution + '%' }"></div>
+            <table class="pdf-table">
+                <thead>
+                    <tr>
+                        <th style="text-align: right; width: 18%;">اسم الموظف</th>
+                        <th style="width: 12%;">الطلبات</th>
+                        <th style="width: 12%;">مدفوعة</th>
+                        <th style="width: 12%;">الأشكال المباعة</th>
+                        <th style="width: 13%;">متوسط الشكل</th>
+                        <th style="width: 18%;">إجمالي الإيرادات (SAR)</th>
+                        <th style="width: 15%;">نسبة المساهمة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="emp in allEmployeesStats" :key="emp.name">
+                        <td style="text-align: right; color: #142952;">{{ emp.name }}</td>
+                        <td class="text-gray-600">{{ emp.orderCount }}</td>
+                        <td style="color: #16a34a;">{{ emp.paidOrderCount }}</td>
+                        <td class="font-black">{{ emp.shapesCount }}</td>
+                        <td class="text-gray-500">{{ emp.shapesCount > 0 ? (emp.totalSales / emp.shapesCount).toFixed(0) : 0 }}</td>
+                        <td style="color: #16a34a; font-size: 15px;">{{ emp.totalSales.toLocaleString() }}</td>
+                        <td>
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="w-10 text-left text-xs">{{ emp.contribution }}%</span>
+                                <div class="w-20 h-3 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
+                                    <div class="h-full bg-[#142952]" :style="{ width: emp.contribution + '%' }"></div>
+                                </div>
                             </div>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-            <tfoot>
-                <tr class="total-row" v-if="allEmployeesStats.length > 0">
-                    <td style="text-align: right;">الإجمالي الكلي:</td>
-                    <td>{{ reportSummary.totalOrders }}</td>
-                    <td style="color: #16a34a;">{{ reportSummary.paidOrders }}</td>
-                    <td>{{ reportSummary.totalShapes }}</td>
-                    <td>-</td>
-                    <td style="color: #16a34a;">SAR {{ reportSummary.totalRevenue.toLocaleString() }}</td>
-                    <td>100%</td>
-                </tr>
-            </tfoot>
-        </table>
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="total-row" v-if="allEmployeesStats.length > 0">
+                        <td style="text-align: right;">الإجمالي الكلي:</td>
+                        <td>{{ reportSummary.totalOrders }}</td>
+                        <td style="color: #16a34a;">{{ reportSummary.paidOrders }}</td>
+                        <td>{{ reportSummary.totalShapes }}</td>
+                        <td>-</td>
+                        <td style="color: #16a34a;">SAR {{ reportSummary.totalRevenue.toLocaleString() }}</td>
+                        <td>100%</td>
+                    </tr>
+                </tfoot>
+            </table>
 
-        <div class="absolute bottom-6 left-0 right-0 px-[20mm] flex justify-between items-center text-sm font-bold text-gray-500 border-t-2 border-gray-200 pt-4">
-            <p>تم استخراج هذا التقرير تلقائياً ومطابقاً للعمليات المالية المسجلة بنظام مكاني.</p>
-            <p>تاريخ ووقت الاستخراج: {{ new Date().toLocaleString('ar-SA') }}</p>
+            <div class="absolute bottom-6 left-0 right-0 px-[20mm] flex justify-between items-center text-sm font-bold text-gray-500 border-t-2 border-gray-200 pt-4">
+                <p>تم استخراج هذا التقرير تلقائياً ومطابقاً للعمليات المالية المسجلة بنظام مكاني.</p>
+                <p>تاريخ ووقت الاستخراج: {{ new Date().toLocaleString('ar-SA') }}</p>
+            </div>
         </div>
     </div>
 </div>
@@ -328,30 +349,33 @@
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
 
-    // معالج التواريخ الذكي - متوافق مع كافة صيغ جوجل شيت
-    const parseSheetDate = (dateStr) => {
-        if (!dateStr) return null;
-        let str = String(dateStr).trim();
-        let d = new Date(str);
-        if (!isNaN(d.getTime())) return d;
+    // معالج التواريخ الذكي الجديد (يتجاهل فروق التوقيت ويستخرج اليوم/الشهر/السنة فقط)
+    const getLocalDateString = (dateVal) => {
+        if (!dateVal) return null;
+        let d = new Date(dateVal);
         
-        const parts = str.split(' ')[0].split(/[\/\-]/);
-        if (parts.length === 3) {
-            const p0 = parseInt(parts[0], 10);
-            const p1 = parseInt(parts[1], 10);
-            const p2 = parseInt(parts[2], 10);
-            
-            if (p2 > 2000) {
-                d = new Date(`${p2}-${String(p0).padStart(2,'0')}-${String(p1).padStart(2,'0')}T12:00:00`);
-                if (!isNaN(d.getTime())) return d;
-                d = new Date(`${p2}-${String(p1).padStart(2,'0')}-${String(p0).padStart(2,'0')}T12:00:00`);
-                if (!isNaN(d.getTime())) return d;
-            } else if (p0 > 2000) {
-                d = new Date(`${p0}-${String(p1).padStart(2,'0')}-${String(p2).padStart(2,'0')}T12:00:00`);
-                if (!isNaN(d.getTime())) return d;
-            }
+        // لو التاريخ مش بصيغة قياسية، نحلله يدوياً
+        if (isNaN(d.getTime()) && typeof dateVal === 'string') {
+             const s = dateVal.trim().split(' ')[0];
+             const parts = s.split(/[\/\-]/);
+             if (parts.length === 3) {
+                 if (parts[2].length === 4) {
+                     let m = parseInt(parts[0]);
+                     let day = parseInt(parts[1]);
+                     if (m > 12) { let t = m; m = day; day = t; } // تبديل لو اليوم مكان الشهر
+                     d = new Date(parseInt(parts[2]), m - 1, day);
+                 } else if (parts[0].length === 4) {
+                     d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                 }
+             }
         }
-        return null;
+        
+        if (!d || isNaN(d.getTime())) return null;
+        
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`; // النتيجة دائماً: YYYY-MM-DD
     };
 
     let revenueChartInstance = null;
@@ -395,7 +419,7 @@
 
             const setReportType = (type) => {
                 reportType.value = type;
-                if (reportGenerated.value && type === 'general') {
+                if (reportGenerated.value && reportSummary.value.totalOrders > 0 && type === 'general') {
                     nextTick(() => renderCharts());
                 }
             };
@@ -419,23 +443,23 @@
                         throw new Error("خطأ في قراءة استجابة السيرفر. يرجى التحقق من جوجل شيت.");
                     }
                     
-                    const startMs = new Date(reportStartDate.value + "T00:00:00").getTime();
-                    const endMs = new Date(reportEndDate.value + "T23:59:59").getTime();
+                    const startStr = reportStartDate.value; // "YYYY-MM-DD"
+                    const endStr = reportEndDate.value; // "YYYY-MM-DD"
                     const tempOrders = {};
                     
                     (result.orders || []).forEach(row => {
-                        const d = parseSheetDate(row['التاريخ']);
-                        if (!d) return; 
+                        const rowDateStr = getLocalDateString(row['التاريخ']);
+                        if (!rowDateStr) return; 
                         
-                        const rowTimeMs = d.getTime();
-                        if (rowTimeMs >= startMs && rowTimeMs <= endMs) {
+                        // مقارنة التواريخ كنصوص تمنع أي مشكلة في فروق التوقيت
+                        if (rowDateStr >= startStr && rowDateStr <= endStr) {
                             const oid = String(row['رقم الطلب'] || '').trim();
                             if (!oid) return;
 
                             if (!tempOrders[oid]) {
                                 tempOrders[oid] = {
                                     orderId: oid,
-                                    date: d,
+                                    dateStr: rowDateStr, // احتفظ بالتاريخ النصي لسهولة الاستخدام
                                     managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim().toUpperCase(),
                                     isPaid: (String(row['حالة الدفع'] || '').trim() === 'تم الدفع'),
                                     discountRate: Number(row['نسبة الخصم'] || 0),
@@ -471,6 +495,7 @@
                         }
                     });
 
+                    // الحسابات متطابقة مع نظام الفواتير
                     Object.values(tempOrders).forEach(o => {
                         let discountable = 0;
                         let nonDiscountable = 0;
@@ -479,6 +504,8 @@
                             let adds = 0;
                             if (p.hasLighting) adds += 129;
                             if (p.customDesign) adds += 50;
+                            if (p.color === 'gold' || p.color === 'black') adds += 19;
+                            
                             let baseAndColor = p.price - adds;
                             discountable += (baseAndColor * p.count);
                             nonDiscountable += (adds * p.count);
@@ -509,7 +536,7 @@
                     try { localStorage.removeItem('hwayt_orders_v8'); } catch(e) {}
 
                     if (reportSummary.value.totalOrders === 0) {
-                        showNotify('تم الاتصال بنجاح ولكن لا توجد طلبات في هذه الفترة', 'info');
+                        showNotify('تم الاتصال ولكن لا توجد طلبات مسجلة في هذا النطاق الزمني', 'info');
                     } else {
                         showNotify('تم استخراج التقارير ومعالجة البيانات بنجاح', 'success');
                         if (reportType.value === 'general') {
@@ -519,7 +546,7 @@
 
                 } catch (e) {
                     console.error('Sync Error:', e);
-                    showNotify(e.message || 'حدث خطأ غير متوقع أثناء المزامنة', 'error');
+                    showNotify('خطأ في المزامنة: ' + (e.message || 'حاول مرة أخرى'), 'error');
                 } finally {
                     syncLoading.value = false;
                 }
@@ -574,7 +601,7 @@
                         o.products.forEach(p => {
                             if (!shapesMap[p.shapeName]) shapesMap[p.shapeName] = { count: 0, revenue: 0 };
                             
-                            let adds = (p.hasLighting ? 129 : 0) + (p.customDesign ? 50 : 0);
+                            let adds = (p.hasLighting ? 129 : 0) + (p.customDesign ? 50 : 0) + ((p.color === 'gold' || p.color === 'black') ? 19 : 0);
                             let baseAndColor = p.price - adds;
                             let discountedBase = o.discountRate > 0 ? baseAndColor - ((baseAndColor * o.discountRate) / 100) : baseAndColor;
                             
@@ -615,9 +642,8 @@
                     const datesMap = {};
                     Object.values(groupedOrdersMap.value).forEach(o => {
                         if (o.isPaid) {
-                            const dateOnly = o.date.toLocaleDateString('en-CA'); 
-                            if (!datesMap[dateOnly]) datesMap[dateOnly] = 0;
-                            datesMap[dateOnly] += o.totalAmount;
+                            if (!datesMap[o.dateStr]) datesMap[o.dateStr] = 0;
+                            datesMap[o.dateStr] += o.totalAmount;
                         }
                     });
 
@@ -658,16 +684,19 @@
                 if (pdfLoading.value) return;
                 
                 pdfLoading.value = true;
-                showNotify('جاري إنشاء وتصدير التقرير، يرجى الانتظار ثواني...', 'info');
+                showNotify('جاري إنشاء وتصدير التقرير، يرجى الانتظار...', 'info');
                 
                 try {
                     const captureEl = document.getElementById('capture-employee-report');
-                    captureEl.style.opacity = '1';
                     
                     await nextTick();
                     await new Promise(r => setTimeout(r, 600)); 
                     
-                    const canvas = await html2canvas(captureEl, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
+                    const canvas = await html2canvas(captureEl, { 
+                        scale: 2, 
+                        useCORS: true, 
+                        backgroundColor: '#ffffff' 
+                    });
                     const imgData = canvas.toDataURL('image/jpeg', 1.0);
                     
                     const { jsPDF } = window.jspdf;
@@ -678,10 +707,8 @@
                     showNotify('تم تحميل التقرير بنجاح', 'success');
                 } catch(e) {
                     console.error('PDF Generation Error:', e);
-                    showNotify('حدث خطأ أثناء معالجة الـ PDF: الرجاء المحاولة مرة أخرى', 'error');
+                    showNotify('حدث خطأ أثناء معالجة الـ PDF: ' + e.message, 'error');
                 } finally {
-                    const captureEl = document.getElementById('capture-employee-report');
-                    if (captureEl) captureEl.style.opacity = '0';
                     pdfLoading.value = false;
                 }
             };
@@ -692,7 +719,6 @@
                 currentUser.value = JSON.parse(storedUser);
                 if (currentUser.value.role !== 'admin') { window.location.href = 'index.html'; return; }
                 setTimeout(() => lucide.createIcons(), 500); 
-                generateReport(); 
             });
 
             return {
