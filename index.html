@@ -108,7 +108,7 @@
 
             <div v-if="syncLoading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm">
                 <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
-                <p class="font-black text-[#142952]">جاري تحديث كتالوج المنتجات والأسعار...</p>
+                <p class="font-black text-[#142952]">جاري تحديث قاعدة البيانات المركزية...</p>
             </div>
 
             <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -166,7 +166,7 @@
                         <div v-else class="space-y-1 lg:col-span-2 invisible"></div>
 
                         <div class="space-y-1 lg:col-span-2">
-                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رفع إيصالات الدفع (أكثر من صورة)</label>
+                            <label class="text-[11px] font-black text-gray-400 mr-2 uppercase">رفع إيصالات الدفع (يمكن اختيار أكثر من صورة)</label>
                             <input type="file" ref="receiptInput" accept="image/*" multiple @change="handleReceiptUpload" class="w-full p-2.5 border-2 border-transparent bg-white rounded-2xl shadow-sm focus:border-blue-500 outline-none font-bold text-sm">
                         </div>
 
@@ -293,7 +293,7 @@
                                     class="text-white px-16 py-4 rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all flex justify-center items-center gap-3 min-w-[280px]">
                                 <i v-if="isSuccess" data-lucide="check-circle" class="w-6 h-6 text-white"></i>
                                 <i v-else-if="isSaving" data-lucide="loader" class="w-5 h-5 animate-spin"></i>
-                                <span>{{ isSuccess ? 'تم حفظ طلبك بنجاح' : (editingOrder ? 'تأكيد تحديث الطلب' : 'إرسال وحفظ الطلب للجدول') }}</span>
+                                <span>{{ isSuccess ? 'تم الحفظ بنجاح' : (editingOrder ? 'تأكيد التحديث' : 'حفظ الطلب') }}</span>
                             </button>
                         </div>
                     </div>
@@ -306,11 +306,7 @@
 <script type="module">
     const { createApp, ref, computed, onMounted } = Vue;
 
-    // الرابط الصحيح الذي أرسلته 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyo-it7TuKYWFRyYW59HwEIjjAlfl0uWjL5zTS0UrDjLAK1K0w7D64JOzlk9tiSRT7W/exec";
-    
-    // مفتاح التخزين الموحد الجديد
-    const STORAGE_KEY = 'hwayt_orders_v9_sync';
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
 
     const STATIC_PRICES = {
         1: 149, 2: 149, 3: 199, 4: 199, 5: 225, 6: 225, 7: 249, 8: 229, 9: 215, 10: 225,
@@ -332,7 +328,7 @@
 
     createApp({
         setup() {
-            const currentUser = ref(null);
+            const currentUser = ref(JSON.parse(sessionStorage.getItem('hb_user') || 'null'));
             const loginForm = ref({ username: '', password: '' });
             const loginLoading = ref(false);
             const loginError = ref('');
@@ -347,7 +343,6 @@
             const isSuccess = ref(false);
             const notification = ref(null);
 
-            // حسابات المجموع الخاضع للخصم (سعر اللوحة + لونها)
             const calcDiscountableSubTotal = computed(() => {
                 return orderForm.value.products.reduce((sum, p) => {
                     let unitPrice = p.basePrice || 0;
@@ -356,7 +351,6 @@
                 }, 0);
             });
 
-            // حسابات المجموع غير الخاضع للخصم (الإضاءة 129 والتصميم 50)
             const calcNonDiscountableSubTotal = computed(() => {
                 return orderForm.value.products.reduce((sum, p) => {
                     let additions = 0;
@@ -384,9 +378,7 @@
                 if (!loginForm.value.username || !loginForm.value.password) { loginError.value = 'يرجى إدخال البيانات كاملة'; return; }
                 loginLoading.value = true; loginError.value = '';
                 try {
-                    // كسر الكاش في تسجيل الدخول
-                    const urlWithCacheBust = GOOGLE_SCRIPT_URL + "?t=" + new Date().getTime();
-                    const res = await fetch(urlWithCacheBust, {
+                    const res = await fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST', redirect: 'follow',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ action: 'login', username: loginForm.value.username, password: loginForm.value.password })
@@ -419,7 +411,6 @@
                 orderForm.value.isPaid = !orderForm.value.isPaid;
             };
 
-            // معالجة رفع صور إيصالات متعددة وضغطها تلقائياً
             const handleReceiptUpload = (e) => {
                 const files = Array.from(e.target.files);
                 if (!files.length) return;
@@ -434,10 +425,8 @@
                             canvas.width = img.width * scale; 
                             canvas.height = img.height * scale;
                             canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                            
-                            // إدراج الصورة المرفوعة في مصفوفة الإيصالات
                             orderForm.value.receipts.push(canvas.toDataURL('image/jpeg', 0.6));
-                            orderForm.value.isPaid = true; // يتم وضع علامة مدفوع تلقائياً عند رفع وصل
+                            orderForm.value.isPaid = true; 
                         };
                         img.src = event.target.result;
                     };
@@ -447,9 +436,7 @@
                 if (receiptInput.value) receiptInput.value.value = '';
             };
 
-            const removeReceipt = (idx) => {
-                orderForm.value.receipts.splice(idx, 1);
-            };
+            const removeReceipt = (idx) => orderForm.value.receipts.splice(idx, 1);
 
             const saveOrder = () => {
                 isSaving.value = true;
@@ -461,7 +448,7 @@
                     orderId, managerCode: mCode, discountRate: orderForm.value.discountRate || 0,
                     discountValue: calcDiscountValue.value, subTotal: calcSubTotal.value, totalAmount: calcTotal.value,
                     isPaid: orderForm.value.isPaid, 
-                    receiptImage: orderForm.value.receipts, // مصفوفة الإيصالات بالكامل تُرسل
+                    receiptImage: orderForm.value.receipts,
                     orderStatus: orderForm.value.orderStatus,
                     client: JSON.parse(JSON.stringify(orderForm.value.client)),
                     products: JSON.parse(JSON.stringify(orderForm.value.products)).map(p => {
@@ -472,38 +459,24 @@
                         p.price = finalUnit;
                         return p;
                     }),
-                    // 🛡️ التثبيت التام للتاريخ الأصلي دون تغيير عند التعديل
-                    timestamp: editingOrder.value && orderForm.value.timestamp ? orderForm.value.timestamp : new Date().toISOString()
+                    timestamp: editingOrder.value ? orderForm.value.timestamp : new Date().toISOString()
                 };
 
-                // كسر الكاش لضمان وصول الطلب
-                const urlWithCacheBust = GOOGLE_SCRIPT_URL + "?t=" + new Date().getTime();
-
-                fetch(urlWithCacheBust, {
+                fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST', mode: 'no-cors', 
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 }).then(() => {
-                    let localOrders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                    if (editingOrder.value) {
-                        const idx = localOrders.findIndex(o => o.orderId === editingOrder.value.orderId);
-                        if (idx !== -1) localOrders[idx] = payload;
-                    } else {
-                        localOrders.unshift(payload);
-                    }
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(localOrders));
-
+                    // Sync fully through cloud locally (Wait for next tab load to fetch, or force sync here)
                     isSaving.value = false;
                     isSuccess.value = true;
                     setTimeout(() => { 
                         isSuccess.value = false; 
                         cancelEdit(); 
-                        window.scrollTo({ top: 0, behavior: 'smooth' }); 
-                        // تحويل تلقائي لصفحة طلباتي بعد الحفظ الناجح للتأكيد
                         window.location.href = 'my_orders.html';
                     }, 1200);
                 }).catch(e => {
-                    isSaving.value = false; showNotify('خطأ فني في سحاب قاعدة البيانات', 'error');
+                    isSaving.value = false; showNotify('خطأ فني في الاتصال', 'error');
                 });
             };
 
@@ -519,8 +492,7 @@
             const syncCatalogFromSheet = async () => {
                 syncLoading.value = true;
                 try {
-                    const urlWithCacheBust = GOOGLE_SCRIPT_URL + "?t=" + new Date().getTime();
-                    const res = await fetch(urlWithCacheBust, { redirect: 'follow' });
+                    const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
                     const text = await res.text();
                     const result = JSON.parse(text);
                     let newCat = [...DEFAULT_CATALOG];
@@ -533,25 +505,18 @@
                         });
                     }
                     catalog.value = newCat;
-                    showNotify('تم مزامنة الكتالوج بنجاح');
+                    showNotify('تم تحديث البيانات من السحاب');
                 } catch(e) { } finally { syncLoading.value = false; }
             };
 
             onMounted(() => { 
-                const storedUser = sessionStorage.getItem('hb_user');
-                if (storedUser) {
-                    currentUser.value = JSON.parse(storedUser);
-                }
-
                 setTimeout(() => lucide.createIcons(), 500); 
                 if (currentUser.value) {
-                    // ⚙️ استقبال بيانات الطلب القادم من الأرشيف/طلباتي للتعديل وحمايتها من المسح
                     const toEdit = localStorage.getItem('orderToEdit');
                     if (toEdit) {
                         const parsed = JSON.parse(toEdit);
                         editingOrder.value = parsed;
                         
-                        // فك تشفير وتوزيع الإيصالات المتعددة المرفوعة مسبقاً
                         let loadedReceipts = [];
                         if (parsed.receiptImage) {
                             if (Array.isArray(parsed.receiptImage)) {
@@ -567,11 +532,11 @@
                             isPaid: parsed.isPaid, 
                             receipts: loadedReceipts,
                             orderStatus: parsed.orderStatus || false,
-                            timestamp: parsed.timestamp, // الحفاظ الثابت على طابع التاريخ والوقت القديم
+                            timestamp: parsed.timestamp, 
                             client: JSON.parse(JSON.stringify(parsed.client)), 
                             products: JSON.parse(JSON.stringify(parsed.products)).map(p => {
-                                p.hasLighting = p.hasLighting === true || p.hasLighting === "نعم";
-                                p.customDesign = p.customDesign === true || p.customDesign === "نعم";
+                                p.hasLighting = p.hasLighting === true || String(p.hasLighting) === "نعم";
+                                p.customDesign = p.customDesign === true || String(p.customDesign) === "نعم";
                                 if (!p.basePrice) {
                                     let deducted = p.price;
                                     if(p.hasLighting) deducted -= 129;
