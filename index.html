@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>هوية بيتك - تسجيل طلب</title>
     
+    <link rel="icon" type="image/png" href="upload.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -306,7 +308,8 @@
 <script type="module">
     const { createApp, ref, computed, onMounted } = Vue;
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
+    // الرابط الجديد الذي يحتوي على التحديثات والمزامنة المطورة
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbycA4wPKpmdhkoTaZhAOZoWZxeaNuzrxkw4GtHmK8j8F-5LPpSubkMju76wzLIaEMSd/exec";
 
     const STATIC_PRICES = {
         1: 149, 2: 149, 3: 199, 4: 199, 5: 225, 6: 225, 7: 249, 8: 229, 9: 215, 10: 225,
@@ -467,16 +470,16 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 }).then(() => {
-                    // Sync fully through cloud locally (Wait for next tab load to fetch, or force sync here)
                     isSaving.value = false;
                     isSuccess.value = true;
+                    // تم الحفظ بنجاح. السكربت قام بتفريغ الكاش ليضمن المزامنة للصفحات الأخرى
                     setTimeout(() => { 
                         isSuccess.value = false; 
                         cancelEdit(); 
                         window.location.href = 'my_orders.html';
                     }, 1200);
                 }).catch(e => {
-                    isSaving.value = false; showNotify('خطأ فني في الاتصال', 'error');
+                    isSaving.value = false; showNotify('خطأ فني في الاتصال، يرجى المحاولة مرة أخرى', 'error');
                 });
             };
 
@@ -492,9 +495,12 @@
             const syncCatalogFromSheet = async () => {
                 syncLoading.value = true;
                 try {
-                    const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
+                    // إضافة `?t=Date.now` لتخطي الكاش الخاص بالمتصفح، وحل مشكلة المزامنة.
+                    const cacheBusterUrl = `${GOOGLE_SCRIPT_URL}?t=${Date.now()}`;
+                    const res = await fetch(cacheBusterUrl, { redirect: 'follow' });
                     const text = await res.text();
                     const result = JSON.parse(text);
+                    
                     let newCat = [...DEFAULT_CATALOG];
                     if (result.catalog?.length > 0) {
                         result.catalog.forEach(r => {
@@ -506,7 +512,11 @@
                     }
                     catalog.value = newCat;
                     showNotify('تم تحديث البيانات من السحاب');
-                } catch(e) { } finally { syncLoading.value = false; }
+                } catch(e) { 
+                    console.error('Error syncing catalog', e);
+                } finally { 
+                    syncLoading.value = false; 
+                }
             };
 
             onMounted(() => { 
