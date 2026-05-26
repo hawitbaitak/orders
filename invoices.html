@@ -20,7 +20,6 @@
         .loader-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
-        /* إعدادات الفاتورة والطباعة */
         .invoice-a4 { width: 210mm; height: 296mm; max-height: 296mm; background: white; margin: 0 auto; padding: 8mm 12mm 25mm 12mm; box-sizing: border-box; color: #000; line-height: 1.3; position: relative; overflow: hidden; }
         .inv-info-box { background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9; }
         .inv-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
@@ -165,7 +164,6 @@
 
     <div id="capture-area" dir="rtl">
         <div v-for="invoice in bulkList" :key="invoice.orderId" :id="'inv-' + invoice.orderId" class="invoice-a4">
-           
            <div class="flex justify-between items-center mb-4 border-b-2 border-gray-100 pb-3">
                 <div class="w-20 h-20 bg-white flex items-center justify-center p-2 rounded-xl">
                     <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
@@ -300,9 +298,7 @@
 
 <script type="module">
     const { createApp, ref, computed, onMounted, nextTick } = Vue;
-
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyo-it7TuKYWFRyYW59HwEIjjAlfl0uWjL5zTS0UrDjLAK1K0w7D64JOzlk9tiSRT7W/exec";
-    const STORAGE_KEY = 'hwayt_orders_v9_sync';
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
 
     function parseSheetDate(dateStr) {
         if (!dateStr) return new Date().toISOString();
@@ -339,7 +335,7 @@
             const filteredByDateOrders = computed(() => {
                 return orders.value.filter(o => {
                     if (currentUser.value?.role !== 'admin') {
-                        if ((o.managerCode || '').toUpperCase() !== (currentUser.value?.managerCode || '').toUpperCase()) return false;
+                        if (String(o.managerCode || '').toUpperCase() !== String(currentUser.value?.managerCode || '').toUpperCase()) return false;
                     }
                     const dateMatch = (o.timestamp || '').split('T')[0] === filterDate.value;
                     let statusMatch = true;
@@ -359,9 +355,7 @@
 
             const viewInvoice = (order) => {
                 bulkList.value = [order];
-                nextTick(() => {
-                    setTimeout(() => window.print(), 500);
-                });
+                nextTick(() => { setTimeout(() => window.print(), 500); });
             };
 
             const printBulk = () => { 
@@ -396,9 +390,7 @@
             const syncFromSheet = async () => {
                 syncLoading.value = true;
                 try {
-                    // كسر الكاش لضمان جلب أحدث البيانات دوماً
-                    const urlWithCacheBust = GOOGLE_SCRIPT_URL + "?t=" + new Date().getTime();
-                    const res = await fetch(urlWithCacheBust, { redirect: 'follow' });
+                    const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
                     const text = await res.text();
                     let result = JSON.parse(text);
 
@@ -417,11 +409,13 @@
                             }
 
                             grouped[oid] = {
-                                orderId: oid, managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim(),
-                                discountRate: parseFloat(row['نسبة الخصم'] || 0), discountValue: parseFloat(row['قيمة الخصم'] || 0),
+                                orderId: oid, 
+                                managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim(),
+                                discountRate: Number(row['نسبة الخصم'] || 0), 
+                                discountValue: Number(row['قيمة الخصم'] || 0),
                                 isPaid: isPaidStatus(row['حالة الدفع']), 
                                 receipts: loadedReceipts,
-                                client: { name: row['العميل'] || '', city: row['المدينة'] || '', phone: String(row['الجوال'] || ''), address: row['العنوان بالتفصيل'] || '' },
+                                client: { name: String(row['العميل'] || ''), city: String(row['المدينة'] || ''), phone: String(row['الجوال'] || ''), address: String(row['العنوان بالتفصيل'] || '') },
                                 products: [], totalAmount: 0, subTotal: 0,
                                 timestamp: parseSheetDate(row['التاريخ'])
                             };
@@ -432,13 +426,13 @@
                             id: Date.now() + Math.random(),
                             productId: productNameOrId,
                             name: productNameOrId, 
-                            color: row['اللون'] || 'silver',
-                            count: parseInt(row['العدد'] || 1), 
-                            price: parseFloat(row['السعر الفردي'] || 0),
-                            nationalAddress: row['العنوان الوطني'] || '', 
-                            villaNo: row['رقم الفيلا'] || '',
-                            customName: row['الاسم المخصص'] || '', 
-                            notes: row['ملاحظات'] || '',
+                            color: String(row['اللون'] || 'silver'),
+                            count: Number(row['العدد'] || 1), 
+                            price: Number(row['السعر الفردي'] || 0),
+                            nationalAddress: String(row['العنوان الوطني'] || ''), 
+                            villaNo: String(row['رقم الفيلا'] || ''),
+                            customName: String(row['الاسم المخصص'] || ''), 
+                            notes: String(row['ملاحظات'] || ''),
                             hasLighting: row['إضافة إضاءة'] === 'نعم' || row['إضافة إضاءة'] === true,
                             customDesign: row['تصميم خاص'] === 'نعم' || row['تصميم خاص'] === true
                         };
@@ -460,16 +454,14 @@
                             let adds = 0;
                             if (p.hasLighting) adds += 129;
                             if (p.customDesign) adds += 50;
-                            
                             let baseAndColor = p.price - adds;
                             discountable += (baseAndColor * p.count);
                             nonDiscountable += (adds * p.count);
                         });
                         
                         o.subTotal = discountable + nonDiscountable;
-                        
                         if (o.discountRate > 0) {
-                            o.discountValue = parseFloat(((discountable * o.discountRate) / 100).toFixed(2));
+                            o.discountValue = Number(((discountable * o.discountRate) / 100).toFixed(2));
                             o.totalAmount = Math.round(discountable - o.discountValue + nonDiscountable);
                         } else {
                             o.totalAmount = o.subTotal;
@@ -477,12 +469,10 @@
                     });
 
                     orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                    
-                    // التحديث الكامل في التخزين المحلي ليكون متاحاً لجميع الصفحات
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders.value));
-                    showNotify('تم تحديث بيانات الفواتير والمزامنة بنجاح');
+                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
+                    showNotify('تم تحديث الفواتير من السحاب بنجاح');
                 } catch(e) {
-                    showNotify('خطأ في المزامنة. يتم العمل بالبيانات المحلية.', 'error');
+                    showNotify('خطأ في المزامنة.', 'error');
                 } finally { syncLoading.value = false; }
             };
 
@@ -492,16 +482,11 @@
 
             onMounted(() => { 
                 const storedUser = sessionStorage.getItem('hb_user');
-                if (!storedUser) {
-                    window.location.href = 'index.html';
-                    return;
-                }
+                if (!storedUser) { window.location.href = 'index.html'; return; }
                 currentUser.value = JSON.parse(storedUser);
                 
-                const localOrders = localStorage.getItem(STORAGE_KEY);
-                if (localOrders) {
-                    orders.value = JSON.parse(localOrders);
-                }
+                const localOrders = localStorage.getItem('hwayt_orders_v8');
+                if (localOrders) orders.value = JSON.parse(localOrders);
 
                 setTimeout(() => lucide.createIcons(), 500); 
                 syncFromSheet();
