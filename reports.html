@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>هوية بيتك  - التقارير والإحصائيات</title>
+    <title>هوية بيتك - التقارير والإحصائيات</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -23,7 +23,6 @@
         .report-table td { border-bottom: 1px solid #e2e8f0; padding: 12px 16px; font-size: 13px; font-weight: 700; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
         .report-table tr:hover td { background-color: #f1f5f9; }
 
-        /* حاوية الـ PDF مخفية بطريقة لا تمنع التصوير */
         #pdf-export-container {
             position: absolute;
             width: 0;
@@ -32,7 +31,6 @@
             z-index: -9999;
         }
 
-        /* قالب الـ PDF بحجم A4 لاندسكيب (أفقي) */
         #capture-employee-report {
             width: 297mm;
             min-height: 210mm;
@@ -42,23 +40,81 @@
             color: #000;
             direction: rtl;
         }
-        .pdf-header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #142952; padding-bottom: 15px; margin-bottom: 20px; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th { background: #142952; color: white; padding: 12px; font-size: 14px; font-weight: 900; border: 1px solid #142952; text-align: center; }
-        .pdf-table td { border: 1px solid #cbd5e1; padding: 10px; font-size: 13px; font-weight: 700; text-align: center; color: #1e293b; }
+        
+        .pdf-header-container { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 4px solid #142952; 
+            padding-bottom: 15px; 
+            margin-bottom: 20px; 
+        }
+        
+        .pdf-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px; 
+        }
+        
+        .pdf-table th { 
+            background: #142952; 
+            color: white; 
+            padding: 12px; 
+            font-size: 14px; 
+            font-weight: 900; 
+            border: 1px solid #142952; 
+            text-align: center; 
+        }
+        
+        .pdf-table td { 
+            border: 1px solid #cbd5e1; 
+            padding: 10px; 
+            font-size: 13px; 
+            font-weight: 700; 
+            text-align: center; 
+            color: #1e293b; 
+        }
+        
         .pdf-table tr:nth-child(even) td { background-color: #f8fafc; }
-        .pdf-table tr.total-row td { background: #e2e8f0; font-weight: 900; color: #142952; font-size: 15px; border-top: 2px solid #142952; }
+        
+        .pdf-table tr.total-row td { 
+            background: #e2e8f0; 
+            font-weight: 900; 
+            color: #142952; 
+            font-size: 15px; 
+            border-top: 2px solid #142952; 
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(20, 41, 82, 0.1);
+            border-top-color: #142952;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .data-empty {
+            opacity: 0.5;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 <div id="app" class="min-h-screen flex">
 
+    <!-- Sidebar -->
     <aside class="sidebar w-64 text-white flex flex-col fixed h-full z-50 shadow-2xl no-print">
         <div class="p-8 text-center border-b border-white/5">
             <div class="w-24 h-24 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center p-2 shadow-xl overflow-hidden">
                 <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.style.display='none'">
             </div>
-            <h1 class="text-xl font-black">هوية بيتك </h1>
+            <h1 class="text-xl font-black">هوية بيتك</h1>
             <p class="text-blue-300 text-[10px] mt-1 tracking-widest font-bold uppercase">نظام إدارة المبيعات</p>
             <div class="mt-3 flex items-center justify-center gap-2">
                 <span class="text-[10px] font-black px-3 py-1 rounded-full bg-yellow-400 text-yellow-900">
@@ -66,6 +122,7 @@
                 </span>
             </div>
         </div>
+        
         <nav class="flex-1 py-10 px-4 space-y-2">
             <a href="index.html" class="w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-all font-bold hover:bg-white/5">
                 <i data-lucide="plus-circle" class="w-5 h-5 text-yellow-400"></i> تسجيل طلب
@@ -86,6 +143,7 @@
                 <i data-lucide="pie-chart" class="w-5 h-5 text-yellow-400"></i> التقارير والإحصائيات
             </a>
         </nav>
+        
         <div class="p-4 border-t border-white/10">
             <button @click="doLogout" class="w-full flex items-center gap-3 px-6 py-3 rounded-xl hover:bg-white/10 transition-all font-bold text-red-300 hover:text-red-200">
                 <i data-lucide="log-out" class="w-4 h-4"></i> تسجيل خروج
@@ -93,8 +151,10 @@
         </div>
     </aside>
 
+    <!-- Main Content -->
     <main class="flex-1 mr-64 p-8 relative min-h-screen">
         
+        <!-- Notifications -->
         <div v-if="notification" class="fixed top-10 left-10 z-[100] p-5 rounded-2xl shadow-2xl bg-white border-l-8 flex items-center gap-4 transition-all"
              :class="{'border-red-500 text-red-600': notification.type === 'error', 'border-green-500 text-green-600': notification.type === 'success', 'border-blue-500 text-blue-700': notification.type === 'info'}">
             <i v-if="notification.type === 'success'" data-lucide="check-circle"></i>
@@ -103,11 +163,14 @@
             <span class="font-black">{{ notification.msg }}</span>
         </div>
 
+        <!-- Loading Overlay -->
         <div v-if="syncLoading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm">
-            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
+            <div class="loading-spinner mb-4"></div>
             <p class="font-black text-[#142952]">جاري مزامنة ومعالجة البيانات...</p>
+            <p class="text-sm text-gray-500 mt-2">يرجى الانتظار قد يستغرق بعض الوقت</p>
         </div>
 
+        <!-- Header -->
         <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div>
                 <h2 class="text-3xl font-black text-[#142952]">التقارير ولوحة التحكم</h2>
@@ -115,7 +178,8 @@
             </div>
             
             <div v-if="reportGenerated && reportSummary.totalOrders > 0">
-                <button @click="downloadAllEmployeesPDF" :disabled="pdfLoading" class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 shadow-lg hover:bg-blue-700 transition-all disabled:opacity-50">
+                <button @click="downloadAllEmployeesPDF" :disabled="pdfLoading" 
+                        class="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 shadow-lg hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     <i v-if="pdfLoading" data-lucide="loader" class="w-5 h-5 animate-spin"></i>
                     <i v-else data-lucide="file-text" class="w-5 h-5"></i> 
                     {{ pdfLoading ? 'جاري تجهيز الـ PDF...' : 'استخراج تقرير الموظفين (PDF)' }}
@@ -123,32 +187,49 @@
             </div>
         </header>
 
+        <!-- Reports Section -->
         <section class="space-y-8 animate-in fade-in">
+            <!-- Report Controls -->
             <div class="bg-white p-8 rounded-3xl shadow-sm border">
                 <div class="flex gap-4 mb-8 pb-6 border-b border-gray-100">
-                    <button @click="setReportType('general')" :class="reportType === 'general' ? 'bg-[#142952] text-white shadow-lg' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-8 py-3 rounded-2xl font-black transition-all">التقرير المالي العام</button>
-                    <button @click="setReportType('employee')" :class="reportType === 'employee' ? 'bg-[#142952] text-white shadow-lg' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" class="px-8 py-3 rounded-2xl font-black transition-all">تقرير أداء الموظفين التفصيلي</button>
+                    <button @click="setReportType('general')" 
+                            :class="reportType === 'general' ? 'bg-[#142952] text-white shadow-lg' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" 
+                            class="px-8 py-3 rounded-2xl font-black transition-all">
+                        التقرير المالي العام
+                    </button>
+                    <button @click="setReportType('employee')" 
+                            :class="reportType === 'employee' ? 'bg-[#142952] text-white shadow-lg' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'" 
+                            class="px-8 py-3 rounded-2xl font-black transition-all">
+                        تقرير أداء الموظفين التفصيلي
+                    </button>
                 </div>
 
+                <!-- Filters -->
                 <div class="flex flex-wrap gap-6 items-end">
                     <div>
                         <label class="block text-xs font-black text-gray-400 mb-2 uppercase">من تاريخ</label>
-                        <input type="date" v-model="reportStartDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold">
+                        <input type="date" v-model="reportStartDate" 
+                               class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold">
                     </div>
                     <div>
                         <label class="block text-xs font-black text-gray-400 mb-2 uppercase">إلى تاريخ</label>
-                        <input type="date" v-model="reportEndDate" class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold">
+                        <input type="date" v-model="reportEndDate" 
+                               class="border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold">
                     </div>
                     
                     <div v-if="reportType === 'employee'" class="w-64">
                         <label class="block text-xs font-black text-gray-400 mb-2 uppercase">تصفية بموظف محدد</label>
-                        <select v-model="selectedEmployee" @change="processEmployeeDetailedData" class="w-full border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold text-[#142952]">
+                        <select v-model="selectedEmployee" @change="processEmployeeDetailedData" 
+                                class="w-full border-2 border-blue-50 p-3 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 bg-gray-50 font-bold text-[#142952]">
                             <option value="">-- يرجى اختيار الموظف --</option>
-                            <option v-for="emp in uniqueEmployees" :key="emp" :value="emp">الموظف: {{ emp }}</option>
+                            <option v-for="emp in uniqueEmployees" :key="emp" :value="emp">
+                                الموظف: {{ emp }}
+                            </option>
                         </select>
                     </div>
 
-                    <button @click="generateReport" :disabled="syncLoading || pdfLoading" class="bg-[#142952] text-white px-8 py-3.5 rounded-2xl font-black shadow-lg hover:bg-blue-900 transition-all flex items-center gap-2">
+                    <button @click="generateReport" :disabled="syncLoading || pdfLoading" 
+                            class="bg-[#142952] text-white px-8 py-3.5 rounded-2xl font-black shadow-lg hover:bg-blue-900 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                         <i v-if="syncLoading" data-lucide="loader" class="w-5 h-5 animate-spin"></i>
                         <i v-else data-lucide="refresh-cw" class="w-5 h-5 text-white"></i> 
                         {{ syncLoading ? 'جاري المعالجة...' : 'تحديث واستخراج التقرير' }}
@@ -156,26 +237,30 @@
                 </div>
             </div>
 
+            <!-- Empty State - No Report Generated -->
             <div v-if="!reportGenerated" class="py-20 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 shadow-sm">
                 <i data-lucide="bar-chart-2" class="w-20 h-20 text-gray-200 mx-auto mb-4"></i>
                 <p class="text-gray-400 font-black text-2xl">التقارير جاهزة للاستخراج</p>
-                <p class="text-base text-gray-400 mt-3 font-bold">اضغط على "تحديث واستخراج التقرير" لجلب ومزامنة البيانات.</p>
+                <p class="text-base text-gray-400 mt-3 font-bold">اضغط على "تحديث واستخراج التقرير" لجلب ومزامنة البيانات من النظام.</p>
             </div>
 
+            <!-- Empty State - No Orders in Date Range -->
             <div v-else-if="reportGenerated && reportSummary.totalOrders === 0" class="py-20 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100 mt-6 shadow-sm">
                 <i data-lucide="calendar-x" class="w-20 h-20 text-gray-200 mx-auto mb-4"></i>
                 <p class="text-gray-400 font-black text-2xl">لا توجد طلبات مسجلة في هذا النطاق الزمني</p>
                 <p class="text-base text-gray-400 mt-3 font-bold">تأكد من اختيار التواريخ بشكل صحيح أو من وجود طلبات مدخلة.</p>
             </div>
 
+            <!-- General Report View -->
             <div v-else-if="reportType === 'general' && reportGenerated" class="space-y-6">
+                <!-- Stats Cards -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div class="bg-white p-6 rounded-3xl shadow-sm border text-center relative overflow-hidden hover:border-blue-500 transition-all">
                         <div class="text-3xl font-black text-[#142952] relative z-10">{{ reportSummary.totalOrders }}</div>
                         <div class="text-xs font-black text-gray-400 mt-2 uppercase relative z-10">إجمالي الطلبات المُسجلة</div>
                     </div>
                     <div class="bg-white p-6 rounded-3xl shadow-sm border text-center relative overflow-hidden hover:border-green-500 transition-all">
-                        <div class="text-3xl font-black text-green-600 relative z-10">{{ reportSummary.totalRevenue.toLocaleString() }} SAR</div>
+                        <div class="text-3xl font-black text-green-600 relative z-10">{{ formatNumber(reportSummary.totalRevenue) }} SAR</div>
                         <div class="text-xs font-black text-gray-400 mt-2 uppercase relative z-10">المبيعات المحصلة (مدفوعة)</div>
                     </div>
                     <div class="bg-white p-6 rounded-3xl shadow-sm border text-center relative overflow-hidden hover:border-blue-300 transition-all">
@@ -188,32 +273,47 @@
                     </div>
                 </div>
 
+                <!-- Charts Row -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Revenue Chart -->
                     <div class="bg-white p-6 rounded-3xl shadow-sm border lg:col-span-2">
-                        <h3 class="font-black text-[#142952] mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5"></i> الإيرادات اليومية للطلبات المدفوعة</h3>
+                        <h3 class="font-black text-[#142952] mb-4 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5"></i> الإيرادات اليومية للطلبات المدفوعة
+                        </h3>
                         <canvas id="revenueChart" height="250"></canvas>
                     </div>
+                    
+                    <!-- Payment Status Chart -->
                     <div class="bg-white p-6 rounded-3xl shadow-sm border flex flex-col justify-center items-center">
-                        <h3 class="font-black text-[#142952] mb-4 flex items-center gap-2"><i data-lucide="pie-chart" class="w-5 h-5"></i> حالة التحصيل</h3>
+                        <h3 class="font-black text-[#142952] mb-4 flex items-center gap-2">
+                            <i data-lucide="pie-chart" class="w-5 h-5"></i> حالة التحصيل
+                        </h3>
                         <div class="w-full max-w-[250px]">
                             <canvas id="paymentChart" height="250"></canvas>
                         </div>
                     </div>
                 </div>
 
+                <!-- Employee Performance Chart -->
                 <div class="bg-white p-6 rounded-3xl shadow-sm border">
-                    <h3 class="font-black text-[#142952] mb-4 flex items-center gap-2"><i data-lucide="users" class="w-5 h-5"></i> أداء المبيعات حسب الموظف</h3>
+                    <h3 class="font-black text-[#142952] mb-4 flex items-center gap-2">
+                        <i data-lucide="users" class="w-5 h-5"></i> أداء المبيعات حسب الموظف
+                    </h3>
                     <canvas id="employeesChart" height="250"></canvas>
                 </div>
             </div>
 
+            <!-- Employee Detailed Report View -->
             <div v-else-if="reportType === 'employee' && reportGenerated" class="space-y-6">
+                <!-- Select Employee Prompt -->
                 <div v-if="!selectedEmployee" class="py-20 text-center bg-white rounded-3xl border-4 border-dashed border-gray-100">
                     <i data-lucide="user-search" class="w-16 h-16 text-gray-200 mx-auto mb-4"></i>
                     <p class="text-gray-400 font-black text-lg">يرجى اختيار الموظف من القائمة المنسدلة أعلاه لعرض تفاصيله</p>
                 </div>
 
+                <!-- Employee Details -->
                 <template v-else>
+                    <!-- Summary Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="bg-gradient-to-l from-[#142952] to-[#1e3a6e] p-8 rounded-3xl shadow-lg text-white flex items-center justify-between">
                             <div>
@@ -225,12 +325,13 @@
                         <div class="bg-gradient-to-l from-green-600 to-green-500 p-8 rounded-3xl shadow-lg text-white flex items-center justify-between">
                             <div>
                                 <p class="text-green-100 font-bold mb-1">إجمالي المبيعات المحققة (مدفوعة)</p>
-                                <h3 class="text-4xl font-black">{{ employeeSummary.totalRevenue.toLocaleString() }} SAR</h3>
+                                <h3 class="text-4xl font-black">{{ formatNumber(employeeSummary.totalRevenue) }} SAR</h3>
                             </div>
                             <i data-lucide="trending-up" class="w-12 h-12 text-white/20"></i>
                         </div>
                     </div>
 
+                    <!-- Details Table -->
                     <div class="bg-white rounded-3xl shadow-sm border overflow-hidden">
                         <div class="p-6 bg-gray-50 border-b flex justify-between items-center">
                             <h3 class="font-black text-[#142952] text-lg flex items-center gap-2">
@@ -253,10 +354,12 @@
                                         <td class="text-blue-800">{{ item.shapeName }}</td>
                                         <td class="text-center bg-gray-50 text-gray-900">{{ item.count }}</td>
                                         <td class="text-center text-gray-500">SAR {{ item.avgPrice }}</td>
-                                        <td class="text-left text-green-600 bg-green-50/30">SAR {{ item.totalRevenue.toLocaleString() }}</td>
+                                        <td class="text-left text-green-600 bg-green-50/30">SAR {{ formatNumber(item.totalRevenue) }}</td>
                                     </tr>
                                     <tr v-if="employeeDetails.length === 0">
-                                        <td colspan="4" class="p-10 text-center text-gray-400 font-bold">لم يقم هذا الموظف ببيع أي منتجات في هذه الفترة.</td>
+                                        <td colspan="4" class="p-10 text-center text-gray-400 font-bold">
+                                            لم يقم هذا الموظف ببيع أي منتجات في هذه الفترة.
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -267,32 +370,38 @@
         </section>
     </main>
 
+    <!-- PDF Export Container -->
     <div id="pdf-export-container">
         <div id="capture-employee-report">
             <div class="pdf-header-container">
                 <div class="flex items-center gap-4">
                     <div class="w-24 h-24 bg-white border-2 border-[#142952] rounded-2xl flex flex-col items-center justify-center text-[#142952]">
-                        <span class="font-black text-2xl">هوية بيتك </span>
+                        <span class="font-black text-2xl">هوية بيتك</span>
                         <span class="font-bold text-[10px]">للمبيعات</span>
                     </div>
                     <div>
-                        <h1 class="text-3xl font-black text-[#142952] mb-1">مؤسسة هوية بيتك </h1>
+                        <h1 class="text-3xl font-black text-[#142952] mb-1">مؤسسة هوية بيتك</h1>
                         <p class="text-lg font-bold text-gray-600">نظام إدارة المبيعات - قسم التقارير</p>
                     </div>
                 </div>
                 
                 <div class="text-center px-8">
-                    <h2 class="text-2xl font-black text-black bg-gray-100 px-8 py-3 rounded-xl border-2 border-gray-300">التقرير الشامل لأداء الموظفين</h2>
-                    <p class="text-base font-bold text-gray-700 mt-2">من: {{ reportStartDate }} — إلى: {{ reportEndDate }}</p>
+                    <h2 class="text-2xl font-black text-black bg-gray-100 px-8 py-3 rounded-xl border-2 border-gray-300">
+                        التقرير الشامل لأداء الموظفين
+                    </h2>
+                    <p class="text-base font-bold text-gray-700 mt-2">
+                        من: {{ reportStartDate }} — إلى: {{ reportEndDate }}
+                    </p>
                 </div>
 
                 <div class="text-left text-sm font-bold text-gray-800 space-y-1.5 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                    <p>السجل التجاري : <span class="font-black text-black">310236446600003</span></p>
-                    <p>البريد الإلكتروني : <span dir="ltr" class="font-black text-blue-700">hwytbytk@gmail.com</span></p>
-                    <p>جوال التواصل : <span dir="ltr" class="font-black">+966 54 478 2301</span></p>
+                    <p>السجل التجاري: <span class="font-black text-black">310236446600003</span></p>
+                    <p>البريد الإلكتروني: <span dir="ltr" class="font-black text-blue-700">hwytbytk@gmail.com</span></p>
+                    <p>جوال التواصل: <span dir="ltr" class="font-black">+966 54 478 2301</span></p>
                 </div>
             </div>
 
+            <!-- PDF Report Table -->
             <table class="pdf-table">
                 <thead>
                     <tr>
@@ -312,7 +421,7 @@
                         <td style="color: #16a34a;">{{ emp.paidOrderCount }}</td>
                         <td class="font-black">{{ emp.shapesCount }}</td>
                         <td class="text-gray-500">{{ emp.shapesCount > 0 ? (emp.totalSales / emp.shapesCount).toFixed(0) : 0 }}</td>
-                        <td style="color: #16a34a; font-size: 15px;">{{ emp.totalSales.toLocaleString() }}</td>
+                        <td style="color: #16a34a; font-size: 15px;">{{ formatNumber(emp.totalSales) }}</td>
                         <td>
                             <div class="flex items-center justify-center gap-2">
                                 <span class="w-10 text-left text-xs">{{ emp.contribution }}%</span>
@@ -330,15 +439,15 @@
                         <td style="color: #16a34a;">{{ reportSummary.paidOrders }}</td>
                         <td>{{ reportSummary.totalShapes }}</td>
                         <td>-</td>
-                        <td style="color: #16a34a;">SAR {{ reportSummary.totalRevenue.toLocaleString() }}</td>
+                        <td style="color: #16a34a;">SAR {{ formatNumber(reportSummary.totalRevenue) }}</td>
                         <td>100%</td>
                     </tr>
                 </tfoot>
             </table>
 
             <div class="absolute bottom-6 left-0 right-0 px-[20mm] flex justify-between items-center text-sm font-bold text-gray-500 border-t-2 border-gray-200 pt-4">
-                <p>تم استخراج هذا التقرير تلقائياً ومطابقاً للعمليات المالية المسجلة بنظام هوية بيتك .</p>
-                <p>تاريخ ووقت الاستخراج: {{ new Date().toLocaleString('ar-SA') }}</p>
+                <p>تم استخراج هذا التقرير تلقائياً ومطابقاً للعمليات المالية المسجلة بنظام هوية بيتك.</p>
+                <p>تاريخ ووقت الاستخراج: {{ getCurrentDateTime() }}</p>
             </div>
         </div>
     </div>
@@ -347,35 +456,72 @@
 <script type="module">
     const { createApp, ref, onMounted, nextTick } = Vue;
 
+    // ✅ استخدام الـ URL المحدثة
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
 
-    // معالج التواريخ الذكي الجديد (يتجاهل فروق التوقيت ويستخرج اليوم/الشهر/السنة فقط)
-    const getLocalDateString = (dateVal) => {
-        if (!dateVal) return null;
-        let d = new Date(dateVal);
+    // ✅ دوال مساعدة
+    const formatNumber = (num) => {
+        if (!num || num === 0) return "0";
+        return Math.round(num).toLocaleString('ar-SA');
+    };
+
+    const getCurrentDateTime = () => {
+        return new Date().toLocaleString('ar-SA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    };
+
+    const parseDate = (dateStr) => {
+        if (!dateStr) return null;
         
-        // لو التاريخ مش بصيغة قياسية، نحلله يدوياً
-        if (isNaN(d.getTime()) && typeof dateVal === 'string') {
-             const s = dateVal.trim().split(' ')[0];
-             const parts = s.split(/[\/\-]/);
-             if (parts.length === 3) {
-                 if (parts[2].length === 4) {
-                     let m = parseInt(parts[0]);
-                     let day = parseInt(parts[1]);
-                     if (m > 12) { let t = m; m = day; day = t; } // تبديل لو اليوم مكان الشهر
-                     d = new Date(parseInt(parts[2]), m - 1, day);
-                 } else if (parts[0].length === 4) {
-                     d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-                 }
-             }
+        // إذا كانت صيغة معيارية
+        if (typeof dateStr === 'string') {
+            const cleaned = dateStr.trim().split(' ')[0];
+            const parts = cleaned.split(/[\/\-]/);
+            
+            if (parts.length === 3) {
+                let year, month, day;
+                
+                // صيغة YYYY-MM-DD
+                if (parts[0].length === 4) {
+                    year = parseInt(parts[0]);
+                    month = parseInt(parts[1]) - 1;
+                    day = parseInt(parts[2]);
+                } else {
+                    // صيغة DD-MM-YYYY أو MM-DD-YYYY
+                    year = parseInt(parts[2]);
+                    month = parseInt(parts[0]) - 1;
+                    day = parseInt(parts[1]);
+                    
+                    // إذا كان الشهر > 12 فهو عكس
+                    if (month > 11) {
+                        month = parseInt(parts[1]) - 1;
+                        day = parseInt(parts[0]);
+                    }
+                }
+                
+                const date = new Date(year, month, day);
+                if (!isNaN(date.getTime())) {
+                    return date.toISOString().split('T')[0];
+                }
+            }
+        } else if (dateStr instanceof Date) {
+            return dateStr.toISOString().split('T')[0];
         }
         
-        if (!d || isNaN(d.getTime())) return null;
-        
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`; // النتيجة دائماً: YYYY-MM-DD
+        return null;
+    };
+
+    const compareDate = (dateStr, startStr, endStr) => {
+        if (!dateStr) return false;
+        const normalized = parseDate(dateStr);
+        if (!normalized) return false;
+        return normalized >= startStr && normalized <= endStr;
     };
 
     let revenueChartInstance = null;
@@ -391,36 +537,49 @@
             
             const reportType = ref('general');
             
-            const date = new Date();
-            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
             const today = new Date().toISOString().split('T')[0];
+            const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+                .toISOString().split('T')[0];
             
             const reportStartDate = ref(firstDay);
             const reportEndDate = ref(today);
             const reportGenerated = ref(false);
             
             const groupedOrdersMap = ref({});
-            const allEmployeesStats = ref([]); 
+            const allEmployeesStats = ref([]);
             
             const uniqueEmployees = ref([]);
             const selectedEmployee = ref('');
             const employeeDetails = ref([]);
             const employeeSummary = ref({ totalBoards: 0, totalRevenue: 0 });
 
-            const reportSummary = ref({ totalOrders: 0, totalRevenue: 0, paidOrders: 0, unpaidOrders: 0, totalShapes: 0 });
+            const reportSummary = ref({
+                totalOrders: 0,
+                totalRevenue: 0,
+                paidOrders: 0,
+                unpaidOrders: 0,
+                totalShapes: 0
+            });
 
             const showNotify = (msg, type = 'success') => {
                 notification.value = { msg, type };
-                setTimeout(() => notification.value = null, 4000);
-                setTimeout(() => lucide.createIcons(), 50);
+                setTimeout(() => notification.value = null, 5000);
+                setTimeout(() => lucide.createIcons(), 100);
             };
 
-            const doLogout = () => { sessionStorage.removeItem('hb_user'); window.location.href = 'index.html'; };
+            const doLogout = () => {
+                sessionStorage.removeItem('hb_user');
+                window.location.href = 'index.html';
+            };
 
             const setReportType = (type) => {
                 reportType.value = type;
+                selectedEmployee.value = '';
+                
                 if (reportGenerated.value && reportSummary.value.totalOrders > 0 && type === 'general') {
-                    nextTick(() => renderCharts());
+                    nextTick(() => {
+                        setTimeout(() => renderCharts(), 100);
+                    });
                 }
             };
 
@@ -431,122 +590,135 @@
                 reportGenerated.value = false;
                 groupedOrdersMap.value = {};
                 allEmployeesStats.value = [];
+                employeeDetails.value = [];
+                selectedEmployee.value = '';
                 
                 try {
-                    const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
-                    const text = await res.text();
+                    console.log("🔄 جاري جلب البيانات من Google Sheets...");
                     
+                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'GET',
+                        redirect: 'follow',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`خطأ في الاتصال: ${response.status}`);
+                    }
+
+                    const text = await response.text();
+                    console.log("📨 الرد الخام:", text.substring(0, 200));
+
                     let result;
                     try {
                         result = JSON.parse(text);
-                    } catch(e) {
-                        throw new Error("خطأ في قراءة استجابة السيرفر. يرجى التحقق من جوجل شيت.");
+                    } catch (e) {
+                        console.error("❌ خطأ في تحليل JSON:", e);
+                        throw new Error("استجابة السيرفر غير صحيحة: " + text.substring(0, 100));
                     }
-                    
-                    const startStr = reportStartDate.value; // "YYYY-MM-DD"
-                    const endStr = reportEndDate.value; // "YYYY-MM-DD"
+
+                    if (!result.orders || !Array.isArray(result.orders)) {
+                        throw new Error("البيانات المستقبلة بصيغة خاطئة");
+                    }
+
+                    console.log(`✅ تم استقبال ${result.orders.length} طلب`);
+
+                    // معالجة البيانات
+                    const startStr = reportStartDate.value;
+                    const endStr = reportEndDate.value;
                     const tempOrders = {};
-                    
-                    (result.orders || []).forEach(row => {
-                        const rowDateStr = getLocalDateString(row['التاريخ']);
-                        if (!rowDateStr) return; 
-                        
-                        // مقارنة التواريخ كنصوص تمنع أي مشكلة في فروق التوقيت
-                        if (rowDateStr >= startStr && rowDateStr <= endStr) {
+
+                    result.orders.forEach((row, idx) => {
+                        try {
                             const oid = String(row['رقم الطلب'] || '').trim();
                             if (!oid) return;
+
+                            const dateStr = row['التاريخ'];
+                            if (!compareDate(dateStr, startStr, endStr)) return;
+
+                            const normalizedDate = parseDate(dateStr);
 
                             if (!tempOrders[oid]) {
                                 tempOrders[oid] = {
                                     orderId: oid,
-                                    dateStr: rowDateStr, // احتفظ بالتاريخ النصي لسهولة الاستخدام
-                                    managerCode: String(row['رمز المسؤول'] || oid.split('-')[0] || 'XX').trim().toUpperCase(),
-                                    isPaid: (String(row['حالة الدفع'] || '').trim() === 'تم الدفع'),
+                                    dateStr: normalizedDate,
+                                    managerCode: String(row['رمز المسؤول'] || 'UNKNOWN').trim().toUpperCase(),
+                                    isPaid: String(row['حالة الدفع'] || '').trim() === 'تم الدفع',
                                     discountRate: Number(row['نسبة الخصم'] || 0),
                                     products: [],
                                     totalAmount: 0,
                                     shapesCount: 0
                                 };
                             }
-                            
-                            const productNameOrId = String(row['المنتج'] || '').trim();
-                            const color = String(row['اللون'] || 'silver');
-                            const count = Number(row['العدد'] || 1);
-                            const price = Number(row['السعر الفردي'] || 0);
-                            const hasLighting = row['إضافة إضاءة'] === 'نعم' || row['إضافة إضاءة'] === true;
-                            const customDesign = row['تصميم خاص'] === 'نعم' || row['تصميم خاص'] === true;
 
-                            let additions = 0;
-                            if (hasLighting) additions += 129;
-                            if (customDesign) additions += 50;
-                            if (color === 'gold' || color === 'black') additions += 19;
+                            const product = {
+                                shapeName: String(row['المنتج'] || 'منتج بدون اسم').trim(),
+                                count: Number(row['العدد'] || 1),
+                                price: Number(row['السعر الفردي'] || 0),
+                                color: String(row['اللون'] || 'silver').trim(),
+                                hasLighting: row['إضافة إضاءة'] === 'نعم' || row['إضافة إضاءة'] === true,
+                                customDesign: row['تصميم خاص'] === 'نعم' || row['تصميم خاص'] === true
+                            };
 
-                            tempOrders[oid].products.push({
-                                shapeName: productNameOrId,
-                                count: count,
-                                price: price,
-                                basePrice: (price - additions),
-                                hasLighting,
-                                customDesign,
-                                color
-                            });
-                            
-                            tempOrders[oid].shapesCount += count;
+                            tempOrders[oid].products.push(product);
+                            tempOrders[oid].shapesCount += product.count;
+
+                        } catch (e) {
+                            console.warn(`تحذير عند معالجة الصف ${idx}:`, e.message);
                         }
                     });
 
-                    // الحسابات متطابقة مع نظام الفواتير
-                    Object.values(tempOrders).forEach(o => {
-                        let discountable = 0;
-                        let nonDiscountable = 0;
+                    // حساب الإجماليات
+                    Object.values(tempOrders).forEach(order => {
+                        let subtotal = 0;
 
-                        o.products.forEach(p => {
-                            let adds = 0;
-                            if (p.hasLighting) adds += 129;
-                            if (p.customDesign) adds += 50;
-                            if (p.color === 'gold' || p.color === 'black') adds += 19;
-                            
-                            let baseAndColor = p.price - adds;
-                            discountable += (baseAndColor * p.count);
-                            nonDiscountable += (adds * p.count);
+                        order.products.forEach(p => {
+                            let additions = 0;
+                            if (p.hasLighting) additions += 129;
+                            if (p.customDesign) additions += 50;
+                            if (p.color === 'gold' || p.color === 'black') additions += 19;
+
+                            const itemPrice = p.price;
+                            subtotal += itemPrice * p.count;
                         });
 
-                        if (o.discountRate > 0) {
-                            const discountValue = (discountable * o.discountRate) / 100;
-                            o.totalAmount = Math.round(discountable - discountValue + nonDiscountable);
+                        if (order.discountRate > 0) {
+                            const discountValue = (subtotal * order.discountRate) / 100;
+                            order.totalAmount = Math.round(subtotal - discountValue);
                         } else {
-                            o.totalAmount = Math.round(discountable + nonDiscountable);
+                            order.totalAmount = Math.round(subtotal);
                         }
                     });
 
                     groupedOrdersMap.value = tempOrders;
-                    
+
+                    // استخراج الموظفين
                     const emps = new Set();
                     Object.values(tempOrders).forEach(o => {
-                        if (o.managerCode && o.managerCode !== 'UNDEFINED' && o.managerCode !== 'NULL') {
+                        if (o.managerCode && o.managerCode !== 'UNKNOWN') {
                             emps.add(o.managerCode);
                         }
                     });
                     uniqueEmployees.value = Array.from(emps).sort();
 
                     processGeneralData();
-                    if (selectedEmployee.value) processEmployeeDetailedData();
-
                     reportGenerated.value = true;
-                    try { localStorage.removeItem('hwayt_orders_v8'); } catch(e) {}
 
                     if (reportSummary.value.totalOrders === 0) {
-                        showNotify('تم الاتصال ولكن لا توجد طلبات مسجلة في هذا النطاق الزمني', 'info');
+                        showNotify('لا توجد طلبات في هذا النطاق الزمني', 'info');
                     } else {
-                        showNotify('تم استخراج التقارير ومعالجة البيانات بنجاح', 'success');
+                        showNotify(`✅ تم استخراج ${reportSummary.value.totalOrders} طلب بنجاح`, 'success');
+                        
                         if (reportType.value === 'general') {
-                            nextTick(() => renderCharts());
+                            nextTick(() => {
+                                setTimeout(() => renderCharts(), 200);
+                            });
                         }
                     }
 
-                } catch (e) {
-                    console.error('Sync Error:', e);
-                    showNotify('خطأ في المزامنة: ' + (e.message || 'حاول مرة أخرى'), 'error');
+                } catch (error) {
+                    console.error('❌ خطأ في المزامنة:', error);
+                    showNotify('❌ خطأ: ' + error.message, 'error');
                 } finally {
                     syncLoading.value = false;
                 }
@@ -556,177 +728,271 @@
                 let tOrders = 0, paid = 0, unpaid = 0, tRev = 0, tShapes = 0;
                 const empStats = {};
 
-                Object.values(groupedOrdersMap.value).forEach(o => {
+                Object.values(groupedOrdersMap.value).forEach(order => {
                     tOrders++;
-                    if (o.isPaid) {
+                    
+                    if (order.isPaid) {
                         paid++;
-                        tRev += o.totalAmount;
+                        tRev += order.totalAmount;
+                        tShapes += order.shapesCount;
+
+                        if (order.managerCode && order.managerCode !== 'UNKNOWN') {
+                            if (!empStats[order.managerCode]) {
+                                empStats[order.managerCode] = {
+                                    name: order.managerCode,
+                                    orderCount: 0,
+                                    paidOrderCount: 0,
+                                    totalSales: 0,
+                                    shapesCount: 0
+                                };
+                            }
+                            empStats[order.managerCode].orderCount++;
+                            empStats[order.managerCode].paidOrderCount++;
+                            empStats[order.managerCode].totalSales += order.totalAmount;
+                            empStats[order.managerCode].shapesCount += order.shapesCount;
+                        }
                     } else {
                         unpaid++;
-                    }
-
-                    if (o.managerCode && o.managerCode !== 'UNDEFINED' && o.managerCode !== 'NULL') {
-                        if (!empStats[o.managerCode]) {
-                            empStats[o.managerCode] = { name: o.managerCode, orderCount: 0, paidOrderCount: 0, totalSales: 0, shapesCount: 0 };
-                        }
-                        empStats[o.managerCode].orderCount++;
-                        if (o.isPaid) {
-                            empStats[o.managerCode].paidOrderCount++;
-                            empStats[o.managerCode].totalSales += o.totalAmount;
-                            empStats[o.managerCode].shapesCount += o.shapesCount;
-                            tShapes += o.shapesCount;
-                        }
                     }
                 });
 
                 reportSummary.value = {
-                    totalOrders: tOrders, totalRevenue: tRev, paidOrders: paid, unpaidOrders: unpaid, totalShapes: tShapes
+                    totalOrders: tOrders,
+                    totalRevenue: tRev,
+                    paidOrders: paid,
+                    unpaidOrders: unpaid,
+                    totalShapes: tShapes
                 };
 
-                allEmployeesStats.value = Object.values(empStats).map(e => {
-                    e.contribution = tRev > 0 ? ((e.totalSales / tRev) * 100).toFixed(1) : 0;
-                    return e;
-                }).sort((a, b) => b.totalSales - a.totalSales);
+                allEmployeesStats.value = Object.values(empStats)
+                    .map(e => ({
+                        ...e,
+                        contribution: tRev > 0 ? ((e.totalSales / tRev) * 100).toFixed(1) : 0
+                    }))
+                    .sort((a, b) => b.totalSales - a.totalSales);
             };
 
             const processEmployeeDetailedData = () => {
-                if (!selectedEmployee.value) return;
+                if (!selectedEmployee.value) {
+                    employeeDetails.value = [];
+                    employeeSummary.value = { totalBoards: 0, totalRevenue: 0 };
+                    return;
+                }
 
                 const shapesMap = {};
                 let tBoards = 0, tRevenue = 0;
-                const empOrders = Object.values(groupedOrdersMap.value).filter(o => o.managerCode === selectedEmployee.value);
 
-                empOrders.forEach(o => {
-                    if (o.isPaid) {
-                        o.products.forEach(p => {
-                            if (!shapesMap[p.shapeName]) shapesMap[p.shapeName] = { count: 0, revenue: 0 };
-                            
-                            let adds = (p.hasLighting ? 129 : 0) + (p.customDesign ? 50 : 0) + ((p.color === 'gold' || p.color === 'black') ? 19 : 0);
-                            let baseAndColor = p.price - adds;
-                            let discountedBase = o.discountRate > 0 ? baseAndColor - ((baseAndColor * o.discountRate) / 100) : baseAndColor;
-                            
-                            const finalItemPrice = discountedBase + adds;
-                            shapesMap[p.shapeName].count += p.count;
-                            shapesMap[p.shapeName].revenue += (finalItemPrice * p.count);
-                            tBoards += p.count;
-                        });
-                        tRevenue += o.totalAmount; 
-                    }
+                const empOrders = Object.values(groupedOrdersMap.value).filter(
+                    o => o.managerCode === selectedEmployee.value && o.isPaid
+                );
+
+                empOrders.forEach(order => {
+                    order.products.forEach(product => {
+                        if (!shapesMap[product.shapeName]) {
+                            shapesMap[product.shapeName] = { count: 0, revenue: 0 };
+                        }
+
+                        const itemTotal = product.price * product.count;
+                        shapesMap[product.shapeName].count += product.count;
+                        shapesMap[product.shapeName].revenue += itemTotal;
+                        tBoards += product.count;
+                    });
+                    tRevenue += order.totalAmount;
                 });
 
-                employeeDetails.value = Object.keys(shapesMap).map(key => ({
-                    shapeName: key,
-                    count: shapesMap[key].count,
-                    avgPrice: shapesMap[key].count > 0 ? (shapesMap[key].revenue / shapesMap[key].count).toFixed(2) : '0.00',
-                    totalRevenue: shapesMap[key].revenue
-                })).sort((a, b) => b.count - a.count);
+                employeeDetails.value = Object.keys(shapesMap)
+                    .map(key => ({
+                        shapeName: key,
+                        count: shapesMap[key].count,
+                        avgPrice: (shapesMap[key].revenue / shapesMap[key].count).toFixed(2),
+                        totalRevenue: shapesMap[key].revenue
+                    }))
+                    .sort((a, b) => b.count - a.count);
 
                 employeeSummary.value = { totalBoards: tBoards, totalRevenue: tRevenue };
             };
 
             const renderCharts = () => {
                 try {
-                    if (!window.Chart || reportType.value !== 'general' || reportSummary.value.totalOrders === 0) return;
-                    
+                    if (!window.Chart || reportType.value !== 'general' || reportSummary.value.totalOrders === 0) {
+                        return;
+                    }
+
                     const ctxRev = document.getElementById('revenueChart');
                     const ctxPay = document.getElementById('paymentChart');
                     const ctxEmp = document.getElementById('employeesChart');
+
                     if (!ctxRev || !ctxPay || !ctxEmp) return;
 
+                    // تنظيف الرسوم البيانية القديمة
                     if (revenueChartInstance) revenueChartInstance.destroy();
                     if (paymentChartInstance) paymentChartInstance.destroy();
                     if (employeesChartInstance) employeesChartInstance.destroy();
 
+                    // إعدادات الخط
                     Chart.defaults.font.family = 'Tajawal';
+                    Chart.defaults.color = '#666';
 
+                    // مخطط الإيرادات اليومية
                     const datesMap = {};
-                    Object.values(groupedOrdersMap.value).forEach(o => {
-                        if (o.isPaid) {
-                            if (!datesMap[o.dateStr]) datesMap[o.dateStr] = 0;
-                            datesMap[o.dateStr] += o.totalAmount;
+                    Object.values(groupedOrdersMap.value).forEach(order => {
+                        if (order.isPaid && order.dateStr) {
+                            if (!datesMap[order.dateStr]) datesMap[order.dateStr] = 0;
+                            datesMap[order.dateStr] += order.totalAmount;
                         }
                     });
 
                     const sortedDates = Object.keys(datesMap).sort();
-                    
+
                     revenueChartInstance = new Chart(ctxRev, {
                         type: 'line',
-                        data: { 
-                            labels: sortedDates, 
-                            datasets: [{ label: 'المبيعات (SAR)', data: sortedDates.map(d => datesMap[d]), borderColor: '#142952', backgroundColor: 'rgba(20, 41, 82, 0.1)', fill: true, tension: 0.4, borderWidth: 3 }] 
+                        data: {
+                            labels: sortedDates,
+                            datasets: [{
+                                label: 'المبيعات اليومية (SAR)',
+                                data: sortedDates.map(d => datesMap[d]),
+                                borderColor: '#142952',
+                                backgroundColor: 'rgba(20, 41, 82, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointRadius: 5,
+                                pointBackgroundColor: '#142952'
+                            }]
                         },
-                        options: { responsive: true, maintainAspectRatio: false }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: true, position: 'top' } }
+                        }
                     });
 
+                    // مخطط حالة الدفع
                     paymentChartInstance = new Chart(ctxPay, {
                         type: 'doughnut',
-                        data: { 
-                            labels: ['مدفوع', 'غير مدفوع'], 
-                            datasets: [{ data: [reportSummary.value.paidOrders, reportSummary.value.unpaidOrders], backgroundColor: ['#16a34a', '#ef4444'], borderWidth: 0 }] 
+                        data: {
+                            labels: ['مدفوع ✓', 'غير مدفوع ✗'],
+                            datasets: [{
+                                data: [reportSummary.value.paidOrders, reportSummary.value.unpaidOrders],
+                                backgroundColor: ['#16a34a', '#ef4444'],
+                                borderWidth: 2,
+                                borderColor: 'white'
+                            }]
                         },
-                        options: { responsive: true, maintainAspectRatio: false, cutout: '75%' }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { position: 'bottom' } },
+                            cutout: '70%'
+                        }
                     });
 
+                    // مخطط أداء الموظفين
                     employeesChartInstance = new Chart(ctxEmp, {
                         type: 'bar',
                         data: {
                             labels: allEmployeesStats.value.map(e => e.name),
-                            datasets: [{ label: 'المبيعات المحققة (SAR)', data: allEmployeesStats.value.map(e => e.totalSales), backgroundColor: '#3b82f6', borderRadius: 6 }]
+                            datasets: [{
+                                label: 'المبيعات المحققة (SAR)',
+                                data: allEmployeesStats.value.map(e => e.totalSales),
+                                backgroundColor: '#3b82f6',
+                                borderRadius: 8,
+                                borderWidth: 0
+                            }]
                         },
-                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { beginAtZero: true, ticks: { callback: val => formatNumber(val) } }
+                            }
+                        }
                     });
-                } catch(e) {
-                    console.error("Charts Render Error", e);
+
+                    console.log("✅ تم رسم الرسوم البيانية بنجاح");
+
+                } catch (error) {
+                    console.error("❌ خطأ في رسم الرسوم البيانية:", error);
+                    showNotify("⚠️ خطأ في عرض الرسوم البيانية", 'error');
                 }
             };
 
             const downloadAllEmployeesPDF = async () => {
                 if (pdfLoading.value) return;
-                
+
                 pdfLoading.value = true;
-                showNotify('جاري إنشاء وتصدير التقرير، يرجى الانتظار...', 'info');
-                
+                showNotify('⏳ جاري تجهيز التقرير...', 'info');
+
                 try {
-                    const captureEl = document.getElementById('capture-employee-report');
-                    
                     await nextTick();
-                    await new Promise(r => setTimeout(r, 600)); 
-                    
-                    const canvas = await html2canvas(captureEl, { 
-                        scale: 2, 
-                        useCORS: true, 
-                        backgroundColor: '#ffffff' 
+                    await new Promise(r => setTimeout(r, 800));
+
+                    const captureEl = document.getElementById('capture-employee-report');
+                    if (!captureEl) throw new Error("عنصر التقرير غير موجود");
+
+                    const canvas = await html2canvas(captureEl, {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        logging: false
                     });
-                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                    
+
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
                     const { jsPDF } = window.jspdf;
-                    const finalPDF = new jsPDF('l', 'mm', 'a4');
-                    finalPDF.addImage(imgData, 'JPEG', 0, 0, 297, 210);
-                    
-                    finalPDF.save(`تقرير_هوية بيتك _أداء_الموظفين_${reportStartDate.value}.pdf`);
-                    showNotify('تم تحميل التقرير بنجاح', 'success');
-                } catch(e) {
-                    console.error('PDF Generation Error:', e);
-                    showNotify('حدث خطأ أثناء معالجة الـ PDF: ' + e.message, 'error');
+                    const pdf = new jsPDF('l', 'mm', 'a4');
+                    pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+
+                    const filename = `تقرير_هوية بيتك_${reportStartDate.value}_${getCurrentDateTime().slice(0, 5)}.pdf`;
+                    pdf.save(filename);
+
+                    showNotify('✅ تم تحميل التقرير بنجاح', 'success');
+
+                } catch (error) {
+                    console.error('❌ خطأ في إنشاء PDF:', error);
+                    showNotify('❌ ' + error.message, 'error');
                 } finally {
                     pdfLoading.value = false;
                 }
             };
 
-            onMounted(() => { 
+            onMounted(() => {
                 const storedUser = sessionStorage.getItem('hb_user');
-                if (!storedUser) { window.location.href = 'index.html'; return; }
+                if (!storedUser) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
                 currentUser.value = JSON.parse(storedUser);
-                if (currentUser.value.role !== 'admin') { window.location.href = 'index.html'; return; }
-                setTimeout(() => lucide.createIcons(), 500); 
+                if (currentUser.value.role !== 'admin') {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                setTimeout(() => lucide.createIcons(), 500);
             });
 
             return {
-                currentUser, syncLoading, pdfLoading, notification,
-                reportType, reportStartDate, reportEndDate, reportGenerated,
-                uniqueEmployees, selectedEmployee, employeeDetails, employeeSummary,
-                reportSummary, allEmployeesStats,
-                doLogout, setReportType, generateReport, processEmployeeDetailedData, downloadAllEmployeesPDF
+                currentUser,
+                syncLoading,
+                pdfLoading,
+                notification,
+                reportType,
+                reportStartDate,
+                reportEndDate,
+                reportGenerated,
+                uniqueEmployees,
+                selectedEmployee,
+                employeeDetails,
+                employeeSummary,
+                reportSummary,
+                allEmployeesStats,
+                doLogout,
+                setReportType,
+                generateReport,
+                processEmployeeDetailedData,
+                downloadAllEmployeesPDF,
+                formatNumber,
+                getCurrentDateTime
             };
         }
     }).mount('#app');
