@@ -24,7 +24,6 @@
         .inv-table th { background: #142952; color: white; padding: 6px 8px; text-align: right; font-size: 12px; border: 1px solid #142952; }
         .inv-table td { border: 1px solid #e2e8f0; padding: 6px 8px; vertical-align: top; font-size: 11px; }
         .invoice-footer { position: absolute; bottom: 8mm; left: 12mm; right: 12mm; border-top: 2px solid #142952; padding-top: 8px; text-align: center; }
-
         #capture-area { position: absolute; left: -9999px; top: 0; width: 210mm; }
         
         @media print {
@@ -90,29 +89,31 @@
 
         <div v-if="syncLoading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm">
             <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
-            <p class="font-black text-[#142952]">جاري مزامنة ومعالجة أرشيف الطلبات...</p>
+            <p class="font-black text-[#142952]">جاري مزامنة السحاب وتحديث الأرشيف العام...</p>
         </div>
 
         <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div>
                 <h2 class="text-3xl font-black text-[#142952]">أرشيف الطلبات العام</h2>
-                <p class="text-gray-400 font-bold mt-1 text-sm">البحث وإدارة جميع الطلبات المسجلة بالنظام</p>
             </div>
             <div class="flex gap-2">
                 <button @click="syncFromSheet" class="bg-[#142952] text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 shadow-lg hover:bg-blue-800 transition-all">
                     <i data-lucide="refresh-cw" :class="{'loader-spin': syncLoading}" class="w-4 h-4"></i>
-                    تحديث الأرشيف
+                    تحديث البيانات من السحاب
                 </button>
             </div>
         </header>
 
         <section class="bg-white rounded-3xl shadow-sm border overflow-hidden animate-in fade-in">
-            <div class="p-8 bg-gray-50 flex justify-between items-center border-b flex-wrap gap-4">
-                <div class="relative w-full md:w-[28rem]">
-                    <i data-lucide="search" class="absolute right-4 top-3.5 text-gray-400 w-5 h-5"></i>
-                    <input v-model="searchQuery" class="w-full pr-12 pl-6 py-3.5 bg-white border-none rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold text-sm" placeholder="ابحث باسم العميل، رقم الطلب، أو الجوال...">
+            <div class="p-8 bg-blue-50 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b">
+                <div class="flex items-center gap-4">
+                    <h3 class="text-xl font-black text-[#142952]">السجل العام لجميع المسئولين</h3>
+                    <div class="font-black text-blue-700 bg-white px-4 py-2 rounded-xl shadow-sm text-sm">إجمالي السجلات: {{ filteredArchiveOrders.length }} طلب</div>
                 </div>
-                <div class="font-black text-blue-700 bg-white px-4 py-2 rounded-xl shadow-sm">الإجمالي: {{ filteredArchiveOrders.length }} طلب</div>
+                <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border shadow-sm w-full md:w-80">
+                    <i data-lucide="search" class="text-gray-400 w-5 h-5"></i>
+                    <input type="text" v-model="searchQuery" placeholder="بحث برقم الطلب، العميل، الجوال، المسؤول..." class="w-full bg-transparent outline-none text-sm font-bold">
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-right border-collapse text-sm">
@@ -120,9 +121,9 @@
                         <tr>
                             <th class="p-6">رقم الطلب وحالته</th>
                             <th class="p-6">التاريخ</th>
-                            <th class="p-6">العميل والموظف</th>
-                            <th class="p-6">الجوال</th>
-                            <th class="p-6">المبلغ</th>
+                            <th class="p-6">المسؤول</th>
+                            <th class="p-6">العميل</th>
+                            <th class="p-6">الإجمالي</th>
                             <th class="p-6 text-center">الإيصالات</th>
                             <th class="p-6 text-center">إجراءات</th>
                         </tr>
@@ -137,11 +138,15 @@
                                 <span v-else class="block mt-1 bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded w-fit font-bold">✗ لم يتم التسجيل</span>
                             </td>
                             <td class="p-6 text-xs text-gray-500 font-bold" dir="ltr">{{ formatDate(order.timestamp) }}<br>{{ formatTime(order.timestamp) }}</td>
+                            <td class="p-6">
+                                <span class="bg-gray-100 text-gray-800 font-black px-2.5 py-1 rounded-lg text-xs border">
+                                    👤 {{ order.managerCode || 'غير محدد' }}
+                                </span>
+                            </td>
                             <td class="p-6 font-black text-gray-800">
                                 {{ order.client?.name || 'غير متوفر' }}
-                                <span class="block text-[10px] text-gray-400 mt-1 font-bold">بواسطة الموظف: {{ order.managerCode }}</span>
+                                <div class="text-[11px] text-gray-400 font-normal mt-0.5">{{ order.client?.phone }}</div>
                             </td>
-                            <td class="p-6 font-bold text-gray-600" dir="ltr">{{ order.client?.phone || '' }}</td>
                             <td class="p-6 font-black text-green-600">{{ order.totalAmount }} SAR</td>
                             <td class="p-6 text-center">
                                 <button v-if="order.receipts && order.receipts.length > 0" @click="showReceipt(order.receipts)" class="relative text-blue-500 hover:text-blue-700 transition-colors flex flex-col items-center justify-center gap-1 mx-auto group">
@@ -153,13 +158,13 @@
                             <td class="p-6">
                                 <div class="flex justify-center gap-2">
                                     <button @click="viewInvoice(order)" title="طباعة الفاتورة" class="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all"><i data-lucide="printer" class="w-4 h-4"></i></button>
-                                    <button v-if="currentUser?.role === 'admin' || order.managerCode === currentUser?.managerCode" @click="editOrder(order)" title="تعديل الطلب" class="p-3 bg-yellow-50 text-yellow-600 rounded-xl hover:bg-yellow-600 hover:text-white transition-all"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                                    <button v-if="currentUser?.role === 'admin' || order.managerCode === currentUser?.managerCode" @click="deleteOrder(order)" title="حذف نهائي" class="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    <button @click="editOrder(order)" title="تعديل الطلب" class="p-3 bg-yellow-50 text-yellow-600 rounded-xl hover:bg-yellow-600 hover:text-white transition-all"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                    <button v-if="currentUser?.role === 'admin'" @click="deleteOrder(order)" title="حذف نهائي (مدير)" class="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                 </div>
                             </td>
                         </tr>
                         <tr v-if="filteredArchiveOrders.length === 0">
-                            <td colspan="7" class="p-10 text-center text-gray-400 font-bold">لا توجد طلبات مطابقة للبحث.</td>
+                            <td colspan="7" class="p-10 text-center text-gray-400 font-bold">لا توجد طلبات مطابقة للبحث أو الأرشيف فارغ.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -174,7 +179,7 @@
                     <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
                 </div>
                 <div class="text-center">
-                    <h1 class="text-3xl font-black text-[#142952]">فاتورة ضريبية مبسطة</h1>
+                    <h1 class="text-3xl font-black text-[#142952]">فاتورة طلب</h1>
                 </div>
                 <div class="text-left font-black text-[11px] space-y-0.5">
                     <p class="text-2xl text-[#142952] pb-1">#{{ invoice.orderId }}</p>
@@ -303,7 +308,9 @@
 
 <script type="module">
     const { createApp, ref, computed, onMounted, nextTick } = Vue;
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
+    
+    // الرابط المحدث لـ App Script للمزامنة الصحيحة للبيانات
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRPBaxtUxauX1wA4ZbeuoT9WKwue6JCx2QCbFxH8zIkfPtT7w3WR-KMkFkbYlEucnT/exec";
 
     function parseSheetDate(dateStr) {
         if (!dateStr) return new Date().toISOString();
@@ -330,26 +337,23 @@
             const currentUser = ref(null);
             const orders = ref([]);
             const bulkList = ref([]);
-            const searchQuery = ref('');
             const syncLoading = ref(false);
             const notification = ref(null);
+            const searchQuery = ref("");
 
+            // جلب الأرشيف لكافة الطلبات مع إمكانية الفرز والبحث الفوري
             const filteredArchiveOrders = computed(() => {
-                const q = String(searchQuery.value || '').toUpperCase().trim();
-                const rawPhone = String(searchQuery.value || '').replace(/[\s+]/g, '');
-                const queryPhone = rawPhone.startsWith('05') ? rawPhone.substring(1) : rawPhone;
-
-                return orders.value.filter(o => {
-                    const matchId = String(o.orderId || '').toUpperCase().includes(q);
-                    const matchName = String(o.client?.name || '').includes(q);
-                    let matchPhone = false;
-                    if (o.client?.phone) {
-                        const rawOrderPhone = String(o.client.phone).replace(/[\s+]/g, '');
-                        const orderPhone = rawOrderPhone.startsWith('05') ? rawOrderPhone.substring(1) : rawOrderPhone;
-                        if (queryPhone.length > 0 && orderPhone.includes(queryPhone)) matchPhone = true;
-                    }
-                    return matchId || matchName || matchPhone;
-                });
+                let list = [...orders.value];
+                if (searchQuery.value.trim()) {
+                    const q = searchQuery.value.toLowerCase().trim();
+                    list = list.filter(o => 
+                        String(o.orderId).toLowerCase().includes(q) || 
+                        String(o.client?.name || '').toLowerCase().includes(q) ||
+                        String(o.client?.phone || '').includes(q) ||
+                        String(o.managerCode || '').toLowerCase().includes(q)
+                    );
+                }
+                return list.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
             });
 
             const showNotify = (msg, type = 'success') => {
@@ -382,7 +386,12 @@
                 if (!confirm(`هل أنت متأكد من حذف الطلب ${order.orderId} نهائياً؟`)) return;
                 
                 orders.value = orders.value.filter(o => o.orderId !== order.orderId);
-                localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value)); 
+                
+                try {
+                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value)); 
+                } catch(e) {
+                    console.warn('تعذر تحديث التخزين المحلي');
+                }
                 
                 try {
                     await fetch(GOOGLE_SCRIPT_URL, { 
@@ -390,9 +399,9 @@
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
                         body: JSON.stringify({ action: 'delete', orderId: order.orderId, target: 'orders' }) 
                     });
-                    showNotify('تم الحذف بنجاح من السحاب');
+                    showNotify('تم الحذف بنجاح من قاعدة البيانات السحابية');
                 } catch { 
-                    showNotify('تم الحذف محلياً فقط', 'error'); 
+                    showNotify('تم الحذف محلياً، يرجى التحقق من اتصال الإنترنت ليتزامن سحابياً', 'error'); 
                 }
             };
 
@@ -470,6 +479,7 @@
                             let adds = 0;
                             if (p.hasLighting) adds += 129;
                             if (p.customDesign) adds += 50;
+                            
                             let baseAndColor = p.price - adds;
                             discountable += (baseAndColor * p.count);
                             nonDiscountable += (adds * p.count);
@@ -485,10 +495,17 @@
                     });
 
                     orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
-                    showNotify('تم تحديث الأرشيف من السحاب');
+                    
+                    try {
+                        localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
+                    } catch(e) {
+                        console.warn('مساحة التخزين ممتلئة، تم الحفظ في الذاكرة المؤقتة فقط.');
+                    }
+                    
+                    showNotify('تم تحديث الأرشيف بالكامل بنجاح من السحاب');
                 } catch(e) {
-                    showNotify('خطأ في المزامنة.', 'error');
+                    console.error('خطأ مزامنة الأرشيف:', e);
+                    showNotify('خطأ أثناء جلب البيانات السحابية. تم عرض السجلات المتوفرة محلياً.', 'error');
                 } finally { syncLoading.value = false; }
             };
 
@@ -501,8 +518,12 @@
                 if (!storedUser) { window.location.href = 'index.html'; return; }
                 currentUser.value = JSON.parse(storedUser);
                 
-                const localOrders = localStorage.getItem('hwayt_orders_v8');
-                if (localOrders) orders.value = JSON.parse(localOrders);
+                try {
+                    const localOrders = localStorage.getItem('hwayt_orders_v8');
+                    if (localOrders) orders.value = JSON.parse(localOrders);
+                } catch(e) {
+                    console.warn('تعذر تحميل كاش المتصفح المحلي');
+                }
 
                 setTimeout(() => lucide.createIcons(), 500); 
                 syncFromSheet(); 
