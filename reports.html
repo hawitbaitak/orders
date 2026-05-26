@@ -586,15 +586,35 @@
                 
                 try {
                     const element = document.getElementById('pdf-export-area');
-                    // استخدام scale:2 للحفاظ على الجودة العالية
-                    const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                    
+                    // حفظ الأبعاد الأصلية
+                    const originalWidth = element.style.width;
+                    const originalMaxWidth = element.style.maxWidth;
+                    
+                    // توسيع الحاوية بشكل مؤقت لتأخذ شكل مناسب للطباعة العرضية (Landscape)
+                    element.style.width = '1400px'; 
+                    element.style.maxWidth = '1400px';
+                    
+                    // التقاط الصورة بدقة عالية مع عرض نافذة مطابق للعرض الجديد
+                    const canvas = await html2canvas(element, { 
+                        scale: 2, 
+                        useCORS: true, 
+                        backgroundColor: '#ffffff',
+                        windowWidth: 1450
+                    });
+                    
+                    // إرجاع الأبعاد الأصلية مباشرة لتجنب تشوه الصفحة عند المستخدم
+                    element.style.width = originalWidth;
+                    element.style.maxWidth = originalMaxWidth;
+                    
                     const imgData = canvas.toDataURL('image/jpeg', 0.95);
                     
                     const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    // تفعيل العرض الأفقي l = landscape
+                    const pdf = new jsPDF('l', 'mm', 'a4');
                     
-                    const imgWidth = 210; // عرض ورقة A4
-                    const pageHeight = 297; // طول ورقة A4
+                    const imgWidth = 297; // عرض الـ A4 في الـ Landscape
+                    const pageHeight = 210; // ارتفاع الـ A4 في الـ Landscape
                     const imgHeight = (canvas.height * imgWidth) / canvas.width;
                     
                     let heightLeft = imgHeight;
@@ -611,7 +631,7 @@
                     }
                     
                     pdf.save(`تقرير_${this.reportType}_${this.getToday()}.pdf`);
-                    this.showNotify('تم تحميل التقرير بنجاح كـ PDF');
+                    this.showNotify('تم تحميل التقرير بنجاح بتنسيق عرضي (Landscape)');
                 } catch (err) {
                     console.error(err);
                     this.showNotify('حدث خطأ أثناء تصدير الملف', 'error');
