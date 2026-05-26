@@ -164,7 +164,7 @@
                     <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
                 </div>
                 <div class="text-center">
-                    <h1 class="text-3xl font-black text-[#142952]">فاتورة ضريبية مبسطة</h1>
+                    <h1 class="text-3xl font-black text-[#142952]">فاتورة طلب</h1>
                 </div>
                 <div class="text-left font-black text-[11px] space-y-0.5">
                     <p class="text-2xl text-[#142952] pb-1">#{{ invoice.orderId }}</p>
@@ -293,7 +293,9 @@
 
 <script type="module">
     const { createApp, ref, computed, onMounted, nextTick } = Vue;
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
+    
+    // تم تحديث الرابط الجديد لـ App Script هنا
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRPBaxtUxauX1wA4ZbeuoT9WKwue6JCx2QCbFxH8zIkfPtT7w3WR-KMkFkbYlEucnT/exec";
 
     function parseSheetDate(dateStr) {
         if (!dateStr) return new Date().toISOString();
@@ -359,7 +361,12 @@
                 if (!confirm(`هل أنت متأكد من حذف الطلب ${order.orderId} نهائياً؟`)) return;
                 
                 orders.value = orders.value.filter(o => o.orderId !== order.orderId);
-                localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value)); 
+                
+                try {
+                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value)); 
+                } catch(e) {
+                    console.warn('لم يتم تحديث التخزين المحلي');
+                }
                 
                 try {
                     await fetch(GOOGLE_SCRIPT_URL, { 
@@ -463,9 +470,17 @@
                     });
 
                     orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
+                    
+                    // محاولة الحفظ المحلي مع الحماية من تجاوز سعة التخزين
+                    try {
+                        localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
+                    } catch(e) {
+                        console.warn('لم نتمكن من الحفظ في LocalStorage، ربما المساحة ممتلئة.');
+                    }
+                    
                     showNotify('تم تحديث القائمة بنجاح من السحاب');
                 } catch(e) {
+                    console.error('خطأ في المزامنة:', e);
                     showNotify('خطأ في المزامنة. يتم عرض البيانات المحلية.', 'error');
                 } finally { syncLoading.value = false; }
             };
@@ -479,8 +494,12 @@
                 if (!storedUser) { window.location.href = 'index.html'; return; }
                 currentUser.value = JSON.parse(storedUser);
                 
-                const localOrders = localStorage.getItem('hwayt_orders_v8');
-                if (localOrders) orders.value = JSON.parse(localOrders);
+                try {
+                    const localOrders = localStorage.getItem('hwayt_orders_v8');
+                    if (localOrders) orders.value = JSON.parse(localOrders);
+                } catch(e) {
+                    console.warn('تعذر تحميل البيانات المحلية');
+                }
 
                 setTimeout(() => lucide.createIcons(), 500); 
                 syncFromSheet(); 
