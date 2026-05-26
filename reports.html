@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>هوية بيتك - التقارير والإحصائيات</title>
+    <title>هوية بيتك  - التقارير والإحصائيات</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -28,16 +28,16 @@
         /* تنسيق تقرير الـ PDF المخفي (A4 Landscape) */
         #capture-employee-report {
             position: absolute; left: -9999px; top: 0;
-            width: 297mm; height: 210mm; /* A4 Landscape dimensions */
+            width: 297mm; height: 210mm;
             background: white; padding: 15mm 20mm; box-sizing: border-box;
             color: #000; direction: rtl; display: none; overflow: hidden;
         }
         .pdf-header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #142952; padding-bottom: 15px; margin-bottom: 20px; }
         .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th { background: #142952; color: white; padding: 12px; font-size: 15px; font-weight: 900; border: 1px solid #142952; text-align: center; }
-        .pdf-table td { border: 1px solid #cbd5e1; padding: 10px; font-size: 14px; font-weight: 700; text-align: center; color: #1e293b; }
+        .pdf-table th { background: #142952; color: white; padding: 12px; font-size: 14px; font-weight: 900; border: 1px solid #142952; text-align: center; }
+        .pdf-table td { border: 1px solid #cbd5e1; padding: 10px; font-size: 13px; font-weight: 700; text-align: center; color: #1e293b; }
         .pdf-table tr:nth-child(even) td { background-color: #f8fafc; }
-        .pdf-table tr.total-row td { background: #e2e8f0; font-weight: 900; color: #142952; font-size: 16px; border-top: 2px solid #142952; }
+        .pdf-table tr.total-row td { background: #e2e8f0; font-weight: 900; color: #142952; font-size: 15px; border-top: 2px solid #142952; }
     </style>
 </head>
 <body>
@@ -46,9 +46,9 @@
     <aside class="sidebar w-64 text-white flex flex-col fixed h-full z-50 shadow-2xl no-print">
         <div class="p-8 text-center border-b border-white/5">
             <div class="w-24 h-24 bg-white rounded-3xl mx-auto mb-4 flex items-center justify-center p-2 shadow-xl overflow-hidden">
-                <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
+                <img src="logo1.png" alt="Logo" class="w-full h-full object-contain">
             </div>
-            <h1 class="text-xl font-black">هوية بيتك</h1>
+            <h1 class="text-xl font-black">هوية بيتك </h1>
             <p class="text-blue-300 text-[10px] mt-1 tracking-widest font-bold uppercase">نظام إدارة المبيعات</p>
             <div class="mt-3 flex items-center justify-center gap-2">
                 <span class="text-[10px] font-black px-3 py-1 rounded-full" :class="currentUser?.role === 'admin' ? 'bg-yellow-400 text-yellow-900' : 'bg-blue-700 text-blue-100'">
@@ -94,7 +94,7 @@
 
         <div v-if="syncLoading" class="fixed inset-0 bg-white/70 z-40 flex flex-col items-center justify-center backdrop-blur-sm">
             <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-[#142952] mb-4"></div>
-            <p class="font-black text-[#142952]">جاري معالجة وتحديث البيانات...</p>
+            <p class="font-black text-[#142952]">جاري مزامنة ومعالجة البيانات...</p>
         </div>
 
         <header class="mb-10 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -249,10 +249,13 @@
         <div class="pdf-header-container">
             <div class="flex items-center gap-4">
                 <div class="w-24 h-24 bg-white p-2 rounded-2xl border border-gray-200 flex items-center justify-center shadow-sm">
-                    <img src="logo1.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://i.ibb.co/68vD84D/logo1.png'">
+                    <div class="w-full h-full flex flex-col items-center justify-center text-[#142952]">
+                        <span class="font-black text-xl">هوية بيتك </span>
+                        <span class="font-bold text-[10px]">للمبيعات</span>
+                    </div>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-black text-[#142952] mb-1">مؤسسة هوية بيتك</h1>
+                    <h1 class="text-3xl font-black text-[#142952] mb-1">مؤسسة هوية بيتك </h1>
                     <p class="text-lg font-bold text-gray-600">نظام إدارة المبيعات - قسم التقارير</p>
                 </div>
             </div>
@@ -272,12 +275,13 @@
         <table class="pdf-table">
             <thead>
                 <tr>
-                    <th style="text-align: right; width: 22%;">اسم الموظف</th>
+                    <th style="text-align: right; width: 18%;">اسم الموظف</th>
                     <th style="width: 12%;">إجمالي الطلبات</th>
                     <th style="width: 12%;">الطلبات المدفوعة</th>
                     <th style="width: 12%;">الأشكال المباعة</th>
-                    <th style="width: 22%;">إجمالي المبيعات (SAR)</th>
-                    <th style="width: 20%;">نسبة المساهمة بالمبيعات</th>
+                    <th style="width: 13%;">متوسط سعر الشكل</th>
+                    <th style="width: 18%;">إجمالي المبيعات (SAR)</th>
+                    <th style="width: 15%;">نسبة المساهمة بالمبيعات</th>
                 </tr>
             </thead>
             <tbody>
@@ -286,24 +290,26 @@
                     <td class="text-gray-600">{{ emp.orderCount }}</td>
                     <td style="color: #16a34a;">{{ emp.paidOrderCount }}</td>
                     <td class="font-black">{{ emp.shapesCount }}</td>
+                    <td class="text-gray-500">{{ emp.shapesCount > 0 ? (emp.totalSales / emp.shapesCount).toFixed(0) : 0 }}</td>
                     <td style="color: #16a34a; font-size: 15px;">{{ emp.totalSales.toLocaleString() }}</td>
                     <td>
-                        <div class="flex items-center justify-center gap-3">
-                            <span class="w-12 text-left">{{ emp.contribution }}%</span>
-                            <div class="w-24 h-3 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="w-10 text-left text-xs">{{ emp.contribution }}%</span>
+                            <div class="w-20 h-3 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
                                 <div class="h-full bg-[#142952]" :style="{ width: emp.contribution + '%' }"></div>
                             </div>
                         </div>
                     </td>
                 </tr>
                 <tr v-if="allEmployeesStats.length === 0">
-                    <td colspan="6" style="padding: 30px; color: gray; font-size: 18px;">لا توجد بيانات موظفين مسجلة خلال هذه الفترة.</td>
+                    <td colspan="7" style="padding: 30px; color: gray; font-size: 18px;">لا توجد بيانات موظفين مسجلة خلال هذه الفترة.</td>
                 </tr>
                 <tr class="total-row" v-if="allEmployeesStats.length > 0">
                     <td style="text-align: right;">الإجمالي الكلي:</td>
                     <td>{{ reportSummary.totalOrders }}</td>
                     <td style="color: #16a34a;">{{ reportSummary.paidOrders }}</td>
-                    <td>{{ allEmployeesStats.reduce((sum, e) => sum + e.shapesCount, 0) }}</td>
+                    <td>{{ reportSummary.totalShapes }}</td>
+                    <td>-</td>
                     <td style="color: #16a34a;">SAR {{ reportSummary.totalRevenue.toLocaleString() }}</td>
                     <td>100%</td>
                 </tr>
@@ -311,7 +317,7 @@
         </table>
 
         <div class="absolute bottom-6 left-0 right-0 px-[20mm] flex justify-between items-center text-sm font-bold text-gray-500 border-t-2 border-gray-200 pt-4">
-            <p>تم استخراج هذا التقرير تلقائياً ومطابقاً للعمليات المالية المسجلة بنظام هوية بيتك.</p>
+            <p>تم استخراج هذا التقرير تلقائياً ومطابقاً للعمليات المالية المسجلة بنظام هوية بيتك .</p>
             <p>تاريخ ووقت استخراج التقرير: {{ new Date().toLocaleString('ar-SA') }}</p>
         </div>
     </div>
@@ -322,17 +328,20 @@
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
 
+    // تم تحديث الدالة لتكون قوية جداً وتتعامل مع نصوص جوجل شيت بدون الاعتماد على فروق التوقيت
     function parseSheetDate(dateStr) {
         if (!dateStr) return new Date();
-        let d = new Date(dateStr);
+        const str = String(dateStr).trim();
+        
+        let d = new Date(str);
         if (!isNaN(d.getTime())) return d;
-        if (typeof dateStr === 'string') {
-            const s = dateStr.trim();
-            const parts = s.split(/[\/\-]/);
-            if (parts.length === 3 && parts[2].length === 4) {
-                d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); 
-                if (!isNaN(d.getTime())) return d;
-            }
+        
+        const dateOnly = str.split(' ')[0];
+        const parts = dateOnly.split(/[\/\-]/);
+        if (parts.length === 3) {
+            let p0 = parseInt(parts[0]), p1 = parseInt(parts[1]), p2 = parseInt(parts[2]);
+            if (p2 > 2000) { d = new Date(`${p2}-${p1}-${p0}`); if (!isNaN(d.getTime())) return d; d = new Date(`${p2}-${p0}-${p1}`); if (!isNaN(d.getTime())) return d; }
+            else if (p0 > 2000) { d = new Date(`${p0}-${p1}-${p2}`); if (!isNaN(d.getTime())) return d; }
         }
         return new Date();
     }
@@ -369,7 +378,7 @@
             const employeeDetails = ref([]);
             const employeeSummary = ref({ totalBoards: 0, totalRevenue: 0 });
 
-            const reportSummary = ref({ totalOrders: 0, totalRevenue: 0, paidOrders: 0, unpaidOrders: 0 });
+            const reportSummary = ref({ totalOrders: 0, totalRevenue: 0, paidOrders: 0, unpaidOrders: 0, totalShapes: 0 });
 
             const showNotify = (msg, type = 'success') => {
                 notification.value = { msg, type };
@@ -386,7 +395,6 @@
                 }
             };
 
-            // ✅ خوارزمية المزامنة القوية المتطابقة مع الفواتير
             const generateReport = async () => {
                 syncLoading.value = true;
                 reportGenerated.value = false;
@@ -395,20 +403,28 @@
                 try {
                     const res = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
                     const text = await res.text();
-                    const result = JSON.parse(text);
                     
-                    const start = new Date(reportStartDate.value); start.setHours(0,0,0,0);
-                    const end = new Date(reportEndDate.value); end.setHours(23,59,59,999);
+                    let result;
+                    try {
+                        result = JSON.parse(text);
+                    } catch(parseErr) {
+                        throw new Error("فشل قراءة البيانات من السيرفر. تأكد من إعدادات جوجل شيت.");
+                    }
+                    
+                    // منع مشاكل التوقيت، المقارنة ستتم بطريقة رياضية دقيقة
+                    const startMs = new Date(reportStartDate.value + "T00:00:00").getTime();
+                    const endMs = new Date(reportEndDate.value + "T23:59:59").getTime();
 
                     const tempOrders = {};
                     
-                    // تحليل البيانات مثل الفواتير بالضبط وحساب المبالغ داخلياً
                     (result.orders || []).forEach(row => {
                         const dStr = String(row['التاريخ'] || '');
                         if(!dStr) return;
                         
                         const d = parseSheetDate(dStr);
-                        if (d >= start && d <= end) {
+                        const rowTimeMs = d.getTime();
+                        
+                        if (rowTimeMs >= startMs && rowTimeMs <= endMs) {
                             const oid = String(row['رقم الطلب'] || '').trim();
                             if (!oid) return;
 
@@ -453,7 +469,6 @@
                         }
                     });
 
-                    // إتمام الحسابات للطلبات المجمعة لحساب الإجمالي الفعلي بدقة
                     Object.values(tempOrders).forEach(o => {
                         let discountable = 0;
                         let nonDiscountable = 0;
@@ -491,25 +506,28 @@
 
                     reportGenerated.value = true;
                     
-                    // منع تضخم الذاكرة
                     try { localStorage.removeItem('hwayt_orders_v8'); } catch(e) {}
 
-                    showNotify('تم استخراج التقارير وتحديث المزامنة بنجاح');
+                    if (Object.keys(groupedOrdersMap.value).length === 0) {
+                        showNotify('تم الاتصال ولكن لا توجد بيانات مطابقة لهذه التواريخ', 'info');
+                    } else {
+                        showNotify('تم استخراج التقارير وتحديث المزامنة بنجاح');
+                    }
                     
                     if (reportType.value === 'general') {
                         nextTick(() => renderCharts());
                     }
 
                 } catch (e) {
-                    console.error(e);
-                    showNotify('حدث خطأ أثناء الاتصال بالمزامنة', 'error');
+                    console.error('Sync Error:', e);
+                    showNotify(e.message || 'حدث خطأ أثناء الاتصال بالمزامنة', 'error');
                 } finally {
                     syncLoading.value = false;
                 }
             };
 
             const processGeneralData = () => {
-                let tOrders = 0, paid = 0, unpaid = 0, tRev = 0;
+                let tOrders = 0, paid = 0, unpaid = 0, tRev = 0, tShapes = 0;
                 const empStats = {};
 
                 const ordersArray = Object.values(groupedOrdersMap.value);
@@ -532,6 +550,7 @@
                             empStats[o.managerCode].paidOrderCount++;
                             empStats[o.managerCode].totalSales += o.totalAmount;
                             empStats[o.managerCode].shapesCount += o.shapesCount;
+                            tShapes += o.shapesCount;
                         }
                     }
                 });
@@ -540,7 +559,8 @@
                     totalOrders: tOrders,
                     totalRevenue: tRev,
                     paidOrders: paid,
-                    unpaidOrders: unpaid
+                    unpaidOrders: unpaid,
+                    totalShapes: tShapes
                 };
 
                 allEmployeesStats.value = Object.values(empStats).map(e => {
@@ -563,7 +583,6 @@
                         o.products.forEach(p => {
                             if (!shapesMap[p.shapeName]) shapesMap[p.shapeName] = { count: 0, revenue: 0 };
                             
-                            // حساب دقيق لإيراد المنتج بناءً على الخصم الخاص بالطلب المطبق عليه
                             let adds = 0;
                             if (p.hasLighting) adds += 129;
                             if (p.customDesign) adds += 50;
@@ -678,7 +697,6 @@
                 });
             };
 
-            // ✅ استخراج PDF بالشكل العرضي (Landscape) A4 عالي الدقة
             const downloadAllEmployeesPDF = async () => {
                 if (allEmployeesStats.value.length === 0) {
                     return showNotify('لا توجد بيانات موظفين لطباعتها في هذه الفترة', 'error');
@@ -692,23 +710,23 @@
                     captureEl.style.display = 'block'; 
                     
                     await nextTick();
-                    await new Promise(r => setTimeout(r, 600)); // لضمان تحميل الخطوط والصور
+                    await new Promise(r => setTimeout(r, 600)); 
                     
-                    const canvas = await html2canvas(captureEl, { scale: 2, useCORS: true });
+                    // استخدام اعدادات لمنع حظر الأمان
+                    const canvas = await html2canvas(captureEl, { scale: 2, useCORS: true, allowTaint: true });
                     const imgData = canvas.toDataURL('image/jpeg', 1.0);
                     
                     const { jsPDF } = window.jspdf;
-                    // 'l' معناها Landscape (أفقي) و الأبعاد 297mm عرض × 210mm طول لورقة A4
                     const finalPDF = new jsPDF('l', 'mm', 'a4');
                     finalPDF.addImage(imgData, 'JPEG', 0, 0, 297, 210);
                     
-                    finalPDF.save(`تقرير_الموظفين_هوية_بيتك_${reportStartDate.value}.pdf`);
+                    finalPDF.save(`تقرير_الموظفين_هوية بيتك _${reportStartDate.value}.pdf`);
                     
                     captureEl.style.display = 'none'; 
                     showNotify('تم تحميل التقرير بنجاح', 'success');
                 } catch(e) {
                     console.error('PDF Error:', e);
-                    showNotify('حدث خطأ أثناء معالجة الـ PDF', 'error');
+                    showNotify('حدث خطأ أثناء معالجة الـ PDF: الرجاء المحاولة مرة أخرى', 'error');
                     document.getElementById('capture-employee-report').style.display = 'none';
                 } finally {
                     syncLoading.value = false;
