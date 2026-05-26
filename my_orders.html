@@ -76,7 +76,7 @@
                 <i data-lucide="log-out" class="w-4 h-4"></i> تسجيل خروج
             </button>
         </div>
-    </</aside>
+    </aside>
 
     <main class="flex-1 mr-64 p-8 no-print relative min-h-screen">
         <div v-if="notification" class="fixed top-10 left-10 z-[100] p-5 rounded-2xl shadow-2xl bg-white border-l-8 flex items-center gap-4 transition-all"
@@ -359,9 +359,7 @@
                 if (!confirm(`هل أنت متأكد من حذف الطلب ${order.orderId} نهائياً؟`)) return;
                 
                 orders.value = orders.value.filter(o => o.orderId !== order.orderId);
-                try {
-                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value)); 
-                } catch(e) {}
+                localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value)); 
                 
                 try {
                     await fetch(GOOGLE_SCRIPT_URL, { 
@@ -465,9 +463,7 @@
                     });
 
                     orders.value = Object.values(grouped).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                    try {
-                        localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
-                    } catch(e) {}
+                    localStorage.setItem('hwayt_orders_v8', JSON.stringify(orders.value));
                     showNotify('تم تحديث القائمة بنجاح من السحاب');
                 } catch(e) {
                     showNotify('خطأ في المزامنة. يتم عرض البيانات المحلية.', 'error');
@@ -483,12 +479,8 @@
                 if (!storedUser) { window.location.href = 'index.html'; return; }
                 currentUser.value = JSON.parse(storedUser);
                 
-                try {
-                    const localOrders = localStorage.getItem('hwayt_orders_v8');
-                    if (localOrders) orders.value = JSON.parse(localOrders);
-                } catch (e) {
-                    console.warn('لم يتم تحميل البيانات المحلية');
-                }
+                const localOrders = localStorage.getItem('hwayt_orders_v8');
+                if (localOrders) orders.value = JSON.parse(localOrders);
 
                 setTimeout(() => lucide.createIcons(), 500); 
                 syncFromSheet(); 
