@@ -23,11 +23,10 @@
         .report-table td { border-bottom: 1px solid #e2e8f0; padding: 12px 16px; font-size: 13px; font-weight: 700; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
         .report-table tr:hover td { background-color: #f1f5f9; }
 
-        /* [إصلاح PDF]: تغيير طريقة الإخفاء لمنع خطأ insertBefore في مكتبة html2canvas */
-        /* لا نستخدم display:none أو width:0 لأن ذلك يدمر قدرة المكتبة على التصوير */
+        /* حماية الـ PDF من الانهيار والتحميل المخفي بأمان */
         #pdf-export-container {
             position: absolute;
-            left: -9999px; /* إزاحة خارج الشاشة بعيداً عن نظر المستخدم */
+            left: -9999px;
             top: 0;
             opacity: 0.01;
             pointer-events: none;
@@ -35,7 +34,7 @@
         }
 
         #capture-employee-report {
-            width: 297mm; /* مقاس A4 بالعرض (Landscape) */
+            width: 297mm;
             min-height: 210mm;
             background: white;
             padding: 15mm 20mm;
@@ -348,15 +347,12 @@
 <script type="module">
     const { createApp, ref, onMounted, nextTick } = Vue;
 
-    // الرابط الجديد الذي زودتني به
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbycA4wPKpmdhkoTaZhAOZoWZxeaNuzrxkw4GtHmK8j8F-5LPpSubkMju76wzLIaEMSd/exec";
 
-    // [إصلاح التواريخ الجذري]: للتعامل مع أي صيغة قادمة من جوجل شيتس
     const getLocalDateString = (dateVal) => {
         if (!dateVal) return null;
         try {
             let d;
-            // التعامل مع التواريخ الرقمية الخاصة باكسيل وجوجل شيت (Serial Dates)
             if (typeof dateVal === 'number') {
                 d = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
             } else if (typeof dateVal === 'string') {
@@ -385,7 +381,6 @@
         } catch (e) { return null; }
     };
 
-    // [إصلاح البيانات]: مُحلل ذكي يبحث عن الكلمة المفتاحية في العمود للهروب من مشكلة التسميات الخاطئة
     const getVal = (rowObj, possibleKeys) => {
         if (!rowObj) return null;
         const keys = Object.keys(rowObj);
@@ -410,7 +405,6 @@
             const reportType = ref('general');
             
             const date = new Date();
-            // [إصلاح]: جعل التاريخ يبدأ من أول السنة بدلاً من أول الشهر لضمان ظهور كل البيانات القديمة
             const firstDay = new Date(date.getFullYear(), 0, 1).toISOString().split('T')[0];
             const today = new Date().toISOString().split('T')[0];
             
@@ -429,7 +423,7 @@
 
             const showNotify = (msg, type = 'success') => {
                 notification.value = { msg, type };
-                setTimeout(() => notification.value = null, 5000);
+                setTimeout(() => notification.value = null, 6000);
                 setTimeout(() => lucide.createIcons(), 50);
             };
 
@@ -454,17 +448,19 @@
                     const timestamp = new Date().getTime();
                     const fetchUrl = `${GOOGLE_SCRIPT_URL}?t=${timestamp}&action=read&target=orders`;
 
-                    console.log("Fetching data from:", fetchUrl);
+                    // تعديل دفاعي: فحص واصطياد أخطاء الشبكة والـ CORS والمتصفح
+                    const res = await fetch(fetchUrl, { redirect: 'follow', cache: 'no-store' })
+                        .catch(err => {
+                            // إعطاء تلميح مباشر للمستخدم إذا قام المتصفح أو الإضافة بحظر الرابط
+                            throw new Error("تم حظر الاتصال من قِبل المتصفح (CORS/Shields). يرجى تعطيل مانع الإعلانات أو مراجعة إعدادات صلاحيات النشر (Anyone) في الـ Script.");
+                        });
 
-                    const res = await fetch(fetchUrl, { redirect: 'follow', cache: 'no-store' });
                     const text = await res.text();
-                    
                     let result;
                     try {
                         result = JSON.parse(text);
                     } catch(e) {
-                        console.error("Server returned HTML or Error text:", text);
-                        throw new Error("خطأ من السيرفر. تأكد أن الرابط مفعل ويعيد بيانات JSON بشكل صحيح.");
+                        throw new Error("استجابة غير صالحة من السيرفر. تأكدي من تحديث النشر كـ New Deployment في جوجل شيت.");
                     }
                     
                     const startStr = reportStartDate.value; 
@@ -472,15 +468,13 @@
                     const tempOrders = {};
                     
                     let ordersArray = result.orders || result.data || (Array.isArray(result) ? result : []);
-                    console.log(`تم جلب ${ordersArray.length} صف من الشيت`);
 
                     ordersArray.forEach((row, index) => {
                         try {
-                            // استخدام الـ Smart Parser لاستخراج البيانات بشكل مقاوم للأخطاء
                             const rawDateStr = getVal(row, ['التاريخ', 'تاريخ', 'date', 'timestamp']);
                             const rowDateStr = getLocalDateString(rawDateStr);
                             
-                            if (!rowDateStr) return; // تجاهل الصفوف المفرغة من التواريخ
+                            if (!rowDateStr) return;
 
                             if (rowDateStr >= startStr && rowDateStr <= endStr) {
                                 const oid = String(getVal(row, ['رقم الطلب', 'طلب', 'orderid']) || '').trim();
@@ -493,7 +487,6 @@
                                     let mCode = String(getVal(row, ['رمز المسؤول', 'مسؤول', 'manager']) || oid.split('-')[0] || 'XX').trim().toUpperCase();
                                     if(mCode === 'UNDEFINED' || mCode === '') mCode = 'غير محدد';
 
-                                    // استخراج نسبة الخصم حتى لو كان الاسم "#نسبة الخصم"
                                     const discountRaw = getVal(row, ['نسبة الخصم', 'خصم', 'discount', '%']);
                                     const discountRate = parseFloat(String(discountRaw).replace(/[^0-9.]/g, '')) || 0;
 
@@ -545,7 +538,6 @@
                         }
                     });
 
-                    // الحسابات متطابقة مع نظام الفواتير
                     Object.values(tempOrders).forEach(o => {
                         let discountable = 0;
                         let nonDiscountable = 0;
@@ -595,7 +587,7 @@
 
                 } catch (e) {
                     console.error('Sync Error:', e);
-                    showNotify('خطأ: ' + e.message, 'error');
+                    showNotify(e.message, 'error'); // عرض رسالة الخطأ المفصلة والمعدلة
                 } finally {
                     syncLoading.value = false;
                 }
@@ -738,8 +730,6 @@
                 
                 try {
                     const captureEl = document.getElementById('capture-employee-report');
-                    
-                    // انتظار قصير جداً لضمان تحميل وتحديث البيانات
                     await nextTick();
                     await new Promise(r => setTimeout(r, 600)); 
                     
@@ -747,11 +737,10 @@
                         scale: 2, 
                         useCORS: true, 
                         backgroundColor: '#ffffff',
-                        logging: false // إيقاف رسائل الكونسول لتسريع المعالجة
+                        logging: false 
                     });
                     
                     const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                    
                     const { jsPDF } = window.jspdf;
                     const finalPDF = new jsPDF('l', 'mm', 'a4');
                     finalPDF.addImage(imgData, 'JPEG', 0, 0, 297, 210);
@@ -773,7 +762,6 @@
                 if (currentUser.value.role !== 'admin') { window.location.href = 'index.html'; return; }
                 setTimeout(() => lucide.createIcons(), 500); 
                 
-                // جلب التقارير تلقائياً عند فتح الصفحة
                 generateReport();
             });
 
