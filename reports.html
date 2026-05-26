@@ -23,18 +23,19 @@
         .report-table td { border-bottom: 1px solid #e2e8f0; padding: 12px 16px; font-size: 13px; font-weight: 700; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; }
         .report-table tr:hover td { background-color: #f1f5f9; }
 
-        /* حاوية الـ PDF مخفية بطريقة لا تمنع التصوير */
+        /* [إصلاح PDF]: تغيير طريقة الإخفاء لمنع خطأ insertBefore في مكتبة html2canvas */
+        /* لا نستخدم display:none أو width:0 لأن ذلك يدمر قدرة المكتبة على التصوير */
         #pdf-export-container {
             position: absolute;
-            width: 0;
-            height: 0;
-            overflow: hidden;
+            left: -9999px; /* إزاحة خارج الشاشة بعيداً عن نظر المستخدم */
+            top: 0;
+            opacity: 0.01;
+            pointer-events: none;
             z-index: -9999;
         }
 
-        /* قالب الـ PDF بحجم A4 لاندسكيب (أفقي) */
         #capture-employee-report {
-            width: 297mm;
+            width: 297mm; /* مقاس A4 بالعرض (Landscape) */
             min-height: 210mm;
             background: white;
             padding: 15mm 20mm;
@@ -347,49 +348,52 @@
 <script type="module">
     const { createApp, ref, onMounted, nextTick } = Vue;
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx8cHHMjfwPrygxjWSSSefPM1YAmpYaPOfQzKJ9IYxEVRcmZ3389uYNvrIggkngRwGA/exec";
+    // الرابط الجديد الذي زودتني به
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbycA4wPKpmdhkoTaZhAOZoWZxeaNuzrxkw4GtHmK8j8F-5LPpSubkMju76wzLIaEMSd/exec";
 
-    // معالج التواريخ الذكي الجديد (يتجاهل فروق التوقيت ويستخرج اليوم/الشهر/السنة فقط)
-    // [إصلاح وتحديث] تم بناء معالج التواريخ ليدعم كافة الصيغ (ISO, طوابع زمنية، جوجل شيتس، عربي) بأمان تام بدون توقف النظام
+    // [إصلاح التواريخ الجذري]: للتعامل مع أي صيغة قادمة من جوجل شيتس
     const getLocalDateString = (dateVal) => {
         if (!dateVal) return null;
         try {
             let d;
-            
-            // [إصلاح] التعامل مع النصوص وتحليل التواريخ القادمة من جوجل شيتس (التي قد تحتوي مسافات أو صيغ غير قياسية)
-            if (typeof dateVal === 'string') {
-                 const s = dateVal.trim().split('T')[0].split(' ')[0]; // استخراج الشق الخاص بالتاريخ فقط
+            // التعامل مع التواريخ الرقمية الخاصة باكسيل وجوجل شيت (Serial Dates)
+            if (typeof dateVal === 'number') {
+                d = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
+            } else if (typeof dateVal === 'string') {
+                 const s = dateVal.trim().split('T')[0].split(' ')[0]; 
                  const parts = s.split(/[\/\-]/);
                  if (parts.length === 3) {
-                     if (parts[2].length === 4) { // صيغة DD/MM/YYYY أو MM/DD/YYYY
-                         let m = parseInt(parts[0], 10);
-                         let day = parseInt(parts[1], 10);
-                         if (m > 12) { let t = m; m = day; day = t; } // تبديل لو اليوم مكان الشهر
-                         d = new Date(parseInt(parts[2], 10), m - 1, day);
-                     } else if (parts[0].length === 4) { // صيغة YYYY-MM-DD
-                         d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                     let p0 = parseInt(parts[0], 10), p1 = parseInt(parts[1], 10), p2 = parseInt(parts[2], 10);
+                     if (p2 > 1000) { 
+                         if (p0 > 12) { let t = p0; p0 = p1; p1 = t; } 
+                         d = new Date(p2, p0 - 1, p1);
+                     } else if (p0 > 1000) { 
+                         d = new Date(p0, p1 - 1, p2);
                      }
                  }
-                 // إذا لم تنجح المطابقة، نلجأ لمحلل الجافاسكربت الافتراضي
                  if (!d || isNaN(d.getTime())) d = new Date(dateVal);
-            } else if (dateVal instanceof Date) {
-                 d = dateVal;
             } else {
-                 d = new Date(dateVal); // لمحاولة قراءة الطوابع الزمنية (Timestamps)
+                 d = new Date(dateVal);
             }
             
-            // [إصلاح] التحقق النهائي من سلامة التاريخ لتجنب خطأ (NaN) في الفلاتر والمقارنة
             if (!d || isNaN(d.getTime())) return null;
             
             const y = d.getFullYear();
             const m = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
-            return `${y}-${m}-${day}`; // النتيجة دائماً: YYYY-MM-DD
-        } catch (e) {
-            // [إصلاح] تسجيل التحذير بدل انهيار التطبيق إذا أتى صف فارغ تماماً من التاريخ
-            console.warn('Date parsing error safely caught for value:', dateVal);
-            return null;
+            return `${y}-${m}-${day}`;
+        } catch (e) { return null; }
+    };
+
+    // [إصلاح البيانات]: مُحلل ذكي يبحث عن الكلمة المفتاحية في العمود للهروب من مشكلة التسميات الخاطئة
+    const getVal = (rowObj, possibleKeys) => {
+        if (!rowObj) return null;
+        const keys = Object.keys(rowObj);
+        for (let pk of possibleKeys) {
+            const found = keys.find(k => k.trim().toLowerCase().includes(pk.toLowerCase()));
+            if (found) return rowObj[found];
         }
+        return null;
     };
 
     let revenueChartInstance = null;
@@ -406,7 +410,8 @@
             const reportType = ref('general');
             
             const date = new Date();
-            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+            // [إصلاح]: جعل التاريخ يبدأ من أول السنة بدلاً من أول الشهر لضمان ظهور كل البيانات القديمة
+            const firstDay = new Date(date.getFullYear(), 0, 1).toISOString().split('T')[0];
             const today = new Date().toISOString().split('T')[0];
             
             const reportStartDate = ref(firstDay);
@@ -420,12 +425,11 @@
             const selectedEmployee = ref('');
             const employeeDetails = ref([]);
             const employeeSummary = ref({ totalBoards: 0, totalRevenue: 0 });
-
             const reportSummary = ref({ totalOrders: 0, totalRevenue: 0, paidOrders: 0, unpaidOrders: 0, totalShapes: 0 });
 
             const showNotify = (msg, type = 'success') => {
                 notification.value = { msg, type };
-                setTimeout(() => notification.value = null, 4000);
+                setTimeout(() => notification.value = null, 5000);
                 setTimeout(() => lucide.createIcons(), 50);
             };
 
@@ -447,80 +451,75 @@
                 allEmployeesStats.value = [];
                 
                 try {
-                    // [إصلاح] إضافة Cache-Buster (t) لمنع التخزين المؤقت (Caching) وضمان استدعاء بيانات جديدة في كل ضغطة
                     const timestamp = new Date().getTime();
                     const fetchUrl = `${GOOGLE_SCRIPT_URL}?t=${timestamp}&action=read&target=orders`;
 
-                    const res = await fetch(fetchUrl, { 
-                        redirect: 'follow', 
-                        cache: 'no-store' // [إصلاح] إجبار المتصفح على عدم حفظ الاستجابة لحل مشكلة عدم المزامنة
-                    });
+                    console.log("Fetching data from:", fetchUrl);
+
+                    const res = await fetch(fetchUrl, { redirect: 'follow', cache: 'no-store' });
                     const text = await res.text();
                     
                     let result;
                     try {
                         result = JSON.parse(text);
                     } catch(e) {
-                        // [إصلاح] تسجيل الرد الخاطئ في الكونسول لتسهيل تتبع المشكلة، وعدم كسر السكربت بخطأ صامت
-                        console.error("JSON Parse Error. Server response snippet:", text.substring(0, 150));
-                        throw new Error("خطأ في قراءة استجابة السيرفر. يرجى التحقق من جوجل شيت.");
+                        console.error("Server returned HTML or Error text:", text);
+                        throw new Error("خطأ من السيرفر. تأكد أن الرابط مفعل ويعيد بيانات JSON بشكل صحيح.");
                     }
                     
-                    const startStr = reportStartDate.value; // "YYYY-MM-DD"
-                    const endStr = reportEndDate.value; // "YYYY-MM-DD"
+                    const startStr = reportStartDate.value; 
+                    const endStr = reportEndDate.value; 
                     const tempOrders = {};
                     
-                    // [إصلاح] الحماية من عدم وجود مصفوفة الطلبات بالاستجابة
-                    const ordersArray = result.orders || [];
+                    let ordersArray = result.orders || result.data || (Array.isArray(result) ? result : []);
+                    console.log(`تم جلب ${ordersArray.length} صف من الشيت`);
 
-                    ordersArray.forEach((originalRow, index) => {
+                    ordersArray.forEach((row, index) => {
                         try {
-                            // [إصلاح] توحيد أسماء الأعمدة لتفادي المسافات الزائدة التي كانت تسبب تجاهل البيانات وتفريغ الجداول
-                            const row = {};
-                            for(let key in originalRow) {
-                                row[key.trim()] = originalRow[key];
-                            }
-
-                            // [إصلاح] البحث عن التاريخ بمرونة عبر عدة أسماء محتملة لتلافي أخطاء الحقول
-                            const rawDateStr = row['التاريخ'] || row['date'] || row['timestamp'];
+                            // استخدام الـ Smart Parser لاستخراج البيانات بشكل مقاوم للأخطاء
+                            const rawDateStr = getVal(row, ['التاريخ', 'تاريخ', 'date', 'timestamp']);
                             const rowDateStr = getLocalDateString(rawDateStr);
-                            if (!rowDateStr) return; // تجاهل الصفوف المكسورة بدون تاريخ صالح
                             
-                            // مقارنة التواريخ كنصوص تمنع أي مشكلة في فروق التوقيت
+                            if (!rowDateStr) return; // تجاهل الصفوف المفرغة من التواريخ
+
                             if (rowDateStr >= startStr && rowDateStr <= endStr) {
-                                const oid = String(row['رقم الطلب'] || row['orderId'] || '').trim();
-                                // [إصلاح] تجاهل الطلبات التي لا تحتوي على رقم معرّف صحيح بدلاً من إيقاف المعالجة
-                                if (!oid || oid === 'undefined' || oid === 'null') return;
+                                const oid = String(getVal(row, ['رقم الطلب', 'طلب', 'orderid']) || '').trim();
+                                if (!oid || oid === 'undefined') return;
 
                                 if (!tempOrders[oid]) {
-                                    // [إصلاح] التعامل المرن مع حالات الدفع المتغيرة (نصوص، بولين، إنجليزي)
-                                    const payStatus = String(row['حالة الدفع'] || '').trim();
-                                    const isOrderPaid = payStatus === 'تم الدفع' || payStatus === 'paid' || payStatus === 'true';
+                                    const payStatus = String(getVal(row, ['حالة الدفع', 'دفع', 'payment']) || '').trim();
+                                    const isOrderPaid = payStatus.includes('تم') || payStatus === 'paid' || payStatus === 'true';
 
-                                    // [إصلاح] ضمان وجود رمز للموظف حتى لو كان مفقود في بعض الطلبات لتجنب الأخطاء بتقاريرهم
-                                    let mCode = String(row['رمز المسؤول'] || row['managerCode'] || oid.split('-')[0] || 'XX').trim().toUpperCase();
-                                    if(mCode === 'UNDEFINED' || mCode === 'NULL' || mCode === '') mCode = 'غير محدد';
+                                    let mCode = String(getVal(row, ['رمز المسؤول', 'مسؤول', 'manager']) || oid.split('-')[0] || 'XX').trim().toUpperCase();
+                                    if(mCode === 'UNDEFINED' || mCode === '') mCode = 'غير محدد';
+
+                                    // استخراج نسبة الخصم حتى لو كان الاسم "#نسبة الخصم"
+                                    const discountRaw = getVal(row, ['نسبة الخصم', 'خصم', 'discount', '%']);
+                                    const discountRate = parseFloat(String(discountRaw).replace(/[^0-9.]/g, '')) || 0;
 
                                     tempOrders[oid] = {
                                         orderId: oid,
-                                        dateStr: rowDateStr, // احتفظ بالتاريخ النصي لسهولة الاستخدام
+                                        dateStr: rowDateStr,
                                         managerCode: mCode,
                                         isPaid: isOrderPaid,
-                                        discountRate: Number(row['نسبة الخصم'] || 0) || 0,
+                                        discountRate: discountRate,
                                         products: [],
                                         totalAmount: 0,
                                         shapesCount: 0
                                     };
                                 }
                                 
-                                const productNameOrId = String(row['المنتج'] || row['name'] || 'منتج غير معروف').trim();
-                                const color = String(row['اللون'] || row['color'] || 'silver').trim().toLowerCase();
-                                const count = Number(row['العدد'] || row['count']) || 1; // تعويض بـ 1 لو كان العدد غير صالح
-                                const price = Number(row['السعر الفردي'] || row['price']) || 0;
+                                const productNameOrId = String(getVal(row, ['المنتج', 'منتج', 'name']) || 'منتج مجهول').trim();
+                                const color = String(getVal(row, ['اللون', 'لون', 'color']) || 'silver').trim().toLowerCase();
                                 
-                                // [إصلاح] قراءة حقول (نعم/لا) بشكل آمن يدعم القيم المنطقية و القيم النصية المختلفة
-                                const lightVal = String(row['إضافة إضاءة'] || '').trim();
-                                const customVal = String(row['تصميم خاص'] || '').trim();
+                                const countRaw = getVal(row, ['العدد', 'عدد', 'count']);
+                                const count = parseInt(String(countRaw).replace(/[^0-9]/g, ''), 10) || 1;
+                                
+                                const priceRaw = getVal(row, ['السعر الفردي', 'سعر', 'price']);
+                                const price = parseFloat(String(priceRaw).replace(/[^0-9.]/g, '')) || 0;
+                                
+                                const lightVal = String(getVal(row, ['إضافة إضاءة', 'إضاءة']) || '').trim();
+                                const customVal = String(getVal(row, ['تصميم خاص', 'تصميم']) || '').trim();
                                 const hasLighting = lightVal === 'نعم' || lightVal === 'true' || lightVal === '1';
                                 const customDesign = customVal === 'نعم' || customVal === 'true' || customVal === '1';
 
@@ -533,7 +532,7 @@
                                     shapeName: productNameOrId,
                                     count: count,
                                     price: price,
-                                    basePrice: Math.max(0, price - additions), // [إصلاح] تفادي الأسعار السالبة إذا حدث خطأ بالتسعير
+                                    basePrice: Math.max(0, price - additions),
                                     hasLighting,
                                     customDesign,
                                     color
@@ -542,12 +541,11 @@
                                 tempOrders[oid].shapesCount += count;
                             }
                         } catch (rowErr) {
-                            // [إصلاح] عزل الصف التالف تماماً ومنعه من كسر الدورة البرمجية لباقي الطلبات
-                            console.warn(`تم تجاوز خطأ في معالجة الصف رقم ${index}:`, rowErr);
+                            console.warn(`تجاوز خطأ في الصف ${index}:`, rowErr);
                         }
                     });
 
-                    // الحسابات متطابقة مع نظام الفواتير (تُحفظ كما هي بدون تغيير لتطابق المحاسبة)
+                    // الحسابات متطابقة مع نظام الفواتير
                     Object.values(tempOrders).forEach(o => {
                         let discountable = 0;
                         let nonDiscountable = 0;
@@ -575,8 +573,7 @@
                     
                     const emps = new Set();
                     Object.values(tempOrders).forEach(o => {
-                        // [إصلاح] استثناء القيم الفارغة من أسماء الموظفين للحصول على قائمة دقيقة
-                        if (o.managerCode && o.managerCode !== 'UNDEFINED' && o.managerCode !== 'NULL' && o.managerCode !== 'غير محدد') {
+                        if (o.managerCode && o.managerCode !== 'UNDEFINED' && o.managerCode !== 'غير محدد') {
                             emps.add(o.managerCode);
                         }
                     });
@@ -586,8 +583,7 @@
                     if (selectedEmployee.value) processEmployeeDetailedData();
 
                     reportGenerated.value = true;
-                    try { localStorage.removeItem('hwayt_orders_v8'); } catch(e) {}
-
+                    
                     if (reportSummary.value.totalOrders === 0) {
                         showNotify('تم الاتصال ولكن لا توجد طلبات مسجلة في هذا النطاق الزمني', 'info');
                     } else {
@@ -599,7 +595,7 @@
 
                 } catch (e) {
                     console.error('Sync Error:', e);
-                    showNotify('خطأ في المزامنة: ' + (e.message || 'حاول مرة أخرى'), 'error');
+                    showNotify('خطأ: ' + e.message, 'error');
                 } finally {
                     syncLoading.value = false;
                 }
@@ -618,7 +614,7 @@
                         unpaid++;
                     }
 
-                    if (o.managerCode && o.managerCode !== 'UNDEFINED' && o.managerCode !== 'NULL') {
+                    if (o.managerCode && o.managerCode !== 'UNDEFINED') {
                         if (!empStats[o.managerCode]) {
                             empStats[o.managerCode] = { name: o.managerCode, orderCount: 0, paidOrderCount: 0, totalSales: 0, shapesCount: 0 };
                         }
@@ -652,7 +648,6 @@
                 empOrders.forEach(o => {
                     if (o.isPaid) {
                         o.products.forEach(p => {
-                            // [إصلاح] التأكد من أن اسم المنتج ليس فارغاً ليظهر التجميع بشكل صحيح في الجداول
                             const sName = p.shapeName || 'منتج غير محدد';
                             if (!shapesMap[sName]) shapesMap[sName] = { count: 0, revenue: 0 };
                             
@@ -681,7 +676,6 @@
 
             const renderCharts = () => {
                 try {
-                    // [إصلاح] التأكد من عدم بناء الرسوميات إذا كانت البيانات فارغة لحماية المتصفح
                     if (!window.Chart || reportType.value !== 'general' || reportSummary.value.totalOrders === 0) return;
                     
                     const ctxRev = document.getElementById('revenueChart');
@@ -705,7 +699,6 @@
 
                     const sortedDates = Object.keys(datesMap).sort();
                     
-                    // [إصلاح] تزويد رسم الإيرادات ببيانات صفرية إذا لم يكن هناك إيرادات لمنع تعطل مكتبة ChartJS
                     revenueChartInstance = new Chart(ctxRev, {
                         type: 'line',
                         data: { 
@@ -724,7 +717,6 @@
                         options: { responsive: true, maintainAspectRatio: false, cutout: '75%' }
                     });
 
-                    // [إصلاح] منع الـ Bar Chart من الانهيار إذا لم يكن هناك موظفين مسجلين
                     employeesChartInstance = new Chart(ctxEmp, {
                         type: 'bar',
                         data: {
@@ -747,25 +739,28 @@
                 try {
                     const captureEl = document.getElementById('capture-employee-report');
                     
+                    // انتظار قصير جداً لضمان تحميل وتحديث البيانات
                     await nextTick();
                     await new Promise(r => setTimeout(r, 600)); 
                     
                     const canvas = await html2canvas(captureEl, { 
                         scale: 2, 
                         useCORS: true, 
-                        backgroundColor: '#ffffff' 
+                        backgroundColor: '#ffffff',
+                        logging: false // إيقاف رسائل الكونسول لتسريع المعالجة
                     });
+                    
                     const imgData = canvas.toDataURL('image/jpeg', 1.0);
                     
                     const { jsPDF } = window.jspdf;
                     const finalPDF = new jsPDF('l', 'mm', 'a4');
                     finalPDF.addImage(imgData, 'JPEG', 0, 0, 297, 210);
                     
-                    finalPDF.save(`تقرير_هوية بيتك _أداء_الموظفين_${reportStartDate.value}.pdf`);
+                    finalPDF.save(`تقرير_مكاني_أداء_الموظفين_${reportStartDate.value}.pdf`);
                     showNotify('تم تحميل التقرير بنجاح', 'success');
                 } catch(e) {
                     console.error('PDF Generation Error:', e);
-                    showNotify('حدث خطأ أثناء معالجة الـ PDF: ' + e.message, 'error');
+                    showNotify('حدث خطأ أثناء المعالجة. حاول مرة أخرى لاحقاً.', 'error');
                 } finally {
                     pdfLoading.value = false;
                 }
@@ -777,6 +772,9 @@
                 currentUser.value = JSON.parse(storedUser);
                 if (currentUser.value.role !== 'admin') { window.location.href = 'index.html'; return; }
                 setTimeout(() => lucide.createIcons(), 500); 
+                
+                // جلب التقارير تلقائياً عند فتح الصفحة
+                generateReport();
             });
 
             return {
